@@ -151,6 +151,72 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'inbox_listar',
+    description: 'Lista items de la bandeja de entrada canonica del OS.',
+    inputSchema: { type: 'object', properties: { leido: { type: 'boolean' } } },
+  },
+  {
+    name: 'inbox_capturar',
+    description: 'Guarda una nota, enlace o pedido explicitamente indicado por Pancho en la bandeja canonica del OS.',
+    inputSchema: {
+      type: 'object',
+      properties: { titulo: { type: 'string' }, url: { type: 'string' }, descripcion: { type: 'string' }, categoria: { type: 'string' } },
+      required: ['titulo'],
+    },
+  },
+  {
+    name: 'aprobaciones_listar',
+    description: 'Lista solicitudes pendientes o resueltas de aprobacion en el OS.',
+    inputSchema: { type: 'object', properties: { estado: { type: 'string', enum: ['pendiente', 'aprobado', 'rechazado'] } } },
+  },
+  {
+    name: 'aprobaciones_solicitar',
+    description: 'Crea una solicitud de aprobacion cuando Hermes propone una accion por iniciativa propia.',
+    inputSchema: {
+      type: 'object',
+      properties: { titulo: { type: 'string' }, contexto: { type: 'string' }, opciones: { type: 'array', items: { type: 'string' } }, recomendacion: { type: 'string' } },
+      required: ['titulo'],
+    },
+  },
+  {
+    name: 'contenido_listar',
+    description: 'Lista ideas de contenido y su estado editorial.',
+    inputSchema: { type: 'object', properties: { estado: { type: 'string' } } },
+  },
+  {
+    name: 'contenido_capturar',
+    description: 'Guarda una idea de contenido, referencia o transcript que Pancho indico explicitamente.',
+    inputSchema: {
+      type: 'object',
+      properties: { titulo: { type: 'string' }, formato: { type: 'string' }, idea_madre: { type: 'string' }, plataformas: { type: 'array', items: { type: 'string' } }, url_referencia: { type: 'string' }, transcript: { type: 'string' } },
+      required: ['titulo'],
+    },
+  },
+  {
+    name: 'prioridades_semana',
+    description: 'Consulta las tres prioridades y la lista de no hacer de una semana.',
+    inputSchema: { type: 'object', properties: { semana_inicio: { type: 'string', description: 'Lunes YYYY-MM-DD. Omite para semana actual.' } } },
+  },
+  {
+    name: 'crm_listar_leads',
+    description: 'Lista los leads del CRM del OS.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'crm_crear_lead',
+    description: 'Crea un lead cuando Pancho lo ordeno explicitamente.',
+    inputSchema: {
+      type: 'object',
+      properties: { nombre: { type: 'string' }, empresa: { type: 'string' }, proyecto: { type: 'string' }, etapa: { type: 'string' }, valor: { type: 'number' }, notas: { type: 'string' } },
+      required: ['nombre'],
+    },
+  },
+  {
+    name: 'finanzas_listar_gastos',
+    description: 'Lista gastos registrados en el OS.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'gbrain_search_memory',
     description: 'Busca conocimiento o notas en G-Brain / Cerebro de Pancho OS.',
     inputSchema: {
@@ -239,7 +305,8 @@ export async function handleMcpStatelessRequest(
     const toolDef = SEMANTIC_TOOLS.find((t) => t.name === toolName);
 
     // Verificación MRTR (Multi Round-Trip Request) para acciones sensibles
-    if (toolDef?.requiresMRTR) {
+    const isGenericDelete = toolName === 'os_api_request' && String(toolArgs.method ?? '').toUpperCase() === 'DELETE';
+    if (toolDef?.requiresMRTR || isGenericDelete) {
       const inputResponses = meta.inputResponses || toolArgs.inputResponses;
       if (!inputResponses || (inputResponses as Record<string, unknown>).confirm !== true) {
         return {
@@ -271,6 +338,16 @@ export async function handleMcpStatelessRequest(
       case 'nutricion_buscar_alimentos':
       case 'nutricion_resumen_dia':
       case 'nutricion_registrar_comida':
+      case 'inbox_listar':
+      case 'inbox_capturar':
+      case 'aprobaciones_listar':
+      case 'aprobaciones_solicitar':
+      case 'contenido_listar':
+      case 'contenido_capturar':
+      case 'prioridades_semana':
+      case 'crm_listar_leads':
+      case 'crm_crear_lead':
+      case 'finanzas_listar_gastos':
       case 'gbrain_search_memory':
       case 'os_api_request': {
         if (executeTool) {

@@ -70,6 +70,39 @@ test('ejecuta el puente universal del OS mediante el ejecutor real', async () =>
   );
 });
 
+test('publica herramientas operativas del OS para inbox, aprobaciones, contenido, prioridades y CRM', async () => {
+  const response = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'operaciones-tools', method: 'tools/list' },
+    new Headers(),
+  );
+
+  const toolNames = (response.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+
+  assert.deepEqual(
+    [
+      'inbox_listar', 'inbox_capturar', 'aprobaciones_listar', 'aprobaciones_solicitar',
+      'contenido_listar', 'contenido_capturar', 'prioridades_semana',
+      'crm_listar_leads', 'crm_crear_lead', 'finanzas_listar_gastos',
+    ].every((name) => toolNames.includes(name)),
+    true,
+  );
+});
+
+test('exige confirmacion para borrar mediante el puente universal del OS', async () => {
+  const response = await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'delete-os-item',
+      method: 'tools/call',
+      params: { name: 'os_api_request', arguments: { module: 'bandeja', method: 'DELETE', query: { id: '123' } } },
+    },
+    new Headers(),
+    async () => ({ ok: true }),
+  );
+
+  assert.equal((response.result as { resultType: string }).resultType, 'input_required');
+});
+
 test('ejecuta una herramienta mediante el ejecutor real en vez de responder un mock', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const response = await handleMcpStatelessRequest(

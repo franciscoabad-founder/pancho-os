@@ -74,11 +74,43 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
           source: 'agente',
         },
       };
+    case 'inbox_listar': {
+      const query = new URLSearchParams();
+      if (typeof args.leido === 'boolean') query.set('leido', args.leido ? '1' : '0');
+      return { path: `/api/bandeja${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'inbox_capturar':
+      return { path: '/api/bandeja', method: 'POST', body: { titulo: args.titulo, url: args.url, descripcion: args.descripcion, categoria: args.categoria } };
+    case 'aprobaciones_listar': {
+      const query = new URLSearchParams();
+      if (typeof args.estado === 'string') query.set('estado', args.estado);
+      return { path: `/api/aprobaciones${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'aprobaciones_solicitar':
+      return { path: '/api/aprobaciones', method: 'POST', body: { titulo: args.titulo, contexto: args.contexto, opciones: args.opciones, recomendacion: args.recomendacion } };
+    case 'contenido_listar': {
+      const query = new URLSearchParams();
+      if (typeof args.estado === 'string') query.set('status', args.estado);
+      return { path: `/api/contenido${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'contenido_capturar':
+      return { path: '/api/contenido', method: 'POST', body: { titulo: args.titulo, formato: args.formato, idea_madre: args.idea_madre, plataformas: args.plataformas, url_referencia: args.url_referencia, transcript: args.transcript } };
+    case 'prioridades_semana': {
+      const query = new URLSearchParams();
+      if (typeof args.semana_inicio === 'string') query.set('semana', args.semana_inicio);
+      return { path: `/api/priority-stack${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'crm_listar_leads':
+      return { path: '/api/leads', method: 'GET' };
+    case 'crm_crear_lead':
+      return { path: '/api/leads', method: 'POST', body: { nombre: args.nombre, empresa: args.empresa, proyecto: args.proyecto, etapa: args.etapa, valor: args.valor, notas: args.notas } };
+    case 'finanzas_listar_gastos':
+      return { path: '/api/gastos', method: 'GET' };
     case 'os_api_request': {
       const module = String(args.module ?? '');
       const method = String(args.method ?? '').toUpperCase();
       if (!MCP_OS_MODULES.has(module) || !['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
-        throw new Error('os_api_request solo permite tareas, agenda o gastos con un método HTTP válido.');
+        throw new Error('Modulo o metodo no permitido para os_api_request. Usa una herramienta semantica cuando exista.');
       }
       const query = args.query && typeof args.query === 'object' ? new URLSearchParams(args.query as Record<string, string>) : new URLSearchParams();
       return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body: args.body as Record<string, unknown> | undefined };
