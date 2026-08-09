@@ -33,6 +33,20 @@ test('acepta notifications/initialized sin tratarla como un método desconocido'
   assert.deepEqual(response, { jsonrpc: '2.0', result: {} });
 });
 
+test('publica herramientas de nutricion para que Hermes pueda consultar y registrar comidas', async () => {
+  const response = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'nutrition-tools', method: 'tools/list' },
+    new Headers(),
+  );
+
+  const toolNames = (response.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+
+  assert.deepEqual(
+    toolNames.filter((name) => name.startsWith('nutricion_')),
+    ['nutricion_buscar_alimentos', 'nutricion_resumen_dia', 'nutricion_registrar_comida'],
+  );
+});
+
 test('ejecuta una herramienta mediante el ejecutor real en vez de responder un mock', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const response = await handleMcpStatelessRequest(

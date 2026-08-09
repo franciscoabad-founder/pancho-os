@@ -27,6 +27,36 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
       return { path: '/api/tareas', method: 'POST', body: { titulo: args.titulo, prioridad: args.prioridad, deadline: args.fecha_limite } };
     case 'finanzas_log_gasto':
       return { path: '/api/gastos', method: 'POST', body: { monto: args.monto, categoria: args.categoria, descripcion: args.descripcion } };
+    case 'nutricion_buscar_alimentos': {
+      const query = new URLSearchParams();
+      if (typeof args.consulta === 'string') query.set('q', args.consulta);
+      if (typeof args.codigo_barras === 'string') query.set('barcode', args.codigo_barras);
+      if (typeof args.modo === 'string') query.set('modo', args.modo);
+      return { path: `/api/salud/alimentos${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'nutricion_resumen_dia': {
+      const query = new URLSearchParams();
+      if (typeof args.fecha === 'string') query.set('dia', args.fecha);
+      return { path: `/api/salud/comidas-log${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'nutricion_registrar_comida':
+      return {
+        path: '/api/salud/comidas-log',
+        method: 'POST',
+        body: {
+          fecha: args.fecha,
+          momento: args.momento,
+          alimento_id: args.alimento_id,
+          cantidad_g: args.cantidad_g,
+          descripcion_libre: args.descripcion_libre,
+          kcal: args.kcal,
+          proteina_g: args.proteina_g,
+          carbos_g: args.carbos_g,
+          grasa_g: args.grasa_g,
+          notas: args.notas,
+          source: 'agente',
+        },
+      };
     case 'os_api_request': {
       const module = String(args.module ?? '');
       const method = String(args.method ?? '').toUpperCase();

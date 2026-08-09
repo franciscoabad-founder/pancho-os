@@ -109,6 +109,48 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'nutricion_buscar_alimentos',
+    description: 'Busca alimentos del catalogo de Pancho OS por texto, codigo de barras o lista rapida.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        consulta: { type: 'string', description: 'Texto a buscar, por ejemplo huevos o ceviche' },
+        codigo_barras: { type: 'string', description: 'Codigo de barras opcional' },
+        modo: { type: 'string', enum: ['recientes', 'frecuentes', 'favoritos'] },
+      },
+    },
+  },
+  {
+    name: 'nutricion_resumen_dia',
+    description: 'Obtiene comidas registradas, macros, metas y restante de un dia.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'Fecha YYYY-MM-DD. Omite para hoy en Guayaquil.' },
+      },
+    },
+  },
+  {
+    name: 'nutricion_registrar_comida',
+    description: 'Registra una comida que Pancho indico explicitamente. Usa alimento_id y cantidad_g cuando el alimento este identificado; usa descripcion_libre y macros estimados cuando no lo este.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'Fecha YYYY-MM-DD. Omite para hoy en Guayaquil.' },
+        momento: { type: 'string', enum: ['desayuno', 'almuerzo', 'cena', 'snack'] },
+        alimento_id: { type: 'string', description: 'ID obtenido con nutricion_buscar_alimentos' },
+        cantidad_g: { type: 'number', description: 'Cantidad consumida en gramos' },
+        descripcion_libre: { type: 'string', description: 'Descripcion cuando no hay alimento identificado' },
+        kcal: { type: 'number' },
+        proteina_g: { type: 'number' },
+        carbos_g: { type: 'number' },
+        grasa_g: { type: 'number' },
+        notas: { type: 'string' },
+      },
+      required: ['momento'],
+    },
+  },
+  {
     name: 'gbrain_search_memory',
     description: 'Busca conocimiento o notas en G-Brain / Cerebro de Pancho OS.',
     inputSchema: {
@@ -226,6 +268,9 @@ export async function handleMcpStatelessRequest(
       case 'tareas_list':
       case 'tareas_create':
       case 'finanzas_log_gasto':
+      case 'nutricion_buscar_alimentos':
+      case 'nutricion_resumen_dia':
+      case 'nutricion_registrar_comida':
       case 'gbrain_search_memory': {
         if (executeTool) {
           try {
