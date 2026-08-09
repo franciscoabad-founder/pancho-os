@@ -7,8 +7,9 @@ export function isOsAuthorized(context: Pick<APIContext, 'cookies' | 'request'>)
 
   const auth = context.request.headers.get('authorization') ?? '';
   const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1];
+  const externalToken = context.request.headers.get('x-os-token');
   const apiToken = import.meta.env.OS_API_TOKEN ?? sessionToken;
-  return !!(bearer && apiToken && bearer === apiToken);
+  return !!(apiToken && (bearer === apiToken || externalToken === apiToken));
 }
 
 export const json = (data: unknown, status = 200) =>

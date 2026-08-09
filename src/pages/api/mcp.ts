@@ -50,6 +50,7 @@ async function executeOsTool(request: Request, name: string, args: Record<string
   const internalToken = import.meta.env.OS_API_TOKEN ?? process.env.OS_API_TOKEN;
   if (!internalToken) throw new Error('OS_API_TOKEN no configurado para ejecutar herramientas MCP.');
   headers.set('Authorization', `Bearer ${internalToken}`);
+  headers.set('X-OS-Token', internalToken);
   if (toolRequest.body) headers.set('Content-Type', 'application/json');
 
   const response = await fetch(new URL(toolRequest.path, request.url), {
