@@ -24,8 +24,8 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "cd /opt/pancho-os && ( [ -d .git ] || ( git init && git remote add origin https://github.com/franciscoabad-founder/pancho-os.git ) ) && git fetch origin && git reset --hard origin/master && git clean -fd && npm install && npm run build && pm2 restart pancho-os"
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "cd /opt/pancho-os && ( [ -d .git ] || ( git init && git remote add origin https://github.com/franciscoabad-founder/pancho-os.git ) ) && git fetch origin && git reset --hard origin/master && git clean -fd && npm install && npm run build && (pm2 restart pancho-os --update-env || pm2 start dist/server/entry.mjs --name pancho-os)"
 
       - name: Verify deployment
         run: |
-          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "curl -s http://localhost:4322/health || echo 'Health check failed'"
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "curl -fsS http://localhost:4322/ > /dev/null"
