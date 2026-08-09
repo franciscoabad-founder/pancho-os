@@ -47,6 +47,29 @@ test('publica herramientas de nutricion para que Hermes pueda consultar y regist
   );
 });
 
+test('ejecuta el puente universal del OS mediante el ejecutor real', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const response = await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'os-api-request',
+      method: 'tools/call',
+      params: { name: 'os_api_request', arguments: { module: 'habitos', method: 'GET' } },
+    },
+    new Headers(),
+    async (name, args) => {
+      calls.push({ name, args });
+      return { habitos: [{ id: 'hoy' }] };
+    },
+  );
+
+  assert.deepEqual(calls, [{ name: 'os_api_request', args: { module: 'habitos', method: 'GET' } }]);
+  assert.equal(
+    (response.result as { content: Array<{ text: string }> }).content[0].text,
+    JSON.stringify({ habitos: [{ id: 'hoy' }], tool: 'os_api_request' }, null, 2),
+  );
+});
+
 test('ejecuta una herramienta mediante el ejecutor real en vez de responder un mock', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const response = await handleMcpStatelessRequest(

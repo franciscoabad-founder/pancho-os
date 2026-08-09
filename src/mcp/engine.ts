@@ -163,12 +163,12 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'os_api_request',
-    description: 'Fallback proxy genérico para interactuar con cualquier módulo de Pancho OS.',
+    description: 'Puente autenticado a los modulos existentes de Pancho OS. Preferir las herramientas semanticas cuando existan; usar este puente para un modulo del OS aun no cubierto.',
     inputSchema: {
       type: 'object',
       properties: {
         module: { type: 'string', description: 'Módulo de la API de Pancho OS' },
-        method: { type: 'string', enum: ['GET', 'POST', 'PATCH', 'DELETE'] },
+        method: { type: 'string', enum: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] },
         query: { type: 'object', additionalProperties: { type: 'string' } },
         body: { type: 'object', additionalProperties: true },
       },
@@ -271,7 +271,8 @@ export async function handleMcpStatelessRequest(
       case 'nutricion_buscar_alimentos':
       case 'nutricion_resumen_dia':
       case 'nutricion_registrar_comida':
-      case 'gbrain_search_memory': {
+      case 'gbrain_search_memory':
+      case 'os_api_request': {
         if (executeTool) {
           try {
             const data = await executeTool(toolName, toolArgs);
@@ -306,25 +307,6 @@ export async function handleMcpStatelessRequest(
                   execution: 'Stateless HTTP 2026-07-28',
                   receivedArgs: toolArgs,
                   timestamp: new Date().toISOString(),
-                }, null, 2),
-              },
-            ],
-          },
-        };
-      }
-
-      case 'os_api_request': {
-        return {
-          jsonrpc: '2.0',
-          id: requestId,
-          result: {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  status: 'success',
-                  message: 'Fallback proxy executado correctamente',
-                  args: toolArgs,
                 }, null, 2),
               },
             ],

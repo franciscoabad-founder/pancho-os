@@ -5,6 +5,23 @@ export const prerender = false;
 
 type ToolRequest = { path: string; method: string; body?: Record<string, unknown> };
 
+const MCP_OS_MODULES = new Set([
+  'agenda', 'aprobaciones', 'bandeja', 'biometricas', 'comidas', 'contenido',
+  'cuentas', 'deudas', 'dia', 'gastos', 'gfit/catalogo', 'gfit/config',
+  'gfit/dia-ejercicios', 'gfit/dias', 'gfit/logros', 'gfit/progreso',
+  'gfit/rutinas', 'gfit/series', 'gfit/sesion-series', 'habitos',
+  'habitos/brief', 'habitos/checks', 'habitos/cierre', 'habitos/journeys',
+  'juego/cierre', 'juego/estado', 'juego/quests', 'juego/recompensas',
+  'kpis', 'leads', 'lineas', 'notas', 'objetivos', 'onboarding', 'pendientes',
+  'por-cobrar', 'presupuestos', 'priority-stack', 'recordatorios',
+  'redes-metricas', 'revision', 'salud/alimentos', 'salud/ayunos',
+  'salud/comidas-log', 'salud/config', 'salud/cuerpo', 'salud/ejercicios',
+  'salud/estiramiento', 'salud/insights', 'salud/meals', 'salud/progreso',
+  'salud/recetas', 'salud/rutinas', 'salud/sesiones', 'salud/sueno/cafeina',
+  'salud/sueno/config', 'salud/sueno/hoy', 'salud/sueno/index', 'semana',
+  'system', 'tareas',
+]);
+
 function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest {
   switch (name) {
     case 'agenda_get_eventos': {
@@ -60,8 +77,7 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
     case 'os_api_request': {
       const module = String(args.module ?? '');
       const method = String(args.method ?? '').toUpperCase();
-      const allowed = new Set(['tareas', 'agenda', 'gastos']);
-      if (!allowed.has(module) || !['GET', 'POST', 'PATCH', 'DELETE'].includes(method)) {
+      if (!MCP_OS_MODULES.has(module) || !['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
         throw new Error('os_api_request solo permite tareas, agenda o gastos con un método HTTP válido.');
       }
       const query = args.query && typeof args.query === 'object' ? new URLSearchParams(args.query as Record<string, string>) : new URLSearchParams();
