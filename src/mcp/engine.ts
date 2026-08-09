@@ -24,6 +24,11 @@ export interface McpToolDefinition {
   requiresMRTR?: boolean;
 }
 
+export type McpToolExecutor = (
+  name: string,
+  args: Record<string, unknown>,
+) => Promise<Record<string, unknown>>;
+
 // Catálogo de herramientas semánticas del Pancho OS (spec 2026-07-28)
 export const SEMANTIC_TOOLS: McpToolDefinition[] = [
   {
@@ -133,7 +138,8 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
 // Motor Stateless RPC (spec 2026-07-28)
 export async function handleMcpStatelessRequest(
   reqBody: McpJsonRpcRequest,
-  headers: Headers
+  headers: Headers,
+  executeTool?: McpToolExecutor,
 ): Promise<Record<string, unknown>> {
   const methodFromHeader = headers.get('Mcp-Method');
   const method = methodFromHeader || reqBody.method;
@@ -221,6 +227,27 @@ export async function handleMcpStatelessRequest(
       case 'tareas_create':
       case 'finanzas_log_gasto':
       case 'gbrain_search_memory': {
+        if (executeTool) {
+          try {
+            const data = await executeTool(toolName, toolArgs);
+            return {
+              jsonrpc: '2.0',
+              id: requestId,
+              result: {
+                content: [{
+                  type: 'text',
+                  text: JSON.stringify({ ...data, tool: toolName }, null, 2),
+                }],
+              },
+            };
+          } catch (err) {
+            return {
+              jsonrpc: '2.0',
+              id: requestId,
+              error: { code: -32603, message: err instanceof Error ? err.message : String(err) },
+            };
+          }
+        }
         return {
           jsonrpc: '2.0',
           id: requestId,

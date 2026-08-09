@@ -32,3 +32,32 @@ test('acepta notifications/initialized sin tratarla como un método desconocido'
 
   assert.deepEqual(response, { jsonrpc: '2.0', result: {} });
 });
+
+test('ejecuta una herramienta mediante el ejecutor real en vez de responder un mock', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const response = await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'tareas-1',
+      method: 'tools/call',
+      params: { name: 'tareas_list', arguments: { estado: 'pendientes' } },
+    },
+    new Headers(),
+    async (name, args) => {
+      calls.push({ name, args });
+      return { tareas: [{ id: 'real-task', titulo: 'Tarea real' }] };
+    },
+  );
+
+  assert.deepEqual(calls, [{ name: 'tareas_list', args: { estado: 'pendientes' } }]);
+  assert.deepEqual(response, {
+    jsonrpc: '2.0',
+    id: 'tareas-1',
+    result: {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({ tareas: [{ id: 'real-task', titulo: 'Tarea real' }], tool: 'tareas_list' }, null, 2),
+      }],
+    },
+  });
+});
