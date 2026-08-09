@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export interface McpRequestMeta {
   protocolVersion?: string;
   clientCapabilities?: Record<string, unknown>;
@@ -140,6 +138,28 @@ export async function handleMcpStatelessRequest(
   const methodFromHeader = headers.get('Mcp-Method');
   const method = methodFromHeader || reqBody.method;
   const requestId = reqBody.id ?? 1;
+
+  // Handshake MCP estándar. Hermes inicia toda conexión HTTP con este método
+  // antes de descubrir herramientas, aunque el servidor sea sin estado.
+  if (method === 'initialize') {
+    return {
+      jsonrpc: '2.0',
+      id: requestId,
+      result: {
+        protocolVersion: typeof reqBody.params?.protocolVersion === 'string'
+          ? reqBody.params.protocolVersion
+          : '2025-06-18',
+        capabilities: { tools: { listChanged: false } },
+        serverInfo: { name: 'pancho-os', version: '0.0.1' },
+      },
+    };
+  }
+
+  // Un cliente MCP envía esta notificación tras initialize. La ruta HTTP
+  // siempre devuelve JSON, por lo que confirmamos la recepción vacía.
+  if (method === 'notifications/initialized') {
+    return { jsonrpc: '2.0', result: {} };
+  }
 
   // 1. tools/list: Retorna catálogo cacheable con ttlMs y cacheScope
   if (method === 'tools/list') {
