@@ -3,9 +3,10 @@ import type { APIRoute } from 'astro';
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const data = await request.formData();
   const password = data.get('password');
+  const expectedPassword = process.env.OS_PASSWORD || import.meta.env.OS_PASSWORD || 'pancho2026';
+  const token = process.env.OS_AUTH_TOKEN || import.meta.env.OS_AUTH_TOKEN || 'pancho_os_auth_token_2026';
   
-  if (password === import.meta.env.OS_PASSWORD) {
-    const token = import.meta.env.OS_AUTH_TOKEN;
+  if (password === expectedPassword) {
     cookies.set('os_auth', token, {
       path: '/',
       httpOnly: true,
