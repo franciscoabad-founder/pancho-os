@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
   const cortexAppUrl = import.meta.env.CORTEX_APP_URL || 'https://app-cortex.franciscoabad.com';
 
   try {
-    const res = await fetch(`${cortexAppUrl}/api/os/admin/overview`, {
+    const res = await fetch(`${cortexAppUrl}/api/admin/overview`, {
       method: 'GET',
       headers: {
         'X-Cortex-Admin-Token': adminToken,

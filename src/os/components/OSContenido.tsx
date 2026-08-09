@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
 
-// Vista Contenido: pipeline editorial en vivo desde /api/os/contenido.
+// Vista Contenido: pipeline editorial en vivo desde /api/contenido.
 
 interface Idea {
   id: string;
@@ -85,7 +85,7 @@ function OSContenidoInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/contenido', { cache: 'no-store' });
+      const res = await fetch('/api/contenido', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setIdeas(data.ideas ?? []);
@@ -100,7 +100,7 @@ function OSContenidoInner() {
 
   async function patch(id: string, body: Record<string, unknown>) {
     try {
-      const res = await fetch(`/api/os/contenido?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/contenido?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -121,7 +121,7 @@ function OSContenidoInner() {
       danger: true,
     }))) return;
     try {
-      const res = await fetch(`/api/os/contenido?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/contenido?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(String(res.status));
       await load();
     } catch (err) {
@@ -146,7 +146,7 @@ function OSContenidoInner() {
     if (!nTitulo.trim() || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/contenido', {
+      const res = await fetch('/api/contenido', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

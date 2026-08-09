@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { EmptyState, Spinner, ToastProvider, useToast } from './ui';
 
-// Vista Proyectos: el Project Stack del canon, en vivo desde /api/os/lineas.
+// Vista Proyectos: el Project Stack del canon, en vivo desde /api/lineas.
 // prioridad_stack es la unica jerarquia que importa: 0 Urgente, 1 Dinero,
 // 2 Soporte, 3 Estabilizar, 4 Pausado. Un proyecto pausado no recibe atencion,
 // esa es la funcion del stack.
@@ -123,7 +123,7 @@ function OSProyectosInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/lineas', { cache: 'no-store' });
+      const res = await fetch('/api/lineas', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setLineas(data.lineas ?? []);
@@ -138,7 +138,7 @@ function OSProyectosInner() {
 
   async function patch(id: string, body: Record<string, unknown>) {
     try {
-      const res = await fetch(`/api/os/lineas?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/lineas?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -189,7 +189,7 @@ function OSProyectosInner() {
           <EmptyState
             icon="account_tree"
             title="Stack vacio"
-            text="Todavia no hay lineas registradas. Las lineas del Project Stack se registran via API (/api/os/lineas)."
+            text="Todavia no hay lineas registradas. Las lineas del Project Stack se registran via API (/api/lineas)."
           />
         </div>
       )}

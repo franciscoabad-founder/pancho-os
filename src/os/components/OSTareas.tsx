@@ -108,7 +108,7 @@ function OSTareasInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/tareas');
+      const res = await fetch('/api/tareas');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setTareas(data.tareas ?? []);
@@ -124,7 +124,7 @@ function OSTareasInner() {
 
   async function patch(id: string, body: Record<string, unknown>) {
     try {
-      const res = await fetch(`/api/os/tareas?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/tareas?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -145,7 +145,7 @@ function OSTareasInner() {
       danger: true,
     }))) return;
     try {
-      const res = await fetch(`/api/os/tareas?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/tareas?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(String(res.status));
       await load();
     } catch (err) {
@@ -186,7 +186,7 @@ function OSTareasInner() {
   }
 
   async function crear(body: Record<string, unknown>) {
-    const res = await fetch('/api/os/tareas', {
+    const res = await fetch('/api/tareas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

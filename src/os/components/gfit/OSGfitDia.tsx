@@ -29,7 +29,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
     if (!buscador.trim()) { setResultados([]); return; }
     setBuscando(true);
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/os/gfit/catalogo?q=${encodeURIComponent(buscador.trim())}&limit=10`);
+      const res = await fetch(`/api/gfit/catalogo?q=${encodeURIComponent(buscador.trim())}&limit=10`);
       const data = await res.json();
       setResultados(data.ejercicios ?? []);
       setBuscando(false);
@@ -48,7 +48,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
     [copia[idx], copia[j]] = [copia[j], copia[idx]];
     const reordenados = copia.map((it, i) => ({ ...it, orden: i }));
     onDia({ ...dia, gfit_dia_ejercicios: reordenados });
-    await fetch('/api/os/gfit/dia-ejercicios', {
+    await fetch('/api/gfit/dia-ejercicios', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reordenar: reordenados.map((it) => ({ id: it.id, orden: it.orden })) }),
     });
@@ -62,7 +62,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
       const afectados = items.filter((it) => it.superset_grupo === grupo);
       onDia({ ...dia, gfit_dia_ejercicios: dia.gfit_dia_ejercicios.map((it) => (it.superset_grupo === grupo ? { ...it, superset_grupo: null } : it)) });
       await Promise.all(afectados.map((it) =>
-        fetch(`/api/os/gfit/dia-ejercicios?id=${it.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ superset_grupo: null }) }),
+        fetch(`/api/gfit/dia-ejercicios?id=${it.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ superset_grupo: null }) }),
       ));
       return;
     }
@@ -74,7 +74,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
         it.id === actual.id || it.id === siguiente.id ? { ...it, superset_grupo: nuevoGrupo } : it),
     });
     await Promise.all([actual.id, siguiente.id].map((id) =>
-      fetch(`/api/os/gfit/dia-ejercicios?id=${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ superset_grupo: nuevoGrupo }) }),
+      fetch(`/api/gfit/dia-ejercicios?id=${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ superset_grupo: nuevoGrupo }) }),
     ));
   }
 
@@ -87,12 +87,12 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
       danger: true,
     }))) return;
     onDia({ ...dia, gfit_dia_ejercicios: dia.gfit_dia_ejercicios.filter((it) => it.id !== id) });
-    await fetch(`/api/os/gfit/dia-ejercicios?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/gfit/dia-ejercicios?id=${id}`, { method: 'DELETE' });
   }
 
   async function confirmarSwap(ejercicioId: string, nuevo: Ejercicio) {
     setSwapId(null);
-    const res = await fetch(`/api/os/gfit/dia-ejercicios?id=${ejercicioId}`, {
+    const res = await fetch(`/api/gfit/dia-ejercicios?id=${ejercicioId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ejercicio_id: nuevo.id }),
     });
     const data = await res.json();
@@ -101,7 +101,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
 
   async function agregarEjercicio(e: Ejercicio) {
     setBuscador(''); setResultados([]);
-    const res = await fetch('/api/os/gfit/dia-ejercicios', {
+    const res = await fetch('/api/gfit/dia-ejercicios', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dia_id: dia.id, ejercicio_id: e.id }),
     });
     const data = await res.json();

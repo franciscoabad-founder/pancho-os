@@ -31,7 +31,7 @@ const HORAS_SIN_REGISTRO = 24;
 // Protocolo + objetivo por defecto (Fase 5). El protocolo vive en la columna existente
 // salud_config.protocolo_ayuno_default; las horas custom en salud_config.ayuno_objetivo_h
 // (Ãºnica columna nueva, ver 20260720000100). El PATCH que los actualiza vive en
-// /api/os/salud/config.ts, no acÃ¡.
+// /api/salud/config.ts, no acÃ¡.
 async function getAyunoConfig(sb: SB): Promise<{ protocolo: string; objetivo_h: number }> {
   const { data, error } = await sb
     .from('salud_config')

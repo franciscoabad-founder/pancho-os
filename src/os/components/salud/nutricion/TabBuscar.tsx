@@ -1,4 +1,4 @@
-// Tab "Buscar" del sheet de captura: input libre (existing logic: /api/os/salud/
+// Tab "Buscar" del sheet de captura: input libre (existing logic: /api/salud/
 // alimentos?q=) + pills Recientes/Frecuentes/Favoritas (?modo=) cuando no hay texto.
 // Tocar una fila (no el "+") abre DetallePorcion; el "+" agrega de una con 100 g.
 import { useEffect, useState } from 'react';
@@ -27,8 +27,8 @@ export default function TabBuscar({ momento, dia, tipoDia, onAgregado }: Props) 
     let vivo = true;
     setBuscando(true);
     const url = q.trim()
-      ? `/api/os/salud/alimentos?q=${encodeURIComponent(q.trim())}`
-      : `/api/os/salud/alimentos?modo=${modo}`;
+      ? `/api/salud/alimentos?q=${encodeURIComponent(q.trim())}`
+      : `/api/salud/alimentos?modo=${modo}`;
     const t = setTimeout(() => {
       fetch(url).then((r) => r.json()).then((d) => { if (vivo) setResultados(d.alimentos ?? []); })
         .catch(() => { if (vivo) setResultados([]); })
@@ -40,7 +40,7 @@ export default function TabBuscar({ momento, dia, tipoDia, onAgregado }: Props) 
   async function agregarRapido(a: Alimento) {
     setAgregandoRapido(a.id);
     try {
-      const res = await fetch('/api/os/salud/comidas-log', {
+      const res = await fetch('/api/salud/comidas-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alimento_id: a.id, cantidad_g: 100, momento, fecha: dia, tipo_dia: tipoDia, descripcion_libre: a.nombre }),
       });

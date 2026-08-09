@@ -18,7 +18,7 @@ export default function OSGfitSwapSheet({ ejercicioActualId, onCerrar, onElegir 
   useEffect(() => {
     let vivo = true;
     setLoading(true);
-    fetch(`/api/os/gfit/catalogo?alternativas=${ejercicioActualId}`)
+    fetch(`/api/gfit/catalogo?alternativas=${ejercicioActualId}`)
       .then((r) => r.json())
       .then((d) => { if (vivo) setAlternativas(d.alternativas ?? []); })
       .finally(() => { if (vivo) setLoading(false); });

@@ -25,7 +25,7 @@ export default function OSGfitBiblioteca() {
   const LIMIT = 50;
 
   useEffect(() => {
-    fetch('/api/os/gfit/catalogo?taxonomia=1').then((r) => r.json()).then((d) => setTaxonomia(d.taxonomia ?? {}));
+    fetch('/api/gfit/catalogo?taxonomia=1').then((r) => r.json()).then((d) => setTaxonomia(d.taxonomia ?? {}));
   }, []);
 
   async function buscar(nuevoOffset: number) {
@@ -38,7 +38,7 @@ export default function OSGfitBiblioteca() {
     if (nivel) params.set('nivel', nivel);
     params.set('limit', String(LIMIT));
     params.set('offset', String(nuevoOffset));
-    const res = await fetch(`/api/os/gfit/catalogo?${params}`);
+    const res = await fetch(`/api/gfit/catalogo?${params}`);
     const data = await res.json();
     setEjercicios((cur) => (nuevoOffset === 0 ? (data.ejercicios ?? []) : [...cur, ...(data.ejercicios ?? [])]));
     setTotal(data.total ?? null);
@@ -179,16 +179,16 @@ function PickerAgregar({ ejercicio, onListo }: { ejercicio: Ejercicio; onListo: 
   const [guardando, setGuardando] = useState(false);
   const [hecho, setHecho] = useState(false);
 
-  useEffect(() => { fetch('/api/os/gfit/rutinas').then((r) => r.json()).then((d) => setRutinas(d.rutinas ?? [])); }, []);
+  useEffect(() => { fetch('/api/gfit/rutinas').then((r) => r.json()).then((d) => setRutinas(d.rutinas ?? [])); }, []);
   useEffect(() => {
     if (!rutinaId) { setDias([]); setDiaId(''); return; }
-    fetch(`/api/os/gfit/dias?rutina_id=${rutinaId}`).then((r) => r.json()).then((d) => setDias(d.dias ?? []));
+    fetch(`/api/gfit/dias?rutina_id=${rutinaId}`).then((r) => r.json()).then((d) => setDias(d.dias ?? []));
   }, [rutinaId]);
 
   async function confirmar() {
     if (!diaId) return;
     setGuardando(true);
-    await fetch('/api/os/gfit/dia-ejercicios', {
+    await fetch('/api/gfit/dia-ejercicios', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dia_id: diaId, ejercicio_id: ejercicio.id }),
     });
     setGuardando(false);

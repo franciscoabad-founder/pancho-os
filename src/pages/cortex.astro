@@ -251,7 +251,7 @@ import OSLayout from '../layouts/OSLayout.astro';
         btn.innerHTML = 'Provisionando... (puede tardar 1-2 minutos)';
 
         try {
-          const res = await fetch('/api/os/cortex-invitar', {
+          const res = await fetch('/api/cortex-invitar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -443,7 +443,7 @@ import OSLayout from '../layouts/OSLayout.astro';
         refreshBtn.disabled = true;
 
         try {
-          const res = await fetch('/api/os/cortex-admin');
+          const res = await fetch('/api/cortex-admin');
           const data = await res.json();
 
           if (!res.ok || data.error) {

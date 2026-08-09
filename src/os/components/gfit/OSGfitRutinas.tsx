@@ -23,7 +23,7 @@ export default function OSGfitRutinas({ unidad, onUnidad }: Props) {
 
   async function cargarRutinas() {
     setLoading(true);
-    const res = await fetch('/api/os/gfit/rutinas');
+    const res = await fetch('/api/gfit/rutinas');
     const data = await res.json();
     setRutinas(data.rutinas ?? []);
     setLoading(false);
@@ -42,7 +42,7 @@ export default function OSGfitRutinas({ unidad, onUnidad }: Props) {
       confirmLabel: 'Archivar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/gfit/rutinas?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/gfit/rutinas?id=${id}`, { method: 'DELETE' });
     cargarRutinas();
   }
 
@@ -141,7 +141,7 @@ function FormRutina({ rutina, onCancelar, onGuardado }: { rutina?: Rutina; onCan
     if (!nombre.trim()) return;
     setGuardando(true);
     const body = { nombre, descripcion, objetivo };
-    const url = rutina ? `/api/os/gfit/rutinas?id=${rutina.id}` : '/api/os/gfit/rutinas';
+    const url = rutina ? `/api/gfit/rutinas?id=${rutina.id}` : '/api/gfit/rutinas';
     await fetch(url, { method: rutina ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setGuardando(false);
     onGuardado();
@@ -174,7 +174,7 @@ function VistaDias({ rutina, onVolver, onAbrirDia }: { rutina: Rutina; onVolver:
 
   async function cargar() {
     setLoading(true);
-    const res = await fetch(`/api/os/gfit/dias?rutina_id=${rutina.id}`);
+    const res = await fetch(`/api/gfit/dias?rutina_id=${rutina.id}`);
     const data = await res.json();
     setDias(data.dias ?? []);
     setLoading(false);
@@ -183,7 +183,7 @@ function VistaDias({ rutina, onVolver, onAbrirDia }: { rutina: Rutina; onVolver:
 
   async function copiarDia(id: string) {
     setMenuId(null);
-    await fetch('/api/os/gfit/dias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ copiar_de: id }) });
+    await fetch('/api/gfit/dias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ copiar_de: id }) });
     cargar();
   }
   async function eliminarDia(id: string) {
@@ -194,7 +194,7 @@ function VistaDias({ rutina, onVolver, onAbrirDia }: { rutina: Rutina; onVolver:
       confirmLabel: 'Eliminar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/gfit/dias?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/gfit/dias?id=${id}`, { method: 'DELETE' });
     cargar();
   }
 
@@ -281,7 +281,7 @@ function FormDia({ rutinaId, onCancelar, onGuardado }: { rutinaId: string; onCan
     const body: Record<string, unknown> = { rutina_id: rutinaId, nombre, tipo };
     if (tipo === 'weekday') body.weekday = weekday;
     if (tipo === 'orden') body.orden = orden - 1;
-    await fetch('/api/os/gfit/dias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await fetch('/api/gfit/dias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setGuardando(false);
     onGuardado();
   }

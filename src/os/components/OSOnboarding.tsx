@@ -26,8 +26,8 @@ async function traerPrefill(): Promise<Respuestas> {
   const prefill: Respuestas = {};
   try {
     const [semanaRes, lineasRes] = await Promise.all([
-      fetch('/api/os/semana', { cache: 'no-store' }),
-      fetch('/api/os/lineas?maker=1', { cache: 'no-store' }),
+      fetch('/api/semana', { cache: 'no-store' }),
+      fetch('/api/lineas?maker=1', { cache: 'no-store' }),
     ]);
     const semana = await semanaRes.json().catch(() => null);
     const lineas = await lineasRes.json().catch(() => null);
@@ -61,7 +61,7 @@ export default function OSOnboarding() {
     let cancelado = false;
     (async () => {
       try {
-        const res = await fetch('/api/os/onboarding?modulo=os', { cache: 'no-store' });
+        const res = await fetch('/api/onboarding?modulo=os', { cache: 'no-store' });
         const data = await res.json();
         if (cancelado) return;
 
@@ -111,7 +111,7 @@ export default function OSOnboarding() {
   // el estado real: si quedo completado, se oculta; si no, se pospone.
   async function alCerrarFlujo() {
     try {
-      const res = await fetch('/api/os/onboarding?modulo=os', { cache: 'no-store' });
+      const res = await fetch('/api/onboarding?modulo=os', { cache: 'no-store' });
       const data = await res.json();
       if (data?.estado?.completado_at) {
         try { localStorage.removeItem(CLAVE_POSPUESTO); } catch { /* noop */ }
@@ -157,7 +157,7 @@ export default function OSOnboarding() {
       respuestasIniciales={respuestasIniciales}
       onFinish={alCerrarFlujo}
       onCompletar={async () => {
-        const res = await fetch('/api/os/onboarding', {
+        const res = await fetch('/api/onboarding', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ aplicar: 'os' }),

@@ -50,7 +50,7 @@ async function aplicarSalud(sb: SB, respuestas: Record<string, any>): Promise<{ 
 
   // Ayuno: la columna real es salud_config.protocolo_ayuno_default (token legacy
   // '16_8', no '16:8') + salud_config.ayuno_objetivo_h para las horas (ver
-  // apps/web/src/pages/api/os/salud/config.ts, fuente de verdad de este mapeo).
+  // apps/web/src/pages/api/salud/config.ts, fuente de verdad de este mapeo).
   // 'sin_ayuno' es una respuesta valida del onboarding pero no un preset de
   // salud_config: en ese caso no se escribe nada, se deja la config como estaba.
   const TOKEN_ONBOARDING_A_CONFIG: Record<string, string> = { '16:8': '16_8', '24h': '24h', '36h': '36h' };

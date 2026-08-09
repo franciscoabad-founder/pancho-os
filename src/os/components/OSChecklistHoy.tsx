@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useConfirm } from './ui';
 
 // Checklist de diarias (habitos) en el HOME del OS. Trae data real desde
-// /api/os/habitos, a diferencia de OSChecklist (estatico por props, daily.astro).
+// /api/habitos, a diferencia de OSChecklist (estatico por props, daily.astro).
 // Vive fuera de [data-modulo="habitos"], asi que usa tokens --os-* (Ultramarine v5),
 // no los tokens --m-* del canon conductual brutalista.
 // Regla de color: hecho/completado = champagne, accion = accent, nunca verde.
@@ -41,7 +41,7 @@ export default function OSChecklistHoy({ title }: Props) {
     if (mostrarLoading) setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/os/habitos?vista=hoy');
+      const res = await fetch('/api/habitos?vista=hoy');
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const diarias: HabitoDiaria[] = (data.habitos ?? []).filter(
@@ -71,7 +71,7 @@ export default function OSChecklistHoy({ title }: Props) {
           danger: true,
         }))) return;
         try {
-          const res = await fetch(`/api/os/habitos/checks?habito_id=${h.id}&fecha=${hoyISO()}`, {
+          const res = await fetch(`/api/habitos/checks?habito_id=${h.id}&fecha=${hoyISO()}`, {
             method: 'DELETE',
           });
           if (!res.ok) throw new Error('No se pudo deshacer');
@@ -83,7 +83,7 @@ export default function OSChecklistHoy({ title }: Props) {
       }
 
       try {
-        const res = await fetch('/api/os/habitos/checks', {
+        const res = await fetch('/api/habitos/checks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ habito_id: h.id }),

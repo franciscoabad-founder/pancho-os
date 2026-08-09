@@ -7,7 +7,7 @@ import type { PlanSueno } from '../../../lib/sueno/plan';
 
 /**
  * Modulo Sueno: modelo de dos procesos (Borbely) aplicado al dia de hoy.
- * Todo el calculo vive en el servidor (/api/os/salud/sueno/hoy); aqui solo se
+ * Todo el calculo vive en el servidor (/api/salud/sueno/hoy); aqui solo se
  * pinta y se registra.
  */
 
@@ -192,7 +192,7 @@ function OSSaludSuenoInner() {
   async function cargar() {
     setLoading(true);
     try {
-      const data = await fetch('/api/os/salud/sueno/hoy').then((r) => r.json());
+      const data = await fetch('/api/salud/sueno/hoy').then((r) => r.json());
       if (data.error) { setError(data.error); return; }
       setEstado(data);
       setError('');
@@ -227,7 +227,7 @@ function OSSaludSuenoInner() {
     const fechaInicio = cruzaMedianoche ? restar1(form.fecha) : form.fecha;
     setGuardando(true);
     try {
-      const res = await fetch('/api/os/salud/sueno', {
+      const res = await fetch('/api/salud/sueno', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -249,7 +249,7 @@ function OSSaludSuenoInner() {
   }
 
   async function registrarCafe(mg: number, bebida: string) {
-    const res = await fetch('/api/os/salud/sueno/cafeina', {
+    const res = await fetch('/api/salud/sueno/cafeina', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mg, bebida }),
     });
@@ -261,14 +261,14 @@ function OSSaludSuenoInner() {
 
   async function borrarSesion(id: string) {
     if (!(await confirm({ title: 'Borrar registro', text: 'Esta accion no se puede deshacer.', confirmLabel: 'Borrar', danger: true }))) return;
-    await fetch(`/api/os/salud/sueno?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/salud/sueno?id=${id}`, { method: 'DELETE' });
     cargar();
   }
 
   async function guardarConfig() {
     setGuardando(true);
     try {
-      const res = await fetch('/api/os/salud/sueno/config', {
+      const res = await fetch('/api/salud/sueno/config', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           necesidad_h: cfg.necesidad_h, necesidad_auto: cfg.necesidad_auto,

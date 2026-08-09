@@ -96,10 +96,10 @@ export default function OSJuego() {
     setError('');
     try {
       const [rEstado, rQuests, rRecompensas, rHabitos] = await Promise.all([
-        fetch('/api/os/juego/estado'),
-        fetch('/api/os/juego/quests'),
-        fetch('/api/os/juego/recompensas'),
-        fetch('/api/os/habitos'),
+        fetch('/api/juego/estado'),
+        fetch('/api/juego/quests'),
+        fetch('/api/juego/recompensas'),
+        fetch('/api/habitos'),
       ]);
       const dEstado = await rEstado.json();
       const dQuests = await rQuests.json();
@@ -126,7 +126,7 @@ export default function OSJuego() {
     setGuardandoConfig(campo);
     setJugador({ ...jugador, config: { ...jugador.config, [campo]: valorNuevo } });
     try {
-      const res = await fetch('/api/os/juego/estado', {
+      const res = await fetch('/api/juego/estado', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [campo]: valorNuevo }),
       });
@@ -151,7 +151,7 @@ export default function OSJuego() {
     setFeedbackTienda('');
     setError('');
     try {
-      const res = await fetch('/api/os/juego/recompensas', {
+      const res = await fetch('/api/juego/recompensas', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ canjear: r.id }),
       });
       const data = await res.json();
@@ -176,7 +176,7 @@ export default function OSJuego() {
     setEnviandoR(true);
     setError('');
     try {
-      const res = await fetch('/api/os/juego/recompensas', {
+      const res = await fetch('/api/juego/recompensas', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nombreR.trim(), costo_oro: costo, descripcion: descR.trim() || undefined }),
       });
@@ -210,7 +210,7 @@ export default function OSJuego() {
       : { tipo: 'habito', habito_id: habitoIdQ, meta };
     setEnviandoQ(true);
     try {
-      const res = await fetch('/api/os/juego/quests', {
+      const res = await fetch('/api/juego/quests', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           titulo: tituloQ.trim(), objetivo,
@@ -243,7 +243,7 @@ export default function OSJuego() {
     setCancelando(id);
     setError('');
     try {
-      const res = await fetch(`/api/os/juego/quests?id=${id}`, {
+      const res = await fetch(`/api/juego/quests?id=${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'cancelar' }),
       });
       const data = await res.json();

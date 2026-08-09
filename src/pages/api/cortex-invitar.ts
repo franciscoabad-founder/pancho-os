@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
   };
 
   try {
-    const res = await fetch(`${cortexAppUrl}/api/os/invitar`, {
+    const res = await fetch(`${cortexAppUrl}/api/invitar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

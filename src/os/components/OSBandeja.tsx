@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
 
-// Vista Bandeja ("por revisar"): fetch en vivo desde /api/os/bandeja.
+// Vista Bandeja ("por revisar"): fetch en vivo desde /api/bandeja.
 
 interface ItemBandeja {
   id: string;
@@ -55,7 +55,7 @@ function OSBandejaInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/bandeja', { cache: 'no-store' });
+      const res = await fetch('/api/bandeja', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setItems(data.bandeja ?? []);
@@ -70,7 +70,7 @@ function OSBandejaInner() {
 
   async function toggleLeido(item: ItemBandeja) {
     try {
-      const res = await fetch(`/api/os/bandeja?id=${encodeURIComponent(item.id)}`, {
+      const res = await fetch(`/api/bandeja?id=${encodeURIComponent(item.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leido: !item.leido }),
@@ -91,7 +91,7 @@ function OSBandejaInner() {
       danger: true,
     }))) return;
     try {
-      const res = await fetch(`/api/os/bandeja?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/bandeja?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(String(res.status));
       await load();
     } catch (err) {
@@ -104,7 +104,7 @@ function OSBandejaInner() {
     if (!nTitulo.trim() || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/bandeja', {
+      const res = await fetch('/api/bandeja', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

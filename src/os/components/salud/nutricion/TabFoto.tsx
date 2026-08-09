@@ -1,6 +1,6 @@
 // Tab "Foto" del sheet de captura: foto desde galeria (input file SIN capture, en movil
 // abre la galeria), redimensionada client-side (canvas, max 1280px lado largo, JPEG 0.8)
-// y enviada a /api/os/salud/foto-comida. El flujo n8n multimodal devuelve una estimacion
+// y enviada a /api/salud/foto-comida. El flujo n8n multimodal devuelve una estimacion
 // que el usuario revisa y EDITA antes de guardar; nada se registra sin su confirmacion
 // (manual-first). Contrato completo en apps/web/docs/contrato-foto-comida.md.
 import { useRef, useState, type ChangeEvent } from 'react';
@@ -15,7 +15,7 @@ interface Props {
   onAgregado: () => void;
 }
 
-// Item de la estimacion tal como lo devuelve /api/os/salud/foto-comida.
+// Item de la estimacion tal como lo devuelve /api/salud/foto-comida.
 interface AlimentoEstimado {
   descripcion: string;
   cantidad_g: number | null;
@@ -98,7 +98,7 @@ export default function TabFoto({ momento, dia, tipoDia, onAgregado }: Props) {
     if (!foto) return;
     setEstimando(true); setError(''); setReintentable(false);
     try {
-      const res = await fetch('/api/os/salud/foto-comida', {
+      const res = await fetch('/api/salud/foto-comida', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ foto_base64: foto, descripcion: descripcion.trim() || undefined, momento }),
       });
@@ -165,7 +165,7 @@ export default function TabFoto({ momento, dia, tipoDia, onAgregado }: Props) {
     try {
       while (pendientes.length) {
         const a = pendientes[0];
-        const res = await fetch('/api/os/salud/comidas-log', {
+        const res = await fetch('/api/salud/comidas-log', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             descripcion_libre: a.descripcion.trim(),

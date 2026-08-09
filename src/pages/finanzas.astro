@@ -455,7 +455,7 @@ async function delPresupuesto(id) {
 // ---- shared API helpers ----
 async function patch(tabla, id, body) {
   try {
-    var res = await fetch('/api/os/' + tabla + '?id=' + encodeURIComponent(id), {
+    var res = await fetch('/api/' + tabla + '?id=' + encodeURIComponent(id), {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(String(res.status));
@@ -465,7 +465,7 @@ async function patch(tabla, id, body) {
 }
 async function del(tabla, id) {
   try {
-    var res = await fetch('/api/os/' + tabla + '?id=' + encodeURIComponent(id), { method: 'DELETE' });
+    var res = await fetch('/api/' + tabla + '?id=' + encodeURIComponent(id), { method: 'DELETE' });
     if (!res.ok) throw new Error(String(res.status));
     hideFinError();
     await loadAll();
@@ -483,7 +483,7 @@ function wireForm(formId, tabla, msgId) {
     var body = {};
     fd.forEach(function(v, k){ body[k] = v; });
     try {
-      var res = await fetch('/api/os/' + tabla, {
+      var res = await fetch('/api/' + tabla, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       var jsonR = await res.json();
@@ -499,11 +499,11 @@ function wireForm(formId, tabla, msgId) {
 async function loadAll() {
   try {
     var results = await Promise.all([
-      fetch('/api/os/cuentas').then(function(r){ return r.json(); }),
-      fetch('/api/os/deudas').then(function(r){ return r.json(); }),
-      fetch('/api/os/gastos').then(function(r){ return r.json(); }),
-      fetch('/api/os/presupuestos').then(function(r){ return r.json(); }),
-      fetch('/api/os/por-cobrar').then(function(r){ return r.json(); }),
+      fetch('/api/cuentas').then(function(r){ return r.json(); }),
+      fetch('/api/deudas').then(function(r){ return r.json(); }),
+      fetch('/api/gastos').then(function(r){ return r.json(); }),
+      fetch('/api/presupuestos').then(function(r){ return r.json(); }),
+      fetch('/api/por-cobrar').then(function(r){ return r.json(); }),
     ]);
     cuentas = results[0].cuentas || [];
     deudas = results[1].deudas || [];

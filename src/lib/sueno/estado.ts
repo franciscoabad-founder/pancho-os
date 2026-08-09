@@ -3,7 +3,7 @@
  * y plan en un solo objeto.
  *
  * Vive aqui y no en el endpoint para que se pueda probar sin Supabase: el
- * endpoint /api/os/salud/sueno/hoy solo consulta las tablas y llama a esto.
+ * endpoint /api/salud/sueno/hoy solo consulta las tablas y llama a esto.
  *
  * Modulo puro: recibe filas y un instante, devuelve el payload.
  */

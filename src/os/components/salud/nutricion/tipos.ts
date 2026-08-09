@@ -1,5 +1,5 @@
 // Nutricion OS — tipos + constantes + helpers puros compartidos por todos los
-// sub-componentes. Contrato exacto de /api/os/salud/{comidas-log,alimentos,config,
+// sub-componentes. Contrato exacto de /api/salud/{comidas-log,alimentos,config,
 // recetas,meals}.ts (ver lectura de esos archivos antes de tocar esto).
 
 export interface Porcion {

@@ -11,7 +11,7 @@ import { Spinner } from './ui';
 // El balance se cuadra por SEMANA y no por dia, porque partir cada dia en tres
 // fragmentaria el dia Maker, que es justo lo que Maker/Manager existe para evitar.
 //
-// Toda la derivacion la hace /api/os/semana; aca solo se pinta.
+// Toda la derivacion la hace /api/semana; aca solo se pinta.
 
 const card: CSSProperties = {
   background: 'var(--os-surface)', border: 'none', borderRadius: 'var(--os-r-card)',
@@ -71,7 +71,7 @@ export default function OSSemana() {
 
   async function cargar() {
     try {
-      const res = await fetch('/api/os/semana', { cache: 'no-store' });
+      const res = await fetch('/api/semana', { cache: 'no-store' });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || String(res.status));
       setData(d);
@@ -84,7 +84,7 @@ export default function OSSemana() {
 
   async function registrar(funcion: string, minutos: number) {
     try {
-      const res = await fetch('/api/os/semana', {
+      const res = await fetch('/api/semana', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ log: { funcion, minutos } }),
       });

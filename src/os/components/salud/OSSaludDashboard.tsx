@@ -26,10 +26,10 @@ export default function OSSaludDashboard() {
     setNowMs(Date.now());
     const t = setInterval(() => setNowMs(Date.now()), 30000);
     Promise.all([
-      fetch('/api/os/salud/comidas-log').then((r) => r.json()).catch(() => null),
-      fetch('/api/os/salud/ayunos?abierto=1').then((r) => r.json()).catch(() => null),
-      fetch('/api/os/salud/sesiones?limit=1').then((r) => r.json()).catch(() => null),
-      fetch('/api/os/salud/cuerpo').then((r) => r.json()).catch(() => null),
+      fetch('/api/salud/comidas-log').then((r) => r.json()).catch(() => null),
+      fetch('/api/salud/ayunos?abierto=1').then((r) => r.json()).catch(() => null),
+      fetch('/api/salud/sesiones?limit=1').then((r) => r.json()).catch(() => null),
+      fetch('/api/salud/cuerpo').then((r) => r.json()).catch(() => null),
     ]).then(([m, a, s, c]) => {
       if (m?.totales) setMacros(m.totales);
       if (a?.ayuno) setAyuno(a.ayuno);

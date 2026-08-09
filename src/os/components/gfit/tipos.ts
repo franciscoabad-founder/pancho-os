@@ -1,5 +1,5 @@
 // GFIT — tipos + constantes + helpers compartidos por todos los sub-componentes.
-// Contrato exacto de los endpoints /api/os/gfit/*.ts (ver notas del módulo).
+// Contrato exacto de los endpoints /api/gfit/*.ts (ver notas del módulo).
 
 export type TipoDia = 'weekday' | 'orden' | 'descanso';
 export type TipoSerie = 'warmup' | 'working' | 'drop' | 'failure';

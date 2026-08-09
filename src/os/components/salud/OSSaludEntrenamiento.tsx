@@ -106,7 +106,7 @@ function Biblioteca() {
     if (q.trim()) params.set('q', q.trim());
     if (grupo) params.set('grupo', grupo);
     if (patron) params.set('patron', patron);
-    const res = await fetch(`/api/os/salud/ejercicios?${params}`);
+    const res = await fetch(`/api/salud/ejercicios?${params}`);
     const data = await res.json();
     setEjercicios(data.ejercicios ?? []);
     setLoading(false);
@@ -115,7 +115,7 @@ function Biblioteca() {
 
   async function crear() {
     if (!nuevo.nombre.trim()) return;
-    await fetch('/api/os/salud/ejercicios', {
+    await fetch('/api/salud/ejercicios', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nuevo),
     });
     setNuevo({ nombre: '', grupo_muscular_primario: '', patron: '', equipamiento: '', instrucciones: '' });
@@ -190,7 +190,7 @@ function Rutinas({ onIniciar }: { onIniciar: (sets: SetVivo[], meta: { rutinaId:
 
   async function cargar() {
     setLoading(true);
-    const res = await fetch('/api/os/salud/rutinas');
+    const res = await fetch('/api/salud/rutinas');
     const data = await res.json();
     setRutinas(data.rutinas ?? []);
     setLoading(false);
@@ -263,7 +263,7 @@ function SesionRapida({ onCreada }: { onCreada: () => void }) {
   const [guardando, setGuardando] = useState(false);
   async function guardar() {
     setGuardando(true);
-    await fetch('/api/os/salud/sesiones', {
+    await fetch('/api/salud/sesiones', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tipo, duracion_min: dur || null }),
     });
@@ -296,7 +296,7 @@ function ConstructorRutina({ rutina, onCerrar }: { rutina: Rutina | null; onCerr
   useEffect(() => {
     const t = setTimeout(async () => {
       if (!buscador.trim()) { setResultados([]); return; }
-      const res = await fetch(`/api/os/salud/ejercicios?q=${encodeURIComponent(buscador.trim())}`);
+      const res = await fetch(`/api/salud/ejercicios?q=${encodeURIComponent(buscador.trim())}`);
       const data = await res.json();
       setResultados((data.ejercicios ?? []).slice(0, 12));
     }, 250);
@@ -328,7 +328,7 @@ function ConstructorRutina({ rutina, onCerrar }: { rutina: Rutina | null; onCerr
       nombre, descripcion,
       ejercicios: items.map((it, idx) => ({ ejercicio_id: it.ejercicio_id, orden: idx, sets_plan: it.sets_plan })),
     };
-    const url = rutina ? `/api/os/salud/rutinas?id=${rutina.id}` : '/api/os/salud/rutinas';
+    const url = rutina ? `/api/salud/rutinas?id=${rutina.id}` : '/api/salud/rutinas';
     await fetch(url, { method: rutina ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setGuardando(false); onCerrar();
   }
@@ -341,7 +341,7 @@ function ConstructorRutina({ rutina, onCerrar }: { rutina: Rutina | null; onCerr
       confirmLabel: 'Borrar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/salud/rutinas?id=${rutina.id}`, { method: 'DELETE' });
+    await fetch(`/api/salud/rutinas?id=${rutina.id}`, { method: 'DELETE' });
     onCerrar();
   }
 
@@ -426,7 +426,7 @@ function ModoSesion({ sets, setSets, meta, onSalir }: {
   // Sugerencias de peso del motor de progresión (M5), computadas localmente con la
   // lib testeada a partir del historial de sets del endpoint de progreso.
   useEffect(() => {
-    fetch('/api/os/salud/progreso')
+    fetch('/api/salud/progreso')
       .then((r) => r.json())
       .then((d) => {
         // Regla de recuperación: usa el sueño más reciente registrado en cuerpo_log.
@@ -497,7 +497,7 @@ function ModoSesion({ sets, setSets, meta, onSalir }: {
         reps: s.reps || null, peso_kg: s.peso_kg || null, rpe: s.rpe || null, completado: s.completado,
       })),
     };
-    await fetch('/api/os/salud/sesiones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await fetch('/api/salud/sesiones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setGuardando(false);
     onSalir();
   }
@@ -613,7 +613,7 @@ function Historial() {
   const [sesiones, setSesiones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch('/api/os/salud/sesiones?limit=50').then((r) => r.json()).then((d) => { setSesiones(d.sesiones ?? []); setLoading(false); });
+    fetch('/api/salud/sesiones?limit=50').then((r) => r.json()).then((d) => { setSesiones(d.sesiones ?? []); setLoading(false); });
   }, []);
   if (loading) return <Spinner />;
   if (!sesiones.length) return <EmptyState icon="history" title="Sin sesiones registradas" text="Inicia una rutina o registra una sesión rápida." />;

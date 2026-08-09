@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Spinner, ToastProvider, useToast } from './ui';
 
-// Vista Revision: weekly + monthly review en vivo desde /api/os/revision,
-// mas el norte de objetivos 90 dias desde /api/os/objetivos.
+// Vista Revision: weekly + monthly review en vivo desde /api/revision,
+// mas el norte de objetivos 90 dias desde /api/objetivos.
 // `contenido` es jsonb libre; aca fijamos la forma que ya usaba el demo
 // (completado/que_parar/que_escalar/energia/nota y wins/pendientes/decision_clave/numero).
 
@@ -85,9 +85,9 @@ function OSRevisionInner() {
   async function load() {
     try {
       const [rObj, rW, rM] = await Promise.all([
-        fetch('/api/os/objetivos', { cache: 'no-store' }),
-        fetch(`/api/os/revision?tipo=semanal&periodo=${encodeURIComponent(pSemanal)}`, { cache: 'no-store' }),
-        fetch(`/api/os/revision?tipo=mensual&periodo=${encodeURIComponent(pMensual)}`, { cache: 'no-store' }),
+        fetch('/api/objetivos', { cache: 'no-store' }),
+        fetch(`/api/revision?tipo=semanal&periodo=${encodeURIComponent(pSemanal)}`, { cache: 'no-store' }),
+        fetch(`/api/revision?tipo=mensual&periodo=${encodeURIComponent(pMensual)}`, { cache: 'no-store' }),
       ]);
       const dObj = await rObj.json();
       const dW = await rW.json();
@@ -110,7 +110,7 @@ function OSRevisionInner() {
   async function guardarSemanal() {
     setGuardandoW(true);
     try {
-      const res = await fetch('/api/os/revision', {
+      const res = await fetch('/api/revision', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tipo: 'semanal', periodo: pSemanal, contenido: weekly }),
       });
@@ -127,7 +127,7 @@ function OSRevisionInner() {
   async function guardarMensual() {
     setGuardandoM(true);
     try {
-      const res = await fetch('/api/os/revision', {
+      const res = await fetch('/api/revision', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tipo: 'mensual', periodo: pMensual, contenido: monthly }),
       });

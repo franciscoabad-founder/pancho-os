@@ -22,7 +22,7 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
     onCambio(series.map((s) => (s.id === id ? { ...s, ...optimista } : s)));
     setGuardandoId(id);
     try {
-      await fetch(`/api/os/gfit/series?id=${id}`, {
+      await fetch(`/api/gfit/series?id=${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
     } finally {
@@ -31,7 +31,7 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
   }
 
   async function agregarSerie() {
-    const res = await fetch('/api/os/gfit/series', {
+    const res = await fetch('/api/gfit/series', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dia_ejercicio_id, tipo: 'working', reps: 10, descanso_s: 90 }),
     });
@@ -41,7 +41,7 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
 
   async function eliminarSerie(id: string) {
     onCambio(series.filter((s) => s.id !== id));
-    await fetch(`/api/os/gfit/series?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/gfit/series?id=${id}`, { method: 'DELETE' });
   }
 
   return (

@@ -64,7 +64,7 @@ export const aprobacionesDefault: ApprovalItem[] = [
   {
     id: 'ap-os-data',
     titulo: 'Conectar n8n y Hermes al estado de Mi Sistema',
-    descripcion: 'Usar /api/os/system para leer objetivos, prioridad, modulos y ritmo antes de ejecutar decisiones.',
+    descripcion: 'Usar /api/system para leer objetivos, prioridad, modulos y ritmo antes de ejecutar decisiones.',
     estado: 'pendiente',
     tipo: 'sistema',
     creado_en: '2026-07-09T00:00:00.000Z',

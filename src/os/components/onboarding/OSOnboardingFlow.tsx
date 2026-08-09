@@ -67,7 +67,7 @@ export default function OSOnboardingFlow({ modulo, pasos, onFinish, onCompletar,
     let cancelado = false;
     (async () => {
       try {
-        const res = await fetch(`/api/os/onboarding?modulo=${encodeURIComponent(modulo)}`, { cache: 'no-store' });
+        const res = await fetch(`/api/onboarding?modulo=${encodeURIComponent(modulo)}`, { cache: 'no-store' });
         const data = await res.json();
         if (cancelado) return;
         if (data?.estado && !data.estado.completado_at) {
@@ -92,7 +92,7 @@ export default function OSOnboardingFlow({ modulo, pasos, onFinish, onCompletar,
   const progreso = Math.round(((paso + 1) / total) * 100);
 
   function persistir(nuevoPaso: number, nuevasRespuestas: Respuestas, completado?: boolean) {
-    return fetch('/api/os/onboarding', {
+    return fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -555,18 +555,37 @@ export default function OSOnboardingFlow({ modulo, pasos, onFinish, onCompletar,
           {renderPaso()}
           {error && <p style={{ color: 'var(--os-error)', fontSize: 12, margin: 0 }}>{error}</p>}
           {!esConstruyendo && (
-            <button
-              type="button"
-              className="os-btn"
-              onClick={avanzar}
-              disabled={!puedeAvanzar()}
-              style={{
-                width: '100%', padding: '0.9rem 1rem', borderRadius: 999, fontSize: 14, marginTop: 8,
-                opacity: puedeAvanzar() ? 1 : 0.5, cursor: puedeAvanzar() ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {enviando ? 'Guardando…' : ctaLabel}
-            </button>
+            <>
+              <button
+                type="button"
+                className="os-btn"
+                onClick={avanzar}
+                disabled={!puedeAvanzar()}
+                style={{
+                  width: '100%', padding: '0.9rem 1rem', borderRadius: 999, fontSize: 14, marginTop: 8,
+                  opacity: puedeAvanzar() ? 1 : 0.5, cursor: puedeAvanzar() ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {enviando ? 'Guardando…' : ctaLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onFinish}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--os-muted)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  padding: '8px',
+                  textDecoration: 'underline',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
+              >
+                Saltar por ahora
+              </button>
+            </>
           )}
         </div>
       </div>

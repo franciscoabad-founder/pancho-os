@@ -9,7 +9,7 @@ interface Ayuno {
 
 // Presets Yazio-style (Fase 5). El default se persiste en la columna existente
 // salud_config.protocolo_ayuno_default (+ horas custom en ayuno_objetivo_h) vía PATCH
-// /api/os/salud/config. Al iniciar un ayuno se manda el preset tal cual: el endpoint de
+// /api/salud/config. Al iniciar un ayuno se manda el preset tal cual: el endpoint de
 // ayunos mapea '24h'/'36h' al enum legacy de la columna ayunos.protocolo y snapshotea
 // las horas reales en ayunos.objetivo_horas.
 const PRESETS: Array<{ key: string; label: string; horas: number | null }> = [
@@ -60,8 +60,8 @@ export default function OSSaludAyuno() {
     setLoading(true); setError('');
     try {
       const [resAbierto, resHist] = await Promise.all([
-        fetch('/api/os/salud/ayunos?abierto=1'),
-        fetch('/api/os/salud/ayunos'),
+        fetch('/api/salud/ayunos?abierto=1'),
+        fetch('/api/salud/ayunos'),
       ]);
       const dataAbierto = await resAbierto.json();
       const dataHist = await resHist.json();
@@ -102,7 +102,7 @@ export default function OSSaludAyuno() {
     try {
       const body: Record<string, unknown> = { protocolo: nuevoPreset };
       if (nuevoPreset === 'custom') body.objetivo_h = objetivoOverride ?? objetivoCustom;
-      await fetch('/api/os/salud/config', {
+      await fetch('/api/salud/config', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
     } catch { /* silencioso: el preset local ya quedó elegido para iniciar el ayuno */ }
@@ -113,7 +113,7 @@ export default function OSSaludAyuno() {
     const p = PRESETS.find((x) => x.key === preset) ?? PRESETS[0];
     const horas = preset === 'custom' ? (objetivoCustom || 16) : (p.horas as number);
     try {
-      const res = await fetch('/api/os/salud/ayunos', {
+      const res = await fetch('/api/salud/ayunos', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ protocolo: preset, objetivo_horas: horas }),
       });
@@ -126,7 +126,7 @@ export default function OSSaludAyuno() {
   async function terminar() {
     if (!activo) return;
     try {
-      await fetch(`/api/os/salud/ayunos?id=${activo.id}`, {
+      await fetch(`/api/salud/ayunos?id=${activo.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fin: new Date().toISOString() }),
       });
@@ -139,7 +139,7 @@ export default function OSSaludAyuno() {
       const body: Record<string, unknown> = {};
       if (editVals.inicio) body.inicio = new Date(editVals.inicio).toISOString();
       if (editVals.fin) body.fin = new Date(editVals.fin).toISOString();
-      await fetch(`/api/os/salud/ayunos?id=${id}`, {
+      await fetch(`/api/salud/ayunos?id=${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       setEditId(null);
@@ -154,7 +154,7 @@ export default function OSSaludAyuno() {
       confirmLabel: 'Borrar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/salud/ayunos?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/salud/ayunos?id=${id}`, { method: 'DELETE' });
     cargar();
   }
 

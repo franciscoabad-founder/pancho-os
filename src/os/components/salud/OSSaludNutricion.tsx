@@ -30,7 +30,7 @@ export default function OSSaludNutricion() {
   async function cargarDia(d = dia) {
     setLoading(true); setError('');
     try {
-      const res = await fetch(`/api/os/salud/comidas-log?dia=${d}`);
+      const res = await fetch(`/api/salud/comidas-log?dia=${d}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setComidas(data.comidas ?? []);
@@ -48,7 +48,7 @@ export default function OSSaludNutricion() {
   async function cargarSemana() {
     try {
       const desde = addDias(hoyISO(), -6);
-      const res = await fetch(`/api/os/salud/comidas-log?historial=1&desde=${desde}`);
+      const res = await fetch(`/api/salud/comidas-log?historial=1&desde=${desde}`);
       const data = await res.json();
       if (!data.error) setSemana(data.comidas ?? []);
     } catch { /* silencioso */ }
@@ -59,7 +59,7 @@ export default function OSSaludNutricion() {
 
   async function ofrecerCerrarAyuno() {
     try {
-      const res = await fetch('/api/os/salud/ayunos?abierto=1');
+      const res = await fetch('/api/salud/ayunos?abierto=1');
       const data = await res.json();
       const ayuno = data.ayuno;
       if (ayuno && ayuno.id) {
@@ -68,7 +68,7 @@ export default function OSSaludNutricion() {
           text: 'Tienes un ayuno abierto. ¿Lo cerramos ahora con esta comida?',
           confirmLabel: 'Cerrar ayuno',
         })) {
-          await fetch(`/api/os/salud/ayunos?id=${ayuno.id}`, {
+          await fetch(`/api/salud/ayunos?id=${ayuno.id}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fin: new Date().toISOString() }),
           });
@@ -90,7 +90,7 @@ export default function OSSaludNutricion() {
     if (comidas.length === 0) return;
     try {
       const res = await Promise.all(comidas.map((c) =>
-        fetch(`/api/os/salud/comidas-log?id=${encodeURIComponent(c.id)}`, {
+        fetch(`/api/salud/comidas-log?id=${encodeURIComponent(c.id)}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tipo_dia: nuevo }),
         })

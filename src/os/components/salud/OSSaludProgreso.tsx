@@ -78,7 +78,7 @@ export default function OSSaludProgreso() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/os/salud/progreso')
+    fetch('/api/salud/progreso')
       .then((r) => r.json())
       .then((d) => { setSets(d.sets ?? []); setCuerpo(d.cuerpo ?? []); })
       .finally(() => setLoading(false));

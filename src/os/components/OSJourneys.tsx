@@ -74,7 +74,7 @@ export default function OSJourneys({ cartas }: Props) {
     if (mostrarLoading) setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/os/habitos/journeys');
+      const res = await fetch('/api/habitos/journeys');
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setJourneys(data.journeys ?? []);
@@ -90,7 +90,7 @@ export default function OSJourneys({ cartas }: Props) {
     setAccionando(slug);
     setError('');
     try {
-      const res = await fetch('/api/os/habitos/journeys', {
+      const res = await fetch('/api/habitos/journeys', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion: 'iniciar', slug }),
       });
@@ -109,7 +109,7 @@ export default function OSJourneys({ cartas }: Props) {
     setError('');
     setAvisoAvance((prev) => ({ ...prev, [journeyId]: '' }));
     try {
-      const res = await fetch('/api/os/habitos/journeys', {
+      const res = await fetch('/api/habitos/journeys', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion: 'avanzar', journey_id: journeyId }),
       });

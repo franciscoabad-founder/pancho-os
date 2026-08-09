@@ -54,7 +54,7 @@ function OSPendientesInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/pendientes');
+      const res = await fetch('/api/pendientes');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setPendientes(data.pendientes ?? []);
@@ -73,7 +73,7 @@ function OSPendientesInner() {
     if (!titulo.trim() || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/pendientes', {
+      const res = await fetch('/api/pendientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ titulo: titulo.trim(), proyecto: proyecto.trim() || null }),
@@ -92,7 +92,7 @@ function OSPendientesInner() {
 
   async function marcar(id: string, estado: Pendiente['estado']) {
     try {
-      const res = await fetch(`/api/os/pendientes?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/pendientes?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado }),
@@ -113,7 +113,7 @@ function OSPendientesInner() {
       return;
     }
     try {
-      const res = await fetch('/api/os/tareas', {
+      const res = await fetch('/api/tareas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +125,7 @@ function OSPendientesInner() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
-      await fetch(`/api/os/pendientes?id=${encodeURIComponent(p.id)}`, {
+      await fetch(`/api/pendientes?id=${encodeURIComponent(p.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: 'convertido', convertido_a: 'tarea', convertido_id: data.tarea?.id ?? null }),

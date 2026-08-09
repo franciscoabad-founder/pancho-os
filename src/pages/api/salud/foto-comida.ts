@@ -61,7 +61,7 @@ function validarAlimentos(data: unknown): AlimentoEstimado[] | null {
 
 // POST: recibe una foto (+ descripciÃ³n opcional) y la reenvÃ­a al flujo n8n multimodal
 // para estimar los alimentos. NO registra nada en comidas_log: el frontend confirma o
-// edita la estimaciÃ³n y luego llama a /api/os/salud/comidas-log Ã©l mismo
+// edita la estimaciÃ³n y luego llama a /api/salud/comidas-log Ã©l mismo
 // (principio manual-first, igual que ayunos).
 export const POST: APIRoute = async (context) => {
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {

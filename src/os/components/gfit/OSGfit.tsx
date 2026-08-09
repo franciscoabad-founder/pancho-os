@@ -10,12 +10,12 @@ export default function OSGfit() {
   const [unidad, setUnidad] = useState<UnidadPeso>('kg');
 
   useEffect(() => {
-    fetch('/api/os/gfit/config').then((r) => r.json()).then((d) => { if (d.unidad_peso) setUnidad(d.unidad_peso); });
+    fetch('/api/gfit/config').then((r) => r.json()).then((d) => { if (d.unidad_peso) setUnidad(d.unidad_peso); });
   }, []);
 
   async function cambiarUnidad(u: UnidadPeso) {
     setUnidad(u);
-    await fetch('/api/os/gfit/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unidad_peso: u }) });
+    await fetch('/api/gfit/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unidad_peso: u }) });
   }
 
   return (

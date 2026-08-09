@@ -30,7 +30,7 @@ export default function DetallePorcion({ alimento, momento, dia, tipoDia, onCerr
     const nuevo = !favorito;
     setFavorito(nuevo);
     try {
-      await fetch(`/api/os/salud/alimentos?id=${alimento.id}`, {
+      await fetch(`/api/salud/alimentos?id=${alimento.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ favorito: nuevo }),
       });
     } catch { setFavorito(!nuevo); }
@@ -49,7 +49,7 @@ export default function DetallePorcion({ alimento, momento, dia, tipoDia, onCerr
       } else {
         body.cantidad_g = Number(cantidad) || 0;
       }
-      const res = await fetch('/api/os/salud/comidas-log', {
+      const res = await fetch('/api/salud/comidas-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       const data = await res.json();

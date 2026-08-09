@@ -164,7 +164,7 @@ function renderAgenda(eventos, usingFallback) {
 }
 async function loadAgenda() {
   try {
-    var res = await fetch('/api/os/agenda');
+    var res = await fetch('/api/agenda');
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || String(res.status));
     agendaEventos = Array.isArray(data.eventos) ? data.eventos : [];
@@ -193,7 +193,7 @@ if (form) {
       descripcion: fd.get('descripcion') || undefined,
     };
     try {
-      var res = await fetch('/api/os/agenda', {
+      var res = await fetch('/api/agenda', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

@@ -179,7 +179,7 @@ function renderPosts(posts) {
 
 async function cargarRedes() {
   try {
-    var res = await fetch('/api/os/redes-metricas?dias=30');
+    var res = await fetch('/api/redes-metricas?dias=30');
     if (!res.ok) throw new Error(String(res.status));
     var data = await res.json();
     renderGrid(data.plataformas || {});

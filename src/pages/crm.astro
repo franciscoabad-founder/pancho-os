@@ -262,7 +262,7 @@ function renderAll(leads) {
 
 async function loadLeads() {
   try {
-    var res = await fetch('/api/os/leads');
+    var res = await fetch('/api/leads');
     if (!res.ok) throw new Error(String(res.status));
     var data = await res.json();
     renderAll(data.leads || []);
@@ -277,7 +277,7 @@ async function loadLeads() {
 async function deleteLead(id) {
   if (!confirm('Eliminar este lead?')) return;
   try {
-    var res = await fetch('/api/os/leads?id=' + encodeURIComponent(id), { method: 'DELETE' });
+    var res = await fetch('/api/leads?id=' + encodeURIComponent(id), { method: 'DELETE' });
     if (!res.ok) throw new Error(String(res.status));
     var msgOk = document.getElementById('form-msg');
     if (msgOk) msgOk.style.display = 'none';
@@ -297,7 +297,7 @@ if (form) {
     var fd = new FormData(form);
     var body = { nombre: fd.get('nombre'), empresa: fd.get('empresa'), proyecto: fd.get('proyecto'), etapa: fd.get('etapa') };
     try {
-      var res = await fetch('/api/os/leads', {
+      var res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

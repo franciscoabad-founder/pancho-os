@@ -24,7 +24,7 @@ export default function TabMas({ momento, dia, tipoDia, comidasHoy, onAgregado }
     if (!libre.descripcion.trim()) { setError('Describe que comiste'); return; }
     setGuardando(true); setError('');
     try {
-      const res = await fetch('/api/os/salud/comidas-log', {
+      const res = await fetch('/api/salud/comidas-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           descripcion_libre: libre.descripcion.trim(), kcal: libre.kcal || null, proteina_g: libre.proteina || null,
@@ -51,7 +51,7 @@ export default function TabMas({ momento, dia, tipoDia, comidasHoy, onAgregado }
         alimento_id: c.alimento_id, descripcion: c.descripcion_libre || 'Alimento', cantidad_g: c.cantidad_g,
         kcal: c.kcal, proteina_g: c.proteina_g, carbos_g: c.carbos_g, grasa_g: c.grasa_g,
       }));
-      const res = await fetch('/api/os/salud/meals', {
+      const res = await fetch('/api/salud/meals', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nombre.trim(), items }),
       });
       const data = await res.json();

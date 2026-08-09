@@ -46,7 +46,7 @@ export default function OSSaludEstiramiento() {
   const [activa, setActiva] = useState<RutinaEstiramiento | null>(null);
 
   useEffect(() => {
-    fetch('/api/os/salud/estiramiento').then((r) => r.json()).then((d) => { setRutinas(d.rutinas ?? []); setLoading(false); });
+    fetch('/api/salud/estiramiento').then((r) => r.json()).then((d) => { setRutinas(d.rutinas ?? []); setLoading(false); });
   }, []);
 
   if (activa) return <Reproductor rutina={activa} onSalir={() => setActiva(null)} />;

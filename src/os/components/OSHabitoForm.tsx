@@ -79,7 +79,7 @@ export default function OSHabitoForm({ habito, onCerrar, onGuardado }: Props) {
     };
     if (tipo === 'habito') { body.permite_mas = permiteMas; body.permite_menos = permiteMenos; }
     try {
-      const url = habito ? `/api/os/habitos?id=${habito.id}` : '/api/os/habitos';
+      const url = habito ? `/api/habitos?id=${habito.id}` : '/api/habitos';
       const res = await fetch(url, {
         method: habito ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
@@ -102,7 +102,7 @@ export default function OSHabitoForm({ habito, onCerrar, onGuardado }: Props) {
       danger: true,
     }))) return;
     try {
-      await fetch(`/api/os/habitos?id=${habito.id}`, { method: 'DELETE' });
+      await fetch(`/api/habitos?id=${habito.id}`, { method: 'DELETE' });
       onGuardado();
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al archivar'); }
   }

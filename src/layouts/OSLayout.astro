@@ -609,7 +609,7 @@ const anyBottomActive = bottomNav.some(i => isActive(i.href));
         if (preguntaPanel) preguntaPanel.style.display = 'flex';
         renderChat(true);
         try {
-          const res = await fetch('/api/os/preguntar', {
+          const res = await fetch('/api/preguntar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pregunta: q.trim() }),
@@ -646,7 +646,7 @@ const anyBottomActive = bottomNav.some(i => isActive(i.href));
       });
 
       // ── Captura rapida unificada (un input, conmutador preguntar/capturar) ──
-      // Mismos endpoints de siempre: /api/os/preguntar (chat) y /api/os/capturar.
+      // Mismos endpoints de siempre: /api/preguntar (chat) y /api/capturar.
       const quickInput  = document.getElementById('os-quick') as HTMLInputElement | null;
       const quickToggle = document.getElementById('os-quick-toggle');
       const quickIcon   = document.getElementById('os-quick-icon');
@@ -666,7 +666,7 @@ const anyBottomActive = bottomNav.some(i => isActive(i.href));
         if (!quickInput) return;
         quickInput.placeholder = 'Guardando...';
         try {
-          const res = await fetch('/api/os/capturar', {
+          const res = await fetch('/api/capturar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texto }),

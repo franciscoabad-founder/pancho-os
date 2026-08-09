@@ -70,7 +70,7 @@ export default function OSHabitos() {
     if (mostrarLoading) setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/os/habitos');
+      const res = await fetch('/api/habitos');
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setHabitos(data.habitos ?? []);
@@ -107,7 +107,7 @@ export default function OSHabitos() {
     setEnviando((cur) => new Set(cur).add(habitoId));
     setError('');
     try {
-      const res = await fetch('/api/os/habitos/checks', {
+      const res = await fetch('/api/habitos/checks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(signo ? { habito_id: habitoId, signo } : { habito_id: habitoId }),
       });
@@ -140,7 +140,7 @@ export default function OSHabitos() {
       }))) return;
       setEnviando((cur) => new Set(cur).add(h.id));
       try {
-        const res = await fetch(`/api/os/habitos/checks?habito_id=${h.id}&fecha=${hoyISO()}`, { method: 'DELETE' });
+        const res = await fetch(`/api/habitos/checks?habito_id=${h.id}&fecha=${hoyISO()}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('No se pudo deshacer');
         await cargar(false);
       } catch (e) { setError(e instanceof Error ? e.message : 'Error'); }
@@ -158,7 +158,7 @@ export default function OSHabitos() {
 
   async function reactivar(h: Habito) {
     try {
-      await fetch(`/api/os/habitos?id=${h.id}`, {
+      await fetch(`/api/habitos?id=${h.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: 'activo' }),
       });
       await cargar(false);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { CheckItem } from '../data/types';
 
 // Checklist estatico (daily.astro): items vienen por props, estado local.
-// Distinto de OSChecklistHoy, que trae habitos desde /api/os/habitos.
+// Distinto de OSChecklistHoy, que trae habitos desde /api/habitos.
 // Regla de color: hecho/completado = champagne, nunca verde.
 
 interface Props {

@@ -155,7 +155,7 @@ async function reagendarRecordatoriosHoy(sb: SB, hoy: string): Promise<void> {
 
 // Procesa todos los dÃ­as pendientes de cierre (desde el Ãºltimo habito_cierres + 1 hasta
 // ayer) y luego re-agenda los recordatorios de hoy. Reutilizable desde el POST de este
-// endpoint y desde el fallback lazy en GET /api/os/habitos.
+// endpoint y desde el fallback lazy en GET /api/habitos.
 export async function cerrarPendientes(
   sb: SB,
 ): Promise<{ cerrados: string[]; resumenes: Record<string, unknown> }> {

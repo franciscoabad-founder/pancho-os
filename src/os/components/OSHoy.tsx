@@ -57,10 +57,10 @@ export default function OSHoy() {
 
   async function cargar() {
     const [diaRes, stackRes, objRes, semRes] = await Promise.all([
-      safeJson('/api/os/dia'),
-      safeJson('/api/os/priority-stack'),
-      safeJson('/api/os/objetivos'),
-      safeJson('/api/os/semana'),
+      safeJson('/api/dia'),
+      safeJson('/api/priority-stack'),
+      safeJson('/api/objetivos'),
+      safeJson('/api/semana'),
     ]);
     if (diaRes) {
       setDia(diaRes.dia ?? null);
@@ -79,7 +79,7 @@ export default function OSHoy() {
   async function guardarDia(patch: Record<string, unknown>) {
     setGuardando(true);
     try {
-      const res = await fetch('/api/os/dia', {
+      const res = await fetch('/api/dia', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
@@ -122,7 +122,7 @@ export default function OSHoy() {
   async function togglePrioridad(p: Prioridad) {
     setPrioridades((cur) => cur.map((x) => (x.id === p.id ? { ...x, hecho: !x.hecho } : x)));
     try {
-      const res = await fetch(`/api/os/priority-stack?id=${p.id}`, {
+      const res = await fetch(`/api/priority-stack?id=${p.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hecho: !p.hecho }),
@@ -139,7 +139,7 @@ export default function OSHoy() {
     if (!texto) return;
     setNuevoWin('');
     try {
-      const res = await fetch('/api/os/dia', {
+      const res = await fetch('/api/dia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ win: { texto } }),
@@ -387,7 +387,7 @@ export default function OSHoy() {
           </div>
 
           {/* Principios: sin endpoint todavia, se mantiene el estatico de data/daily.ts */}
-          {/* TODO: crear /api/os/principios cuando exista tabla os_principios; hasta entonces esto queda fijo */}
+          {/* TODO: crear /api/principios cuando exista tabla os_principios; hasta entonces esto queda fijo */}
           <div className="os-card">
             <p className="os-section-title">Principios</p>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>

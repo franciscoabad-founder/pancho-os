@@ -52,7 +52,7 @@ export default function OSJugadorBar() {
 
     async function cargar() {
       try {
-        const res = await fetch('/api/os/juego/estado');
+        const res = await fetch('/api/juego/estado');
         const data: EstadoResponse = await res.json();
         if (cancelado) return;
         if (data.error || !data.jugador) {

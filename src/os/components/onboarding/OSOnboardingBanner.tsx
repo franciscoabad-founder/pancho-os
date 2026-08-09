@@ -16,7 +16,7 @@ export default function OSOnboardingBanner({ modulo }: Props) {
 
   async function chequearEstado() {
     try {
-      const res = await fetch(`/api/os/onboarding?modulo=${modulo}`);
+      const res = await fetch(`/api/onboarding?modulo=${modulo}`);
       const data = await res.json();
       return !!data?.estado?.completado_at;
     } catch {
@@ -37,8 +37,8 @@ export default function OSOnboardingBanner({ modulo }: Props) {
     const previa: Respuestas = {};
     try {
       const [resCuerpo, resConfig] = await Promise.all([
-        fetch('/api/os/salud/cuerpo').then((r) => r.json()).catch(() => null),
-        fetch('/api/os/salud/config').then((r) => r.json()).catch(() => null),
+        fetch('/api/salud/cuerpo').then((r) => r.json()).catch(() => null),
+        fetch('/api/salud/config').then((r) => r.json()).catch(() => null),
       ]);
       const unidad = resConfig?.config?.unidad_peso === 'lb' ? 'lb' : 'kg';
       const pesoKg = resCuerpo?.mediciones?.[0]?.peso_kg;
@@ -53,7 +53,7 @@ export default function OSOnboardingBanner({ modulo }: Props) {
   }
 
   async function aplicarPlan() {
-    const res = await fetch('/api/os/onboarding', {
+    const res = await fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ aplicar: 'salud' }),

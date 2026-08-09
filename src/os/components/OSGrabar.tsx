@@ -3,7 +3,7 @@
 //   IndexedDB durante la grabacion para sobrevivir crashes o cierres.
 // - Wake Lock mientras graba para que la pantalla no se apague en movil.
 // - Al detener se ensambla el Blob y se sube DIRECTO a Supabase Storage con una
-//   signed URL (el audio nunca pasa por Vercel). Luego /api/os/grabaciones
+//   signed URL (el audio nunca pasa por Vercel). Luego /api/grabaciones
 //   action=done dispara el pipeline de transcripcion en n8n.
 // - Si al cargar hay una grabacion sin subir en IndexedDB, se ofrece recuperarla.
 import { useEffect, useRef, useState } from 'react';
@@ -341,7 +341,7 @@ export default function OSGrabar() {
     try {
       setProgreso('Creando URL de subida...');
       const mime = s.mime.split(';')[0];
-      const resStart = await fetch('/api/os/grabaciones', {
+      const resStart = await fetch('/api/grabaciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'start', mime }),
@@ -358,7 +358,7 @@ export default function OSGrabar() {
       if (!resUp.ok) throw new Error(`Fallo la subida a Storage (HTTP ${resUp.status})`);
 
       setProgreso('Enviando a transcripcion...');
-      const resDone = await fetch('/api/os/grabaciones', {
+      const resDone = await fetch('/api/grabaciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

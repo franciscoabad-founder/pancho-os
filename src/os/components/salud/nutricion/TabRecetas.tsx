@@ -26,7 +26,7 @@ export default function TabRecetas({ momento, dia, tipoDia, onAgregado }: Props)
   async function cargar() {
     setCargando(true);
     try {
-      const res = await fetch(`/api/os/salud/recetas${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`);
+      const res = await fetch(`/api/salud/recetas${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`);
       const data = await res.json();
       setRecetas(data.recetas ?? []);
     } catch { setRecetas([]); }
@@ -41,7 +41,7 @@ export default function TabRecetas({ momento, dia, tipoDia, onAgregado }: Props)
 
   async function abrirDetalle(id: string) {
     setInstruccionesAbiertas(false);
-    const res = await fetch(`/api/os/salud/recetas?id=${id}`);
+    const res = await fetch(`/api/salud/recetas?id=${id}`);
     const data = await res.json();
     if (data.receta) setDetalle(data.receta);
   }
@@ -50,7 +50,7 @@ export default function TabRecetas({ momento, dia, tipoDia, onAgregado }: Props)
     if (!importUrl.trim()) return;
     setImportando(true); setErrorImport('');
     try {
-      const res = await fetch('/api/os/salud/recetas', {
+      const res = await fetch('/api/salud/recetas', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ importar_url: importUrl.trim() }),
       });
       const data = await res.json();
@@ -69,7 +69,7 @@ export default function TabRecetas({ momento, dia, tipoDia, onAgregado }: Props)
     if (!detalle) return;
     setRegistrando(true);
     try {
-      const res = await fetch('/api/os/salud/comidas-log', {
+      const res = await fetch('/api/salud/comidas-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           descripcion_libre: detalle.nombre, kcal: detalle.kcal, proteina_g: detalle.proteina_g,

@@ -41,7 +41,7 @@ export default function FilaComida({ comida, onCambio }: Props) {
       } else {
         body.cantidad_g = form.cantidad_g || null;
       }
-      const res = await fetch(`/api/os/salud/comidas-log?id=${encodeURIComponent(comida.id)}`, {
+      const res = await fetch(`/api/salud/comidas-log?id=${encodeURIComponent(comida.id)}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -62,7 +62,7 @@ export default function FilaComida({ comida, onCambio }: Props) {
       confirmLabel: 'Borrar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/salud/comidas-log?id=${comida.id}`, { method: 'DELETE' });
+    await fetch(`/api/salud/comidas-log?id=${comida.id}`, { method: 'DELETE' });
     onCambio();
   }
 

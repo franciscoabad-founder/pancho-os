@@ -53,7 +53,7 @@ export default function OSRecordatorios() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/recordatorios');
+      const res = await fetch('/api/recordatorios');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setItems(data.recordatorios ?? []);
@@ -72,7 +72,7 @@ export default function OSRecordatorios() {
     if (!mensaje.trim() || !cuando || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/recordatorios', {
+      const res = await fetch('/api/recordatorios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mensaje: mensaje.trim(), recordar_at: new Date(cuando).toISOString() }),
@@ -91,7 +91,7 @@ export default function OSRecordatorios() {
 
   async function marcar(id: string, estado: Recordatorio['estado']) {
     try {
-      const res = await fetch(`/api/os/recordatorios?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/recordatorios?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado }),
@@ -112,7 +112,7 @@ export default function OSRecordatorios() {
       danger: true,
     }))) return;
     try {
-      const res = await fetch(`/api/os/recordatorios?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/recordatorios?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(String(res.status));
       await load();
     } catch (err) {

@@ -1,5 +1,5 @@
 // Editor inline de metas (kcal_objetivo, proteina_objetivo_g, carbos_objetivo_g,
-// grasa_objetivo_g). PATCH /api/os/salud/config. Se abre desde "Configura tus metas".
+// grasa_objetivo_g). PATCH /api/salud/config. Se abre desde "Configura tus metas".
 import { useState } from 'react';
 import { card2, input, btn, btnGhost, eyebrow } from './estilos';
 
@@ -27,7 +27,7 @@ export default function TargetsEditor({ valores, onGuardado, onCerrar }: Props) 
         const v = form[k].trim();
         body[k] = v === '' ? null : Number(v);
       }
-      const res = await fetch('/api/os/salud/config', {
+      const res = await fetch('/api/salud/config', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       const data = await res.json();

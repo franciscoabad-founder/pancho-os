@@ -1,4 +1,4 @@
-// useResource — hook de datos sobre fetch a /api/os/*.
+// useResource — hook de datos sobre fetch a /api/*.
 // Contrato uniforme: { data, loading, error, reload, mutate }.
 // Los endpoints del OS (Molde A) responden JSON y usan { error } en fallo.
 import { useCallback, useEffect, useRef, useState } from 'react';

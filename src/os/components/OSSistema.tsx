@@ -37,7 +37,7 @@ export default function OSSistema({ initialState }: Props) {
       }
 
       try {
-        const res = await fetch('/api/os/system');
+        const res = await fetch('/api/system');
         const data = await res.json();
         if (!cancelled && data.state) {
           setState(data.state);
@@ -63,7 +63,7 @@ export default function OSSistema({ initialState }: Props) {
     setSaving(true);
     setMessage('Guardando...');
     try {
-      const res = await fetch('/api/os/system', {
+      const res = await fetch('/api/system', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state }),

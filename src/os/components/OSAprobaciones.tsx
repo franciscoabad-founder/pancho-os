@@ -32,7 +32,7 @@ export default function OSAprobaciones() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/os/aprobaciones')
+    fetch('/api/aprobaciones')
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -58,7 +58,7 @@ export default function OSAprobaciones() {
   async function act(id: string, action: string) {
     setMessage(`${labels[action]}...`);
     try {
-      const res = await fetch(`/api/os/aprobaciones?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/aprobaciones?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: ESTADO_POR_ACCION[action] }),

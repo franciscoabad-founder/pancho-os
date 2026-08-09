@@ -21,7 +21,7 @@ export default function TabMeals({ momento, dia, onAgregado }: Props) {
     let vivo = true;
     setCargando(true);
     const t = setTimeout(() => {
-      fetch(`/api/os/salud/meals${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`)
+      fetch(`/api/salud/meals${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`)
         .then((r) => r.json())
         .then((d) => { if (vivo) setMeals(d.meals ?? []); })
         .catch(() => { if (vivo) setMeals([]); })
@@ -33,7 +33,7 @@ export default function TabMeals({ momento, dia, onAgregado }: Props) {
   async function registrar(meal: Meal) {
     setRegistrando(meal.id);
     try {
-      const res = await fetch('/api/os/salud/meals', {
+      const res = await fetch('/api/salud/meals', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ log: meal.id, momento, fecha: dia }),
       });

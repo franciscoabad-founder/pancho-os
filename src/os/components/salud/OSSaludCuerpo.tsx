@@ -50,7 +50,7 @@ export default function OSSaludCuerpo() {
 
   async function cargar() {
     setLoading(true);
-    const res = await fetch('/api/os/salud/cuerpo');
+    const res = await fetch('/api/salud/cuerpo');
     const data = await res.json();
     if (data.error) setError(data.error); else setMediciones(data.mediciones ?? []);
     setLoading(false);
@@ -62,7 +62,7 @@ export default function OSSaludCuerpo() {
       setError('Ingresa al menos una medición'); return;
     }
     setGuardando(true); setError('');
-    const res = await fetch('/api/os/salud/cuerpo', {
+    const res = await fetch('/api/salud/cuerpo', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fecha: form.fecha, peso_kg: form.peso_kg || null, grasa_pct: form.grasa_pct || null,
@@ -84,7 +84,7 @@ export default function OSSaludCuerpo() {
       confirmLabel: 'Borrar',
       danger: true,
     }))) return;
-    await fetch(`/api/os/salud/cuerpo?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/salud/cuerpo?id=${id}`, { method: 'DELETE' });
     cargar();
   }
 

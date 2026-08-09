@@ -56,7 +56,7 @@ export default function TaskiBubble() {
   async function cargarHistorial() {
     setCargandoHistorial(true);
     try {
-      const res = await fetch('/api/os/taski');
+      const res = await fetch('/api/taski');
       const data: { mensajes?: { role: 'user' | 'assistant'; content: string }[]; error?: string } =
         await res.json();
       if (data.mensajes) {
@@ -85,7 +85,7 @@ export default function TaskiBubble() {
     setTurnos((prev) => [...prev, { role: 'user', content: msg }]);
     setPensando(true);
     try {
-      const res = await fetch('/api/os/taski', {
+      const res = await fetch('/api/taski', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg }),

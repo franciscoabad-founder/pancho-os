@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
 
-// Vista KPIs: tablero en vivo desde /api/os/kpis.
+// Vista KPIs: tablero en vivo desde /api/kpis.
 // La tabla arranca vacia; el vacio invita a crear el primer KPI en vez de fingir datos.
 
 interface KPI {
@@ -81,7 +81,7 @@ function OSKpisInner() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/kpis', { cache: 'no-store' });
+      const res = await fetch('/api/kpis', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setKpis(data.kpis ?? []);
@@ -99,7 +99,7 @@ function OSKpisInner() {
     if (!Number.isFinite(num)) { toast.show('Ingresa un numero valido.', 'error'); return; }
     setBusy(true);
     try {
-      const res = await fetch('/api/os/kpis', {
+      const res = await fetch('/api/kpis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kpi_id: kpiId, valor: num }),
@@ -122,7 +122,7 @@ function OSKpisInner() {
     if (!nLabel.trim() || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/kpis', {
+      const res = await fetch('/api/kpis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +153,7 @@ function OSKpisInner() {
       danger: true,
     }))) return;
     try {
-      const res = await fetch(`/api/os/kpis?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/kpis?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(String(res.status));
       await load();
     } catch (err) {

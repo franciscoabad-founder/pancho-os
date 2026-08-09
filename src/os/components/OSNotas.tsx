@@ -72,7 +72,7 @@ export default function OSNotas() {
 
   async function load() {
     try {
-      const res = await fetch('/api/os/notas');
+      const res = await fetch('/api/notas');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setNotas(data.notas ?? []);
@@ -91,7 +91,7 @@ export default function OSNotas() {
     if (!contenido.trim() || busy) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/os/notas', {
+      const res = await fetch('/api/notas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contenido: contenido.trim() }),
@@ -109,7 +109,7 @@ export default function OSNotas() {
 
   async function archivar(id: string) {
     try {
-      const res = await fetch(`/api/os/notas?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/notas?id=${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: 'archivada' }),
@@ -152,7 +152,7 @@ export default function OSNotas() {
       payload.recordar_at = new Date(mRecordarAt).toISOString();
     }
     try {
-      const res = await fetch('/api/os/notas', {
+      const res = await fetch('/api/notas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ convertir: { id: nota.id, a: destino, payload } }),

@@ -7,7 +7,7 @@ import { formatearPeso, kgALbs } from '../../../lib/gfit/unidades';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GFIT — tab Progreso (parity Jefit). Un solo golpe de datos desde
-// /api/os/gfit/progreso + /api/os/gfit/logros. Ambos endpoints devuelven
+// /api/gfit/progreso + /api/gfit/logros. Ambos endpoints devuelven
 // `breakdown3m` y `recovery` como diccionarios (Record<grupo, valor>), no
 // arreglos — verificado contra la respuesta real del endpoint (ver
 // lib/gfit/volumen.ts#muscleBreakdown y lib/gfit/recovery.ts#estadoRecuperacion).
@@ -389,8 +389,8 @@ export default function OSGfitProgreso({ unidad }: { unidad: UnidadPeso }) {
     setError('');
     try {
       const [resProgreso, resLogros] = await Promise.all([
-        fetch('/api/os/gfit/progreso'),
-        fetch('/api/os/gfit/logros'),
+        fetch('/api/gfit/progreso'),
+        fetch('/api/gfit/logros'),
       ]);
       const dataProgreso = await resProgreso.json();
       const dataLogros = await resLogros.json();
@@ -413,7 +413,7 @@ export default function OSGfitProgreso({ unidad }: { unidad: UnidadPeso }) {
     // dispara el evento de XP/oro (para que OSJugadorBar anime) y refresca la lista.
     (async () => {
       try {
-        const res = await fetch('/api/os/gfit/logros', {
+        const res = await fetch('/api/gfit/logros', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ evaluar: true }),
         });
         const data: { otorgados?: OtorgadoLogro[] } = await res.json();
@@ -421,7 +421,7 @@ export default function OSGfitProgreso({ unidad }: { unidad: UnidadPeso }) {
         const xp = data.otorgados.reduce((a, o) => a + (o.premio_xp ?? 0), 0);
         const oro = data.otorgados.reduce((a, o) => a + (o.premio_oro ?? 0), 0);
         window.dispatchEvent(new CustomEvent('os:xp', { detail: { xp, oro } }));
-        const r = await fetch('/api/os/gfit/logros');
+        const r = await fetch('/api/gfit/logros');
         const d = await r.json();
         if (!cancelado) setLogros(d.logros ?? []);
       } catch {
