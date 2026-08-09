@@ -16,7 +16,7 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/pancho_deploy
+          echo "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/pancho_deploy
           chmod 600 ~/.ssh/pancho_deploy
           ssh-keyscan -H 178.105.163.120 >> ~/.ssh/known_hosts
         env:
