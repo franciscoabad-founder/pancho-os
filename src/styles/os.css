@@ -1,0 +1,406 @@
+/* ============================================================================
+   Growth OS — capa de estilos compartida ("Ultramarine v5 · Clay")
+   Lenguaje visual unificado para todo lo que vive detras de /os.
+   Importado una sola vez desde OSLayout.astro.
+
+   Tema por defecto: CLARO (marca-claro, claymorphism). El tema oscuro se activa
+   con [data-theme="dark"] en <html> (ver script no-flash en OSLayout.astro).
+   Los NOMBRES de los tokens --os-* no cambian: 30 paginas del OS los consumen.
+   Solo cambian los VALORES entre :root (claro) y [data-theme="dark"] (oscuro).
+   ========================================================================== */
+
+:root {
+  /* ── Grounds (claro / Linen) ── */
+  --os-bg:           #FAFAF7;   /* fondo base */
+  --os-bg-sunken:    #F1F2F6;   /* command bar, sidebar, bottom-nav */
+  --os-surface:      #FFFFFF;   /* cards primarias */
+  --os-surface-2:    #F4F5F9;   /* elevated — KPIs */
+  --os-surface-3:    #EEF0F6;   /* containers */
+  --os-surface-hi:   #E8EAF4;   /* hover de superficies */
+
+  /* ── Lineas ── */
+  --os-line:         rgba(45, 55, 72, 0.12);
+  --os-line-soft:    rgba(45, 55, 72, 0.06);
+  --os-line-accent:  rgba(59, 78, 217, 0.25);
+
+  /* ── Acentos ── */
+  --os-accent:       #3B4ED9;   /* ultramarine — CTAs, activos, links */
+  --os-accent-hover: #2F3FC0;   /* hover de accent sobre fondo claro (mas oscuro) */
+  --os-accent-light: #3B4ED9;   /* sobre fondo claro el accent ya es legible */
+  --os-champagne:    #8A6F3D;   /* bronze — legible sobre fondo claro */
+  --os-bronze:       #8A6F3D;
+  --os-ok:           #8A6F3D;   /* champagne = hecho/positivo (sin verde) */
+  --os-warn:         #B45309;
+  /* Danger suave canonico (alineado con os-conductual y Cortex) */
+  --os-error:        #D4537E;
+
+  /* ── Texto ── */
+  --os-text:         #2D3748;
+  --os-text-2:       #4A5568;
+  --os-muted:        #6B7280;
+
+  /* ── Rellenos utilitarios (hover / fondos sutiles) ── */
+  --os-hover:        rgba(45, 55, 72, 0.05);
+  --os-fill-subtle:  rgba(45, 55, 72, 0.04);
+  --os-glass-bg:     rgba(255, 255, 255, 0.55);
+
+  /* ── Forma (radios clay: cards 16-20px, botones 12-14px) ── */
+  --os-r-sm: 12px;
+  --os-r-md: 14px;
+  --os-r-card: 18px;
+  --os-r-lg: 20px;
+  --os-r-full: 999px;
+
+  /* ── Sombra clay (doble sombra suave: elevacion + relieve) ── */
+  --os-shadow-card:   0 6px 14px rgba(45, 55, 72, 0.10), inset 0 -3px 6px rgba(45, 55, 72, 0.05), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+  --os-shadow-modal:  0 18px 40px rgba(45, 55, 72, 0.16), inset 0 -3px 6px rgba(45, 55, 72, 0.05), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+  --os-shadow-accent: 0 8px 22px rgba(59, 78, 217, 0.28), inset 0 -3px 6px rgba(45, 55, 72, 0.05), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+
+  /* ── Fuentes ── */
+  --os-font-display: 'Montserrat', sans-serif;
+  --os-font-body:    'Inter', sans-serif;
+  --os-font-mono:    'JetBrains Mono', 'SF Mono', monospace;
+  --os-font-rounded: 'Nunito', 'Inter', sans-serif;
+
+  /* ── Escala tipografica minima (legibilidad) ──
+     Regla dura: ningun texto del OS baja de 11px; el cuerpo nunca baja de 13px.
+     xs es el piso para labels/eyebrows/tags; base es el cuerpo por defecto. */
+  --os-text-xs:   12px;
+  --os-text-sm:   13px;
+  --os-text-base: 14.5px;
+  --os-text-lg:   16px;
+
+  /* ── Areas tactiles ──
+     36px minimo en desktop (densidad); 44px en pantallas tactiles via
+     media (pointer: coarse) al final de este archivo. */
+  --os-tap-min: 36px;
+  --os-tap-coarse: 44px;
+}
+
+/* ── Tema oscuro ── */
+[data-theme="dark"] {
+  --os-bg:           #071132;
+  --os-bg-sunken:    #060C1E;
+  --os-surface:      #1A2B6B;
+  --os-surface-2:    #131F4A;
+  --os-surface-3:    #151D3F;
+  --os-surface-hi:   #1F284A;
+
+  --os-line:         rgba(255, 255, 255, 0.12);
+  --os-line-soft:    rgba(232, 234, 240, 0.07);
+  --os-line-accent:  rgba(59, 78, 217, 0.30);
+
+  --os-accent:       #3B4ED9;
+  --os-accent-hover: #4A5FEA;
+  --os-accent-light: #6B7AE8;
+  --os-champagne:    #B5985A;
+  --os-bronze:       #8A6F3D;
+  --os-ok:           #B5985A;
+  /* Warn se queda en familia ambar tambien en dark; rosados solo para error */
+  --os-warn:         #F0C070;
+  --os-error:        #E06C93;
+
+  --os-text:         #E8EAF0;
+  --os-text-2:       #C5C5D7;
+  /* AA sobre cards Royal #1A2B6B (el #6B7280 del light da 2.7:1 aqui) */
+  --os-muted:        #9AA3B8;
+
+  --os-hover:        rgba(232, 234, 240, 0.09);
+  --os-fill-subtle:  rgba(232, 234, 240, 0.05);
+  --os-glass-bg:     rgba(26, 43, 107, 0.40);
+
+  --os-shadow-card:   0 8px 18px rgba(0, 0, 0, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.30), inset 0 2px 3px rgba(255, 255, 255, 0.05);
+  --os-shadow-modal:  0 20px 50px rgba(0, 0, 0, 0.55), inset 0 -3px 6px rgba(0, 0, 0, 0.30), inset 0 2px 3px rgba(255, 255, 255, 0.05);
+  --os-shadow-accent: 0 8px 28px rgba(59, 78, 217, 0.36), inset 0 -3px 6px rgba(0, 0, 0, 0.30), inset 0 2px 3px rgba(255, 255, 255, 0.05);
+}
+
+/* ── Material Symbols ── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 22px;
+  line-height: 1;
+  user-select: none;
+}
+.material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* ============================================================================
+   Tipografia utilitaria
+   ========================================================================== */
+.os-eyebrow {
+  font-family: var(--os-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--os-accent-light);
+  margin: 0;
+}
+.os-eyebrow-muted { color: var(--os-muted); }
+.os-eyebrow-gold  { color: var(--os-champagne); }
+
+.os-h1 {
+  font-family: var(--os-font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--os-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.os-section-title {
+  font-family: var(--os-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--os-muted);
+  margin: 0 0 0.75rem;
+}
+.os-mono { font-family: var(--os-font-mono); }
+.os-num  { font-family: var(--os-font-mono); color: var(--os-champagne); font-weight: 700; }
+
+/* ============================================================================
+   Superficies
+   ========================================================================== */
+.os-card {
+  background: var(--os-surface);
+  border: 1px solid var(--os-line);
+  border-radius: var(--os-r-card);
+  padding: 1.25rem;
+  box-shadow: var(--os-shadow-card);
+}
+.os-card-2 {
+  background: var(--os-surface-2);
+  border: 1px solid var(--os-line-soft);
+  border-radius: var(--os-r-card);
+  padding: 1.25rem;
+}
+.os-card-accent { border-color: var(--os-line-accent); }
+.os-card-interactive { transition: border-color 0.15s, transform 0.15s, background 0.15s; cursor: pointer; }
+.os-card-interactive:hover { border-color: var(--os-line-accent); }
+.os-card-interactive:active { transform: scale(0.99); }
+
+/* Glass panel (Stitch) */
+.os-glass {
+  background: var(--os-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--os-line);
+  border-radius: var(--os-r-card);
+}
+
+/* ============================================================================
+   One Domino
+   ========================================================================== */
+.os-domino {
+  position: relative;
+  overflow: hidden;
+  background: var(--os-surface);
+  border: 1px solid var(--os-line-accent);
+  border-left: 4px solid var(--os-accent);
+  border-radius: var(--os-r-card);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--os-shadow-card);
+}
+
+/* ============================================================================
+   KPIs (numero = champagne, siempre mono)
+   ========================================================================== */
+.os-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.os-kpi {
+  background: var(--os-surface-2);
+  border: 1px solid var(--os-line-soft);
+  border-radius: var(--os-r-card);
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.os-kpi-label {
+  font-family: var(--os-font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--os-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-kpi-value {
+  font-family: var(--os-font-mono);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--os-champagne);
+  line-height: 1.05;
+  margin: 0;
+}
+
+/* ============================================================================
+   Pills / tags
+   ========================================================================== */
+.os-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--os-r-full);
+  font-family: var(--os-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.os-pill-accent { background: rgba(59, 78, 217, 0.22); color: var(--os-accent-light); }
+.os-pill-gold   { background: rgba(181, 152, 90, 0.16); color: var(--os-champagne); }
+.os-tag {
+  font-size: 11px;
+  color: var(--os-muted);
+  background: var(--os-fill-subtle);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* MAKER MODE pill con pulso (Stitch) */
+.os-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--os-r-sm);
+}
+.os-mode-pill .material-symbols-outlined {
+  font-size: 15px;
+  color: var(--os-accent-light);
+  animation: os-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.os-mode-label {
+  font-family: var(--os-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ============================================================================
+   Botones / inputs
+   ========================================================================== */
+.os-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--os-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--os-r-sm);
+  padding: 0.5rem 1rem;
+  min-height: var(--os-tap-min);
+  font-family: var(--os-font-display);
+  font-size: var(--os-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.12s;
+}
+.os-btn:hover { background: var(--os-accent-hover); }
+.os-btn:active { transform: scale(0.97); }
+.os-btn-ghost {
+  background: var(--os-fill-subtle);
+  border: 1px solid var(--os-line);
+  color: var(--os-text-2);
+}
+.os-btn-ghost:hover { background: var(--os-hover); color: var(--os-text); }
+
+.os-input {
+  background: var(--os-fill-subtle);
+  border: 1px solid var(--os-line);
+  border-radius: var(--os-r-sm);
+  padding: 0.5rem 0.75rem;
+  min-height: var(--os-tap-min);
+  font-size: var(--os-text-sm);
+  color: var(--os-text);
+  font-family: var(--os-font-body);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.os-input::placeholder { color: var(--os-muted); }
+.os-input:focus { border-color: var(--os-line-accent); }
+
+/* FAB (Stitch) */
+.os-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(72px + 1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--os-r-full);
+  background: var(--os-accent);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--os-shadow-accent);
+  cursor: pointer;
+  transition: transform 0.18s;
+}
+.os-fab:active { transform: scale(0.9); }
+@media (min-width: 821px) {
+  .os-fab { bottom: 1.5rem; right: 1.5rem; }
+}
+
+/* ============================================================================
+   Animaciones (Stitch lo abraza)
+   ========================================================================== */
+@keyframes os-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes os-pulse-soft {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+@keyframes os-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.os-pulse-dot { animation: os-pulse-soft 4s infinite ease-in-out; }
+.os-fade-up { animation: os-fade-up 0.5s ease-out both; }
+
+/* ============================================================================
+   Helpers responsive
+   ========================================================================== */
+.os-hide-mobile { display: revert; }
+.os-show-mobile { display: none; }
+@media (max-width: 820px) {
+  .os-hide-mobile { display: none !important; }
+  .os-show-mobile { display: revert; }
+}
+
+/* Scrollbar oculto para filas horizontales */
+.os-hscroll { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.os-hscroll::-webkit-scrollbar { display: none; }
+
+/* ============================================================================
+   Areas tactiles en pantallas touch (pointer: coarse)
+   Controles interactivos suben a 44px de alto minimo. En desktop se mantiene
+   36px por densidad.
+   ========================================================================== */
+@media (pointer: coarse) {
+  .os-btn,
+  .os-input,
+  button.os-pill,
+  a.os-pill,
+  .os-theme-toggle {
+    min-height: var(--os-tap-coarse);
+  }
+}

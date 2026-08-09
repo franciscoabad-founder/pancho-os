@@ -1,0 +1,22 @@
+---
+export const prerender = false;
+import OSLayout from '../../layouts/OSLayout.astro';
+import OSSaludDashboard from '../../os/components/salud/OSSaludDashboard';
+import OSSaludNav from '../../os/components/salud/OSSaludNav.astro';
+import OSOnboardingBanner from '../../os/components/onboarding/OSOnboardingBanner';
+import PageHeader from '../../os/components/ui/PageHeader';
+
+const fecha = new Date().toLocaleDateString('es-EC', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+});
+const fechaLarga = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+---
+
+<OSLayout title="Salud">
+  <div class="os-fade-up">
+    <PageHeader eyebrow="Cuerpo" title="Salud" subtitle={fechaLarga} />
+    <OSSaludNav activo="dashboard" />
+    <OSOnboardingBanner modulo="salud" client:load />
+    <OSSaludDashboard client:load />
+  </div>
+</OSLayout>

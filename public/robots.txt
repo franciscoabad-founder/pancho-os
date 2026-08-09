@@ -1,0 +1,72 @@
+# Robots.txt — franciscoabad.com
+
+# Default: allow all crawlers including AI training and search bots
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# AI training crawlers — explicit allow
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: CCBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: Bytespider
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# AI search crawlers — explicit allow (real-time citation)
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://franciscoabad.com/sitemap-index.xml

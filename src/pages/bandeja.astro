@@ -1,0 +1,17 @@
+---
+export const prerender = false;
+import OSLayout from '../layouts/OSLayout.astro';
+import OSBandeja from '../os/components/OSBandeja';
+import PageHeader from '../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Por revisar">
+  <div class="os-fade-up">
+    <PageHeader
+      eyebrow="Growth OS"
+      title="Por revisar"
+      subtitle="Articulos, links y decisiones capturadas para revisar despues."
+    />
+    <OSBandeja client:load />
+  </div>
+</OSLayout>

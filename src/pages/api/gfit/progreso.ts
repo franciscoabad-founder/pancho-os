@@ -1,0 +1,186 @@
+export const prerender = false;
+
+import type { APIRoute } from 'astro';
+import { getSupabaseServer } from '../../../lib/supabase';
+import { isOsAuthorized, json } from '../../../os/lib/osAuth';
+import { errMsg, hoyGuayaquil } from '../../../lib/salud/apiHelpers';
+import { estimar1RM } from '../../../lib/gfit/rm';
+import {
+  volumenPorRango,
+  tiempoPorRango,
+  muscleBreakdown,
+  calendarioEntrenos,
+  type SerieVolumen,
+  type RangoVolumen,
+} from '../../../lib/gfit/volumen';
+import {
+  estadoRecuperacion,
+  intensidadDeSerie,
+  DEFAULT_INTENSIDAD_PCT,
+  type EventoGrupo,
+} from '../../../lib/gfit/recovery';
+import { addDias } from '../../../lib/habitos/fechas';
+
+// Devuelve TODO lo necesario para el dashboard de progreso de GFIT en un solo golpe:
+// calendario de entrenos, volumen/tiempo por rango, breakdown muscular (3 meses),
+// top 1RM por ejercicio (6 meses) y estado de recuperaciÃ³n por grupo (7 dÃ­as).
+// Molde: query paralela (Promise.all) + cÃ³mputo en memoria con las libs puras
+// (lib/gfit/volumen.ts, lib/gfit/recovery.ts, lib/gfit/rm.ts), sin lÃ³gica de negocio
+// aquÃ­ (mismo patrÃ³n que api/os/salud/progreso.ts).
+
+interface SesionRow {
+  id: string;
+  fecha: string;
+  duracion_min: number | null;
+  inicio: string | null;
+}
+
+interface MusculoPrimario {
+  grupo?: string | null;
+  sub?: string | null;
+}
+
+interface SerieRow {
+  id: string;
+  sesion_id: string;
+  ejercicio_id: string;
+  tipo: string;
+  peso_kg: number | null;
+  reps: number | null;
+  completada_at: string;
+  sesion: { fecha: string; inicio: string | null } | null;
+  ejercicio: { nombre_en: string; nombre_es: string | null; musculos_primarios: MusculoPrimario[] } | null;
+}
+
+const RANGOS: Array<{ key: string; rango: RangoVolumen }> = [
+  { key: 'r7d', rango: '7d' },
+  { key: 'r14d', rango: '14d' },
+  { key: 'r1m', rango: '1m' },
+  { key: 'r12m', rango: '12m' },
+  { key: 'all', rango: 'all' },
+];
+
+function gruposDe(ejercicio: SerieRow['ejercicio']): string[] {
+  if (!Array.isArray(ejercicio?.musculos_primarios)) return [];
+  return Array.from(new Set(ejercicio!.musculos_primarios.map((m) => m?.grupo).filter((g): g is string => !!g)));
+}
+
+export const GET: APIRoute = async (context) => {
+  if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
+  try {
+    const sb = getSupabaseServer();
+    const hoy = hoyGuayaquil();
+
+    const [sesionesRes, seriesRes] = await Promise.all([
+      sb.from('sesiones').select('id, fecha, duracion_min, inicio').order('fecha', { ascending: true }),
+      sb
+        .from('gfit_sesion_series')
+        .select(
+          'id, sesion_id, ejercicio_id, tipo, peso_kg, reps, completada_at, ' +
+            'sesion:sesiones(fecha, inicio), ejercicio:ejercicios_catalogo(nombre_en, nombre_es, musculos_primarios)',
+        )
+        .order('completada_at', { ascending: true }),
+    ]);
+    if (sesionesRes.error) throw sesionesRes.error;
+    if (seriesRes.error) throw seriesRes.error;
+
+    const sesiones = (sesionesRes.data ?? []) as SesionRow[];
+    const seriesRaw = (seriesRes.data ?? []) as unknown as SerieRow[];
+
+    // â”€â”€â”€ calendario: todas las fechas con al menos una sesiÃ³n registrada â”€â”€â”€â”€â”€â”€
+    const calendario = calendarioEntrenos(sesiones.map((s) => ({ fecha: s.fecha })));
+
+    // â”€â”€â”€ series normalizadas (fecha de la sesiÃ³n, no de la serie) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const seriesVolumen: SerieVolumen[] = seriesRaw
+      .filter((s) => s.sesion?.fecha)
+      .map((s) => ({ fecha: s.sesion!.fecha, pesoKg: s.peso_kg, reps: s.reps, tipo: s.tipo, ejercicioId: s.ejercicio_id }));
+
+    const volumen: Record<string, ReturnType<typeof volumenPorRango>> = {};
+    for (const { key, rango } of RANGOS) volumen[key] = volumenPorRango(seriesVolumen, rango, hoy);
+
+    const sesionesTiempo = sesiones.map((s) => ({ fecha: s.fecha, duracionMin: s.duracion_min }));
+    const tiempo: Record<string, ReturnType<typeof tiempoPorRango>> = {};
+    for (const { key, rango } of RANGOS) tiempo[key] = tiempoPorRango(sesionesTiempo, rango, hoy);
+
+    // â”€â”€â”€ breakdown muscular (3 meses): grupos primarios por ejercicio â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const gruposPorEjercicio = new Map<string, string[]>();
+    for (const s of seriesRaw) {
+      if (s.ejercicio_id && !gruposPorEjercicio.has(s.ejercicio_id)) {
+        gruposPorEjercicio.set(s.ejercicio_id, gruposDe(s.ejercicio));
+      }
+    }
+    const ejerciciosParaBreakdown = Array.from(gruposPorEjercicio.entries()).map(([id, gruposPrimarios]) => ({
+      id,
+      gruposPrimarios,
+    }));
+    const breakdown3m = muscleBreakdown(seriesVolumen, ejerciciosParaBreakdown, 3, hoy);
+
+    // â”€â”€â”€ 1RM histÃ³rico "de todos los tiempos" por ejercicio (denominador de intensidad) â”€â”€
+    const rmHistoricoTodo = new Map<string, number>();
+    for (const s of seriesRaw) {
+      if (s.tipo !== 'working' || s.peso_kg == null || s.reps == null) continue;
+      const est = estimar1RM(s.peso_kg, s.reps);
+      if (est <= 0) continue;
+      if (est > (rmHistoricoTodo.get(s.ejercicio_id) ?? 0)) rmHistoricoTodo.set(s.ejercicio_id, est);
+    }
+
+    // â”€â”€â”€ top 1RM por ejercicio (Ãºltimos 6 meses, top 12) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const desde6m = addDias(hoy, -180);
+    const mejoresRecientes = new Map<string, { est: number; nombre: string }>();
+    for (const s of seriesRaw) {
+      if (s.tipo !== 'working' || s.peso_kg == null || s.reps == null) continue;
+      const fecha = s.sesion?.fecha;
+      if (!fecha || fecha < desde6m || fecha > hoy) continue;
+      const est = estimar1RM(s.peso_kg, s.reps);
+      if (est <= 0) continue;
+      const actual = mejoresRecientes.get(s.ejercicio_id);
+      if (!actual || est > actual.est) {
+        mejoresRecientes.set(s.ejercicio_id, {
+          est,
+          nombre: s.ejercicio?.nombre_es || s.ejercicio?.nombre_en || 'Ejercicio',
+        });
+      }
+    }
+    const unoRm = Array.from(mejoresRecientes.entries())
+      .map(([ejercicio_id, v]) => ({ ejercicio_id, nombre: v.nombre, est_1rm: v.est }))
+      .sort((a, b) => b.est_1rm - a.est_1rm)
+      .slice(0, 12);
+
+    // â”€â”€â”€ recovery: Ãºltimos 7 dÃ­as, agregado por sesiÃ³n+grupo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const desde7d = addDias(hoy, -6);
+    interface Acumulado {
+      workingSets: number;
+      intensidades: number[];
+      fechaHora: string;
+    }
+    const porSesionGrupo = new Map<string, Acumulado>();
+    for (const s of seriesRaw) {
+      if (s.tipo === 'warmup') continue;
+      const fecha = s.sesion?.fecha;
+      if (!fecha || fecha < desde7d || fecha > hoy) continue;
+      const grupos = gruposDe(s.ejercicio);
+      if (!grupos.length) continue;
+      const intensidad = intensidadDeSerie(s.peso_kg, rmHistoricoTodo.get(s.ejercicio_id) ?? null);
+      const fechaHora = s.sesion?.inicio ?? `${fecha}T12:00:00`;
+      for (const grupo of grupos) {
+        const key = `${s.sesion_id}::${grupo}`;
+        if (!porSesionGrupo.has(key)) porSesionGrupo.set(key, { workingSets: 0, intensidades: [], fechaHora });
+        const acc = porSesionGrupo.get(key)!;
+        acc.workingSets += 1;
+        acc.intensidades.push(intensidad);
+      }
+    }
+    const eventosRecovery: EventoGrupo[] = Array.from(porSesionGrupo.entries()).map(([key, acc]) => {
+      const grupo = key.split('::')[1];
+      const intensidadPct = acc.intensidades.length
+        ? Math.round((acc.intensidades.reduce((a, b) => a + b, 0) / acc.intensidades.length) * 100) / 100
+        : DEFAULT_INTENSIDAD_PCT;
+      return { grupo, fecha: acc.fechaHora, workingSets: acc.workingSets, intensidadPct };
+    });
+    const recovery = estadoRecuperacion(eventosRecovery, new Date());
+
+    return json({ calendario, volumen, tiempo, breakdown3m, unoRm, recovery });
+  } catch (err) {
+    return json({ error: errMsg(err) }, 502);
+  }
+};

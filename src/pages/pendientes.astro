@@ -1,0 +1,18 @@
+---
+export const prerender = false;
+import OSLayout from '../layouts/OSLayout.astro';
+import OSPendientes from '../os/components/OSPendientes';
+import PageHeader from '../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Pendientes">
+  <div class="os-fade-up">
+    <PageHeader
+      eyebrow="Growth OS"
+      title="Pendientes"
+      subtitle="Intenciones sin fecha comprometida. Cuando decides actuar, conviertelas a tarea."
+    />
+
+    <OSPendientes client:load />
+  </div>
+</OSLayout>

@@ -1,0 +1,43 @@
+---
+// Navegación horizontal entre submódulos de Salud. Mobile-first (scroll horizontal).
+interface Props {
+  activo: 'dashboard' | 'nutricion' | 'ayuno' | 'entrenamiento' | 'progreso' | 'cuerpo' | 'sueno' | 'estiramiento';
+}
+const { activo } = Astro.props;
+
+const items = [
+  { key: 'dashboard',    href: '/os/salud',                label: 'Resumen',      icon: 'favorite' },
+  { key: 'nutricion',    href: '/os/salud/nutricion',      label: 'Nutrición',    icon: 'nutrition' },
+  { key: 'ayuno',        href: '/os/salud/ayuno',          label: 'Ayuno',        icon: 'timer' },
+  { key: 'entrenamiento',href: '/os/salud/entrenamiento',  label: 'Entreno',      icon: 'fitness_center' },
+  { key: 'progreso',     href: '/os/salud/progreso',       label: 'Progreso',     icon: 'trending_up' },
+  { key: 'cuerpo',       href: '/os/salud/cuerpo',         label: 'Cuerpo',       icon: 'monitor_weight' },
+  { key: 'sueno',        href: '/os/salud/sueno',          label: 'Sueño',        icon: 'bedtime' },
+  { key: 'estiramiento', href: '/os/salud/estiramiento',   label: 'Estiramiento', icon: 'self_improvement' },
+];
+---
+<nav class="os-hscroll" style="display:flex;gap:6px;margin-bottom:1.25rem;padding-bottom:4px;">
+  {items.map((it) => (
+    <a
+      href={it.href}
+      class={`salud-nav-pill${activo === it.key ? ' active' : ''}`}
+    >
+      <span class="material-symbols-outlined" style="font-size:16px;">{it.icon}</span>
+      <span>{it.label}</span>
+    </a>
+  ))}
+</nav>
+<style>
+  .salud-nav-pill {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    padding: 7px 13px; border-radius: 999px; text-decoration: none;
+    font-family: var(--os-font-display); font-size: 12px; font-weight: 600;
+    color: var(--os-muted); background: rgba(232,234,240,0.04);
+    border: 1px solid var(--os-line-soft); transition: color .14s, background .14s, border-color .14s;
+    flex-shrink: 0;
+  }
+  .salud-nav-pill:hover { color: var(--os-text); background: rgba(232,234,240,0.07); }
+  .salud-nav-pill.active {
+    color: #fff; background: var(--os-accent); border-color: var(--os-accent);
+  }
+</style>

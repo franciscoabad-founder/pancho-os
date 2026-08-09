@@ -1,0 +1,18 @@
+---
+export const prerender = false;
+import OSLayout from '../layouts/OSLayout.astro';
+import OSRecordatorios from '../os/components/OSRecordatorios';
+import PageHeader from '../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Recordatorios">
+  <div class="os-fade-up">
+    <PageHeader
+      eyebrow="Growth OS"
+      title="Recordatorios"
+      subtitle="Avisos con fecha que Hermes empuja al celular. No son tareas operativas."
+    />
+
+    <OSRecordatorios client:load />
+  </div>
+</OSLayout>

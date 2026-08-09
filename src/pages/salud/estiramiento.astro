@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+import OSLayout from '../../layouts/OSLayout.astro';
+import OSSaludEstiramiento from '../../os/components/salud/OSSaludEstiramiento';
+import OSSaludNav from '../../os/components/salud/OSSaludNav.astro';
+import PageHeader from '../../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Estiramiento">
+  <div class="os-fade-up">
+    <PageHeader eyebrow="Salud · Estiramiento" title="Estiramiento" />
+    <OSSaludNav activo="estiramiento" />
+    <OSSaludEstiramiento client:load />
+  </div>
+</OSLayout>

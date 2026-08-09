@@ -1,0 +1,505 @@
+/* ============================================================================
+   Modulo Habitos — capa "Clay" (claymorphism suave). Sigue el tema global del
+   OS: valores "marca-light" por defecto, override "marca-dark" bajo
+   [data-theme="dark"] (el mismo atributo que fija OSLayout.astro en <html>).
+   Scope: [data-modulo="habitos"]. Solo se importa desde las paginas del
+   modulo (habitos.astro, habitos/journeys.astro, juego.astro). El resto del
+   OS (shell, nav, home) NO carga este archivo y sigue en Ultramarine v5.
+   La ESTRUCTURA clay (radios, forma de sombra, fuente Nunito, sentence case)
+   es identica en ambos temas; solo cambian los VALORES de los tokens.
+   Canon: apps/web/docs/os-diseno-conductual.md
+
+   REGLA DE VERDE (canon conductual, regla dura del OS):
+   el teal --m-ok se reserva EXCLUSIVAMENTE para "dia perfecto" y "racha
+   cumplida" (la unica celebracion destacada). Todo lo demas:
+   hecho/completado = champagne (--m-champagne), accion/CTA = --m-accent.
+   Ningun otro selector de este archivo debe usar --m-ok.
+   ========================================================================== */
+
+[data-modulo="habitos"] {
+  /* Tokens por defecto = "marca-light" (Linen + Ultramarine), tema claro
+     del OS. Se sobreescriben en el bloque [data-theme="dark"] mas abajo. */
+  --m-bg:        #FAFAF7;
+  --m-surface:   #FFFFFF;
+  --m-surface-2: #F1F3F8;
+  --m-fg:        #2D3748;
+  --m-muted:     #6B7280;
+  --m-accent:      #3B4ED9;
+  --m-accent-text: #3B4ED9;
+  --m-ok:      #1D9E75;  /* teal: SOLO dia perfecto / racha cumplida */
+  --m-warn:    #EF9F27;
+  --m-danger:  #D4537E;
+  --m-champagne: #8A6F3D;
+  --m-line:      rgba(45, 55, 72, 0.12);
+  --m-line-soft: rgba(45, 55, 72, 0.06);
+  --m-warn-bg: #FBEFD9;
+  --m-warn-fg: #7A4E12;
+
+  /* Clay: profundidad falsa via doble sombra suave (sin gradientes). */
+  --m-shadow: 0 6px 14px rgba(45, 55, 72, 0.13), inset 0 -3px 6px rgba(45, 55, 72, 0.07), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+  --m-shadow-sm: 0 3px 8px rgba(45, 55, 72, 0.12);
+
+  /* Macro: Nunito 800 cubre titulares y macro-tipografia. Fallback a las
+     fuentes ya cargadas por el OS mientras Nunito termina de resolver.
+     Compartido por ambos temas: el bloque [data-theme="dark"] no lo redefine. */
+  --m-font-macro: 'Nunito', var(--os-font-display, sans-serif);
+  --m-font-rounded: 'Nunito', var(--os-font-body, 'Inter', sans-serif);
+  /* Alias: cualquier referencia residual a --m-font-mono cae en la fuente
+     amigable, no en monoespaciada. */
+  --m-font-mono:  var(--m-font-rounded);
+
+  background: var(--m-bg);
+  color: var(--m-fg);
+  min-height: 100%;
+  padding: 1rem;
+  margin: -1rem;
+  font-family: var(--m-font-rounded);
+}
+
+@media (min-width: 640px) {
+  [data-modulo="habitos"] { padding: 1.5rem; margin: -1.5rem; }
+}
+
+/* ── Tema oscuro del OS: "marca-dark" (Ink + Ultramarine) ──
+   Se activa junto con el resto del shell via [data-theme="dark"] en <html>,
+   fijado por el script no-flash de OSLayout.astro. Mismo set completo de
+   tokens que la base; solo cambian los valores. */
+[data-theme="dark"] [data-modulo="habitos"] {
+  --m-bg: #0E1738; --m-surface: #1A2B6B; --m-surface-2: #131F4A; --m-fg: #E8EAF0; --m-muted: #9AA0BE;
+  --m-accent: #3B4ED9; --m-accent-text: #6B7AE8; --m-ok: #35C79A; --m-warn: #EF9F27; --m-danger: #E8709A;
+  --m-champagne: #B5985A; --m-line: rgba(232, 234, 240, 0.12); --m-line-soft: rgba(232, 234, 240, 0.07);
+  --m-warn-bg: rgba(239, 159, 39, 0.16); --m-warn-fg: #F0C070;
+  --m-shadow: 0 8px 18px rgba(0, 0, 0, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.30), inset 0 2px 3px rgba(255, 255, 255, 0.05);
+  --m-shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.40);
+}
+
+/* ── Header de pagina dentro del modulo ── */
+[data-modulo="habitos"] .m-eyebrow {
+  font-family: var(--m-font-rounded);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--m-muted);
+  margin: 0 0 4px;
+}
+[data-modulo="habitos"] .m-h1 {
+  font-family: var(--m-font-macro);
+  font-weight: 800;
+  letter-spacing: normal;
+  line-height: 1.02;
+  color: var(--m-fg);
+  margin: 0;
+  font-size: clamp(1.75rem, 6vw, 2.75rem);
+}
+
+/* ── HUD de racha (macro-tipografia gigante) ── */
+[data-modulo="habitos"] .m-hud {
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 1rem 1.1rem;
+}
+[data-modulo="habitos"] .m-hud-label {
+  font-family: var(--m-font-rounded);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--m-muted);
+  margin: 0 0 2px;
+}
+[data-modulo="habitos"] .m-hud-num {
+  font-family: var(--m-font-macro);
+  font-weight: 800;
+  letter-spacing: normal;
+  line-height: 0.95;
+  color: var(--m-fg);
+  font-size: clamp(3rem, 22vw, 7rem);
+  margin: 0;
+  word-break: break-all;
+}
+[data-modulo="habitos"] .m-hud-num.is-riesgo { color: var(--m-warn); }
+
+/* ── Linea de telemetria XP/nivel ── */
+[data-modulo="habitos"] .m-telemetria {
+  font-family: var(--m-font-rounded);
+  font-size: clamp(11px, 3vw, 13px);
+  letter-spacing: normal;
+  color: var(--m-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+[data-modulo="habitos"] .m-telemetria strong { color: var(--m-fg); font-weight: 700; }
+[data-modulo="habitos"] .m-bar {
+  height: 8px;
+  width: 100%;
+  background: var(--m-line-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+[data-modulo="habitos"] .m-bar-fill {
+  height: 100%;
+  background: var(--m-accent);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+
+/* ── Banda de advertencia (tile amber suave, sin stripes) ── */
+[data-modulo="habitos"] .m-banda-alerta {
+  position: relative;
+  border: none;
+  border-radius: 16px;
+  background: var(--m-warn-bg);
+  color: var(--m-warn-fg);
+  box-shadow: var(--m-shadow-sm);
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-modulo="habitos"] .m-banda-alerta p {
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--m-warn-fg);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Compartimentos / misiones ── */
+[data-modulo="habitos"] .m-section-title {
+  font-family: var(--m-font-rounded);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--m-muted);
+  margin: 0 0 10px;
+}
+[data-modulo="habitos"] .m-mission {
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Checkbox clay ── */
+[data-modulo="habitos"] .m-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+[data-modulo="habitos"] .m-checkbox-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid var(--m-line);
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--m-font-rounded);
+  font-weight: 700;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+/* Check marcado = HECHO, no celebracion: champagne, nunca teal. */
+[data-modulo="habitos"] .m-checkbox-box.is-checked {
+  background: var(--m-champagne);
+  border-color: var(--m-champagne);
+}
+
+/* ── Estado [ OK ] / [ -- ] ── */
+[data-modulo="habitos"] .m-estado {
+  font-family: var(--m-font-rounded);
+  font-size: 12px;
+  letter-spacing: normal;
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+[data-modulo="habitos"] .m-estado.is-ok { color: var(--m-champagne); }
+
+/* ── Botones redondos +/- ── */
+[data-modulo="habitos"] .m-glyph-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow-sm);
+  color: var(--m-fg);
+  font-family: var(--m-font-rounded);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+[data-modulo="habitos"] .m-glyph-btn:active { transform: translateY(1px); }
+[data-modulo="habitos"] .m-glyph-btn.is-mas:hover { color: var(--m-accent-text); }
+[data-modulo="habitos"] .m-glyph-btn.is-menos:hover { color: var(--m-accent-text); }
+[data-modulo="habitos"] .m-glyph-count {
+  font-family: var(--m-font-rounded);
+  font-size: 11px;
+  color: var(--m-muted);
+  text-align: center;
+}
+
+/* ── Feedback de registro ── */
+[data-modulo="habitos"] .m-terminal-line {
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--m-champagne);
+  margin: 6px 0 0;
+  border-radius: 8px;
+  transition: background 0.3s, color 0.3s;
+}
+@keyframes m-flash {
+  0%   { background: color-mix(in srgb, var(--m-accent) 16%, transparent); color: var(--m-fg); }
+  100% { background: transparent; color: var(--m-champagne); }
+}
+[data-modulo="habitos"] .m-terminal-line.is-flash {
+  animation: m-flash 0.6s ease-out 1;
+}
+
+/* ── Botones estandar del modulo ── */
+[data-modulo="habitos"] .m-btn {
+  background: var(--m-accent);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  box-shadow: var(--m-shadow-sm);
+  padding: 0.75rem 1.1rem;
+  min-height: 44px;
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+[data-modulo="habitos"] .m-btn:active { transform: translateY(1px); }
+[data-modulo="habitos"] .m-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+[data-modulo="habitos"] .m-btn-ghost {
+  background: transparent;
+  color: var(--m-accent-text);
+  border: 1px solid var(--m-line);
+  border-radius: 14px;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
+  font-family: var(--m-font-rounded);
+  font-size: 12px;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+[data-modulo="habitos"] .m-btn-ghost:active { transform: translateY(1px); }
+[data-modulo="habitos"] .m-btn-ghost.is-danger {
+  color: var(--m-danger);
+  border-color: color-mix(in srgb, var(--m-danger) 35%, transparent);
+}
+
+/* ── Inputs redondeados ── */
+[data-modulo="habitos"] .m-label {
+  font-family: var(--m-font-rounded);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--m-muted);
+  margin-bottom: 6px;
+  display: block;
+}
+[data-modulo="habitos"] .m-input {
+  background: var(--m-surface);
+  border: 1px solid var(--m-line);
+  border-radius: 14px;
+  box-shadow: inset 0 2px 4px color-mix(in srgb, var(--m-accent) 8%, transparent);
+  padding: 0.65rem 0.7rem;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--m-fg);
+  font-family: var(--m-font-rounded);
+  outline: none;
+  width: 100%;
+}
+[data-modulo="habitos"] .m-input:focus {
+  border-color: var(--m-accent);
+  /* Anillo de foco derivado del accent activo (color-mix) para que se adapte
+     a cada paleta. Fallback documentado en el prompt: rgba neutro fijo si
+     color-mix no compilara, pero el build lo soporta. */
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent) 30%, transparent);
+}
+
+/* ── Pills toggle (dificultad / dias) ── */
+[data-modulo="habitos"] .m-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-family: var(--m-font-rounded);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: normal;
+  cursor: pointer;
+  border: none;
+  background: var(--m-surface-2);
+  color: var(--m-muted);
+  box-shadow: var(--m-shadow-sm);
+  transition: background 0.12s, color 0.12s;
+}
+[data-modulo="habitos"] .m-pill.is-activo {
+  background: var(--m-accent);
+  color: #fff;
+}
+
+/* ── Journeys: montanas, cards, estado ── */
+[data-modulo="habitos"] .m-montana-title {
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--m-muted);
+  margin: 0 0 10px;
+}
+[data-modulo="habitos"] .m-journey-card {
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 1rem;
+}
+[data-modulo="habitos"] .m-journey-estado {
+  font-family: var(--m-font-rounded);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: normal;
+  padding: 3px 10px;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--m-muted) 16%, transparent);
+  color: var(--m-muted);
+}
+[data-modulo="habitos"] .m-journey-estado.en-curso { background: rgba(239, 159, 39, 0.16); color: #96650F; }
+[data-modulo="habitos"] .m-journey-estado.bloqueado { background: color-mix(in srgb, var(--m-muted) 16%, transparent); color: var(--m-muted); }
+[data-modulo="habitos"] .m-journey-estado.completo { background: color-mix(in srgb, var(--m-champagne) 16%, transparent); color: var(--m-champagne); }
+[data-modulo="habitos"] .m-journey-estado.disponible {
+  background: color-mix(in srgb, var(--m-accent-text) 16%, transparent);
+  color: var(--m-accent-text);
+}
+
+[data-modulo="habitos"] details.m-carta summary {
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--m-fg);
+  cursor: pointer;
+}
+[data-modulo="habitos"] details.m-carta {
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 0.75rem 1rem;
+}
+
+/* ── Modulo Juego: HP segmentado, switches, filas de tienda ── */
+[data-modulo="habitos"] .m-hp-bar {
+  display: flex;
+  gap: 4px;
+  height: 14px;
+}
+[data-modulo="habitos"] .m-hp-seg {
+  flex: 1;
+  border-radius: 5px;
+  background: var(--m-line-soft);
+  border: 1px solid var(--m-line);
+}
+/* HP = recurso de accion, no un "hecho": morado accent, nunca teal. */
+[data-modulo="habitos"] .m-hp-seg.is-lleno { background: var(--m-accent); border-color: var(--m-accent); }
+[data-modulo="habitos"] .m-hp-seg.is-critico { background: var(--m-danger); border-color: var(--m-danger); }
+
+[data-modulo="habitos"] .m-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 0.75rem 1rem;
+}
+[data-modulo="habitos"] .m-switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  min-width: 52px;
+  border: none;
+  background: color-mix(in srgb, var(--m-muted) 30%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s;
+}
+[data-modulo="habitos"] .m-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--m-shadow-sm);
+  transition: transform 0.15s;
+}
+[data-modulo="habitos"] .m-switch.is-on { background: var(--m-accent); }
+[data-modulo="habitos"] .m-switch.is-on .m-switch-knob {
+  background: #fff;
+  transform: translateX(24px);
+}
+[data-modulo="habitos"] .m-switch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+[data-modulo="habitos"] .m-tienda-row {
+  border: none;
+  border-radius: 20px;
+  background: var(--m-surface);
+  box-shadow: var(--m-shadow);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+[data-modulo="habitos"] .m-precio {
+  font-family: var(--m-font-rounded);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--m-fg);
+  white-space: nowrap;
+}

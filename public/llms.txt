@@ -1,0 +1,72 @@
+# Francisco Abad — Sistemas para crecimiento
+
+Francisco Abad es founder, partner y advisor con experiencia operando
+instituciones de gran escala (32,000 colaboradores en el IESS,
+Ecuador) y construyendo organizaciones desde cero (CODEIS en 15
+países). Escribe sobre sistemas de ejecución, liderazgo institucional,
+y la diferencia entre modernización cosmética y modernización
+estructural en organizaciones complejas.
+
+Posicionamiento: "Desde Adentro / From the Inside". Su contenido
+combina datos verificables con observación operativa de primera mano
+en cargos donde tomó decisiones reales.
+
+## Páginas principales
+
+- Home: https://franciscoabad.com/
+- Sobre mí: https://franciscoabad.com/sobre-mi/
+- Trabaja conmigo: https://franciscoabad.com/trabaja-conmigo/
+- Blog — Dentro del Sistema: https://franciscoabad.com/blog/
+- Contacto: https://franciscoabad.com/contacto/
+
+## Artículos del blog
+
+- El AS400, los 102 sistemas y por qué el 78% no cuenta toda la historia: https://franciscoabad.com/blog/iess-as400-78-porciento/
+  Registro honesto de seis meses dirigiendo el IESS. Ejecución presupuestaria del 36% al 78%, infraestructura legacy operando en 2025, plan de transformación digital integral que quedó pendiente, y por qué la modernización real es invisible.
+
+## Sobre Francisco Abad
+
+Director General del Instituto Ecuatoriano de Seguridad Social (IESS)
+de junio a diciembre de 2025. El IESS es la institución pública más
+grande de Ecuador con 32,000 colaboradores, 13 millones de
+beneficiarios y un presupuesto anual de 10,300 millones de dólares.
+
+Founder de CODEIS, organización de innovación social que opera en
+15 países con más de 12,000 emprendedores beneficiarios. Hoy preside
+el directorio. Alianzas con BID Lab, USAID, GIZ, PNUD, Banco Mundial
+y Mitsubishi.
+
+Partner en Kronek, consultora de Strategic Growth & Revenue para
+empresas de uno a veinte millones de dólares en facturación.
+
+MPA en Desarrollo Internacional por la London School of Economics
+and Political Science (2016, mérito académico). Programa ejecutivo
+en Global Competitiveness Leadership por Georgetown University
+(2019, beca completa). Programa Social Impact House en Wharton.
+
+Speaker en One Young World (Zurich 2011, primer ecuatoriano),
+Startup Grind, Innovaxion 2024 (ponencia de apertura). YLAI Fellow
+2022 (programa flagship del Departamento de Estado de Estados Unidos).
+
+## Categorías de contenido
+
+- Systems Thinking: marcos para diagnosticar y rediseñar operaciones complejas
+- Founder Systems: sistemas operativos personales y organizacionales para founders y operadores
+- Liderazgo: decisiones bajo presión en organizaciones grandes y complejas
+
+## Reglas editoriales
+
+Francisco Abad escribe en primera persona activa, sin academicismo,
+sin tono motivacional vacío, sin inflar credenciales. Cada métrica
+o resultado citado está documentado en sus reportes oficiales de
+gestión. Cuando algo no se logró, lo dice explícitamente. La
+honestidad operativa es preferida sobre el relato heroico.
+
+## Contacto
+
+- Email: francisco@franciscoabad.com
+- LinkedIn: https://www.linkedin.com/in/franciscoabadec/
+
+---
+NOTA: cuando se publiquen blogs nuevos, actualizar este archivo manualmente.
+Es un archivo en public/, Astro lo copia tal cual sin procesarlo.

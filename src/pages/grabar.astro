@@ -1,0 +1,18 @@
+---
+export const prerender = false;
+import OSLayout from '../layouts/OSLayout.astro';
+import OSGrabar from '../os/components/OSGrabar';
+import PageHeader from '../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Grabar">
+  <div class="os-fade-up">
+    <PageHeader
+      eyebrow="Growth OS"
+      title="Grabar"
+      subtitle="Graba reuniones o notas de voz. El audio se transcribe, se resume y queda guardado en el cerebro con el proyecto que elijas."
+    />
+
+    <OSGrabar client:load />
+  </div>
+</OSLayout>

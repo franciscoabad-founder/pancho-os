@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+import OSLayout from '../../layouts/OSLayout.astro';
+import OSSaludNutricion from '../../os/components/salud/OSSaludNutricion';
+import OSSaludNav from '../../os/components/salud/OSSaludNav.astro';
+import PageHeader from '../../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Nutrición">
+  <div class="os-fade-up">
+    <PageHeader eyebrow="Salud · Nutrición" title="Nutrición" />
+    <OSSaludNav activo="nutricion" />
+    <OSSaludNutricion client:load />
+  </div>
+</OSLayout>

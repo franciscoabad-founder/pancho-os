@@ -1,0 +1,95 @@
+---
+export const prerender = false;
+import { getCollection, render } from 'astro:content';
+import OSLayout from '../../layouts/OSLayout.astro';
+import OSJourneys from '../../os/components/OSJourneys';
+import '../../styles/os-conductual.css';
+
+// Cartas de journeys: colección MDX en src/content/journeys/<journey>/<etapa-slug>.mdx.
+// entry.id = '<journey>/<etapa-slug>' (glob loader con base en ./src/content/journeys),
+// que coincide exactamente con journey_etapas.contenido_slug en Supabase: así el
+// criterio de progreso (Supabase) y la carta de contenido (repo) se enlazan por el
+// mismo string, sin tabla puente.
+//
+// Decisión de arquitectura para pasar contenido a la isla React (documentada por
+// instrucción explícita del build de esta fase): NO se le pasa HTML compilado a
+// OSJourneys. En Astro 6 `render(entry)` devuelve un COMPONENTE Astro (<Content />),
+// no un string; forzarlo a string para mandarlo como prop de una isla requeriría un
+// workaround frágil (renderToString manual, fuera del contrato soportado). En vez de
+// eso, opción más simple y SSR-friendly:
+//   1. La isla React (interactiva: fetch de progreso, iniciar/avanzar) solo recibe un
+//      resumen liviano {id, title, resumen} de cada carta, para mostrar un preview de
+//      la etapa en curso y linkear por anchor.
+//   2. Las cartas completas se renderizan AQUÍ, en Astro puro (cero JS extra), dentro
+//      de <details id="carta-<id>"> colapsables más abajo en esta misma página.
+//   3. La isla enlaza a la carta de la etapa en curso con <a href="#carta-<id>">; un
+//      script mínimo abre el <details> correspondiente al llegar por ese anchor.
+const entradas = await getCollection('journeys');
+
+const cartasResumen = entradas.map((e) => ({
+  id: e.id,
+  title: e.data.title,
+  resumen: e.data.resumen,
+}));
+
+const cartasRenderizadas = await Promise.all(
+  entradas.map(async (e) => {
+    const { Content } = await render(e);
+    return { id: e.id, title: e.data.title, journey: e.data.journey, etapa: e.data.etapa, Content };
+  }),
+);
+cartasRenderizadas.sort((a, b) => a.journey.localeCompare(b.journey) || a.etapa - b.etapa);
+---
+
+<OSLayout title="Journeys">
+  <div class="os-fade-up" data-modulo="habitos">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1rem;position:relative;z-index:2;">
+      <div>
+        <p class="m-eyebrow">Hábitos // Journeys</p>
+        <h1 class="m-h1">Journeys</h1>
+      </div>
+      <a
+        href="/os/habitos"
+        style="font-size:14px;color:var(--m-accent);text-decoration:none;font-family:var(--m-font-rounded);font-weight:700;white-space:nowrap;"
+      >
+        ← Volver
+      </a>
+    </div>
+
+    <div style="position:relative;z-index:2;">
+      <OSJourneys client:load cartas={cartasResumen} />
+    </div>
+
+    {cartasRenderizadas.length > 0 && (
+      <div style="margin-top:2rem;position:relative;z-index:2;">
+        <p class="m-eyebrow" style="margin-bottom:10px;">Cartas de contenido</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          {cartasRenderizadas.map(({ id, title, Content }) => (
+            <details id={`carta-${id}`} class="m-carta">
+              <summary>{title}</summary>
+              <div style="margin-top:10px;font-size:13.5px;line-height:1.7;color:var(--m-muted);font-family:var(--m-font-rounded);">
+                <Content />
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+
+  <script>
+    // Abre el <details> correspondiente al navegar a un anchor #carta-<id> (la isla
+    // React enlaza así desde "Leer carta completa ↓" de la etapa en curso).
+    function abrirCartaDesdeHash() {
+      const id = location.hash.replace('#', '');
+      if (!id) return;
+      const el = document.getElementById(id);
+      if (el && el.tagName === 'DETAILS') {
+        (el as HTMLDetailsElement).open = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    window.addEventListener('hashchange', abrirCartaDesdeHash);
+    abrirCartaDesdeHash();
+  </script>
+</OSLayout>

@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+import OSLayout from '../../layouts/OSLayout.astro';
+import OSSaludProgreso from '../../os/components/salud/OSSaludProgreso';
+import OSSaludNav from '../../os/components/salud/OSSaludNav.astro';
+import PageHeader from '../../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Progreso">
+  <div class="os-fade-up">
+    <PageHeader eyebrow="Salud · Progreso" title="Progreso" />
+    <OSSaludNav activo="progreso" />
+    <OSSaludProgreso client:load />
+  </div>
+</OSLayout>
