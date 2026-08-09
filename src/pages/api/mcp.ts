@@ -47,8 +47,9 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
 async function executeOsTool(request: Request, name: string, args: Record<string, unknown>) {
   const toolRequest = toToolRequest(name, args);
   const headers = new Headers({ Accept: 'application/json' });
-  const authorization = request.headers.get('Authorization') ?? request.headers.get('X-OS-Token');
-  if (authorization) headers.set('Authorization', authorization.startsWith('Bearer ') ? authorization : `Bearer ${authorization}`);
+  const internalToken = import.meta.env.OS_API_TOKEN ?? process.env.OS_API_TOKEN;
+  if (!internalToken) throw new Error('OS_API_TOKEN no configurado para ejecutar herramientas MCP.');
+  headers.set('Authorization', `Bearer ${internalToken}`);
   if (toolRequest.body) headers.set('Content-Type', 'application/json');
 
   const response = await fetch(new URL(toolRequest.path, request.url), {
@@ -71,7 +72,7 @@ export const POST: APIRoute = async ({ request }) => {
   const expectedToken = import.meta.env.OS_API_TOKEN || process.env.OS_API_TOKEN;
 
   // Validación de seguridad de la petición stateless
-  if (expectedToken && tokenHeader !== expectedToken) {
+  if (!expectedToken || tokenHeader !== expectedToken) {
     return new Response(
       JSON.stringify({
         jsonrpc: '2.0',
