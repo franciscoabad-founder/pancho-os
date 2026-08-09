@@ -13,6 +13,7 @@ Pancho OS es el cockpit personal y operativo de Pancho Abad, alojado de forma in
 - **Servicio Node SSR**: PM2 process `pancho-os` escuchando en `0.0.0.0:4322`
 - **Reverse Proxy**: Docker Caddy (`n8n-caddy-1`) proxying `os.franciscoabad.com` -> `172.18.0.1:4322` con SSL Let's Encrypt automático.
 - **Firewall UFW**: Permite `172.18.0.0/16` hacia el puerto `4322/tcp`.
+- **CI/CD**: GitHub Actions (`deploy.yml`) despliega automáticamente a producción tras cada push a `master`. El VPS utiliza PM2.
 
 ---
 
