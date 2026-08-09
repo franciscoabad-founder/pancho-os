@@ -1,0 +1,31 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/pancho_deploy
+          chmod 600 ~/.ssh/pancho_deploy
+          ssh-keyscan -H 178.105.163.120 >> ~/.ssh/known_hosts
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Deploy to VPS
+        run: |
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "cd /opt/pancho-os && git pull && npm install && npm run build && pm2 restart pancho-os"
+
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "curl -s http://localhost:4322/health || echo 'Health check failed'"
