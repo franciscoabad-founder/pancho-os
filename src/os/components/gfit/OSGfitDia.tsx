@@ -6,6 +6,7 @@ import { Spinner, EmptyState, useConfirm } from '../ui';
 import OSGfitBodyMap from './OSGfitBodyMap';
 import OSGfitSerieEditor from './OSGfitSerieEditor';
 import OSGfitSwapSheet from './OSGfitSwapSheet';
+import OSGfitReproductor from './OSGfitReproductor';
 
 interface Props {
   dia: Dia;
@@ -22,6 +23,7 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
   const [buscador, setBuscador] = useState('');
   const [resultados, setResultados] = useState<Ejercicio[]>([]);
   const [buscando, setBuscando] = useState(false);
+  const [sesionActiva, setSesionActiva] = useState(false);
 
   const items = [...dia.gfit_dia_ejercicios].sort((a, b) => a.orden - b.orden);
 
@@ -108,6 +110,10 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
     if (data?.dia_ejercicio) onDia({ ...dia, gfit_dia_ejercicios: [...dia.gfit_dia_ejercicios, data.dia_ejercicio] });
   }
 
+  if (sesionActiva) {
+    return <OSGfitReproductor dia={dia} unidad={unidad} onSalir={() => setSesionActiva(false)} />;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -116,6 +122,12 @@ export default function OSGfitDia({ dia, unidad, onDia, onVolver }: Props) {
       </div>
 
       <OSGfitBodyMap dia={dia} />
+
+      {items.length > 0 && (
+        <button style={{ ...btnGhost, background: 'var(--os-accent)', color: '#fff', border: 'none', padding: '12px', fontSize: 16, fontWeight: 700, borderRadius: 'var(--os-r-md)' }} onClick={() => setSesionActiva(true)}>
+          ▶ Iniciar Día
+        </button>
+      )}
 
       {!items.length && (
         <EmptyState

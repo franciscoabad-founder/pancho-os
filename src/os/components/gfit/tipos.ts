@@ -32,6 +32,7 @@ export interface SeriePlan {
   peso_kg: number | null;
   reps: number | null;
   descanso_s: number | null;
+  duracion_s: number | null;
 }
 
 export interface DiaEjercicio {

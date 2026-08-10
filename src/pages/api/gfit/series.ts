@@ -61,6 +61,7 @@ export const POST: APIRoute = async (context) => {
         peso_kg: pesoKg ?? null,
         reps: numOrNull(body.reps),
         descanso_s: numOrNull(body.descanso_s),
+        duracion_s: numOrNull(body.duracion_s),
       }])
       .select()
       .single();
@@ -85,6 +86,7 @@ export const PATCH: APIRoute = async (context) => {
     if ('orden' in body) patch.orden = numOrNull(body.orden) ?? 0;
     if ('reps' in body) patch.reps = numOrNull(body.reps);
     if ('descanso_s' in body) patch.descanso_s = numOrNull(body.descanso_s);
+    if ('duracion_s' in body) patch.duracion_s = numOrNull(body.duracion_s);
     const pesoKg = resolverPesoKg(body);
     if (pesoKg !== undefined) patch.peso_kg = pesoKg;
 

@@ -46,11 +46,12 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 1fr 1fr 30px', gap: 6, alignItems: 'center', padding: '0 2px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 1fr 1fr 1fr 30px', gap: 4, alignItems: 'center', padding: '0 2px' }}>
         <span />
-        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)' }}>Peso ({unidad})</span>
-        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)' }}>Reps</span>
-        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)' }}>Desc. (s)</span>
+        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)', textAlign: 'center' }}>Peso({unidad})</span>
+        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)', textAlign: 'center' }}>Reps</span>
+        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)', textAlign: 'center' }}>Dur.(s)</span>
+        <span style={{ fontSize: 11, color: 'var(--os-muted)', fontFamily: 'var(--os-font-display)', textAlign: 'center' }}>Desc.(s)</span>
         <span />
       </div>
 
@@ -67,6 +68,7 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
             patchSerie(s.id, { peso: valor, unidad }, { peso_kg: kg });
           }}
           onReps={(valor) => patchSerie(s.id, { reps: valor }, { reps: valor })}
+          onDuracion={(valor) => patchSerie(s.id, { duracion_s: valor }, { duracion_s: valor })}
           onDescanso={(valor) => patchSerie(s.id, { descanso_s: valor }, { descanso_s: valor })}
           onEliminar={() => eliminarSerie(s.id)}
         />
@@ -97,16 +99,17 @@ export default function OSGfitSerieEditor({ dia_ejercicio_id, series, unidad, on
   );
 }
 
-function SerieFila({ serie, etiqueta, unidad, guardando, onTipo, onPeso, onReps, onDescanso, onEliminar }: {
+function SerieFila({ serie, etiqueta, unidad, guardando, onTipo, onPeso, onReps, onDuracion, onDescanso, onEliminar }: {
   serie: SeriePlan; etiqueta: string; unidad: UnidadPeso; guardando: boolean;
-  onTipo: () => void; onPeso: (v: number) => void; onReps: (v: number) => void; onDescanso: (v: number) => void; onEliminar: () => void;
+  onTipo: () => void; onPeso: (v: number) => void; onReps: (v: number) => void; onDuracion: (v: number) => void; onDescanso: (v: number) => void; onEliminar: () => void;
 }) {
   const [peso, setPeso] = useState(serie.peso_kg != null ? String(formatearPeso(serie.peso_kg, unidad)) : '');
   const [reps, setReps] = useState(serie.reps != null ? String(serie.reps) : '');
+  const [duracion, setDuracion] = useState(serie.duracion_s != null ? String(serie.duracion_s) : '');
   const [descanso, setDescanso] = useState(serie.descanso_s != null ? String(serie.descanso_s) : '');
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 1fr 1fr 30px', gap: 6, alignItems: 'center', opacity: guardando ? 0.6 : 1 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 1fr 1fr 1fr 30px', gap: 4, alignItems: 'center', opacity: guardando ? 0.6 : 1 }}>
       <button
         onClick={onTipo}
         style={{
@@ -119,19 +122,25 @@ function SerieFila({ serie, etiqueta, unidad, guardando, onTipo, onPeso, onReps,
         {etiqueta}
       </button>
       <input
-        style={{ ...input, padding: '8px 8px', textAlign: 'center', fontSize: 14 }}
+        style={{ ...input, padding: '8px 4px', textAlign: 'center', fontSize: 14 }}
         type="number" inputMode="decimal" placeholder="-" value={peso}
         onChange={(e) => setPeso(e.target.value)}
         onBlur={() => onPeso(Number(peso) || 0)}
       />
       <input
-        style={{ ...input, padding: '8px 8px', textAlign: 'center', fontSize: 14 }}
+        style={{ ...input, padding: '8px 4px', textAlign: 'center', fontSize: 14 }}
         type="number" inputMode="numeric" placeholder="-" value={reps}
         onChange={(e) => setReps(e.target.value)}
         onBlur={() => onReps(Number(reps) || 0)}
       />
       <input
-        style={{ ...input, padding: '8px 8px', textAlign: 'center', fontSize: 14 }}
+        style={{ ...input, padding: '8px 4px', textAlign: 'center', fontSize: 14 }}
+        type="number" inputMode="numeric" placeholder="-" value={duracion}
+        onChange={(e) => setDuracion(e.target.value)}
+        onBlur={() => onDuracion(Number(duracion) || 0)}
+      />
+      <input
+        style={{ ...input, padding: '8px 4px', textAlign: 'center', fontSize: 14 }}
         type="number" inputMode="numeric" placeholder="-" value={descanso}
         onChange={(e) => setDescanso(e.target.value)}
         onBlur={() => onDescanso(Number(descanso) || 0)}

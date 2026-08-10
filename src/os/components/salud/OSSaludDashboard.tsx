@@ -9,7 +9,7 @@ const card: React.CSSProperties = {
 const submodulos = [
   { href: '/os/salud/nutricion', label: 'Nutrición', icon: 'nutrition', desc: 'Macros y comidas' },
   { href: '/os/salud/ayuno', label: 'Ayuno', icon: 'timer', desc: 'Timer y fases' },
-  { href: '/os/salud/entrenamiento', label: 'Entrenamiento', icon: 'fitness_center', desc: 'Rutinas y sesiones' },
+  { href: '/os/gfit', label: 'Entrenamiento', icon: 'fitness_center', desc: 'GFIT: rutinas y sesiones' },
   { href: '/os/salud/progreso', label: 'Progreso', icon: 'trending_up', desc: 'Fuerza y volumen' },
   { href: '/os/salud/cuerpo', label: 'Cuerpo', icon: 'monitor_weight', desc: 'Peso y medidas' },
   { href: '/os/salud/estiramiento', label: 'Estiramiento', icon: 'self_improvement', desc: 'Rutinas guiadas' },
@@ -63,7 +63,7 @@ export default function OSSaludDashboard() {
           ) : <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 16, color: 'var(--os-muted)', margin: '4px 0 0' }}>Sin ayuno</p>}
         </a>
 
-        <a href="/os/salud/entrenamiento" style={{ ...card, textDecoration: 'none' }}>
+        <a href="/os/gfit" style={{ ...card, textDecoration: 'none' }}>
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Última sesión</p>
           {sesion ? (
             <>
