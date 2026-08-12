@@ -17,6 +17,12 @@ export default defineConfig({
   }),
   vite: {
     plugins: [tailwindcss()],
+    // Con 2+ islas React en una pagina, Vite puede resolver React por dos
+    // rutas y el SSR lanza "Invalid hook call" (visto en produccion en /).
+    // Forzar una sola copia de react/react-dom en el grafo.
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
   },
   integrations: [
     react(),
