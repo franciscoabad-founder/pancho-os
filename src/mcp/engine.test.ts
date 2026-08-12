@@ -131,3 +131,29 @@ test('ejecuta una herramienta mediante el ejecutor real en vez de responder un m
     },
   });
 });
+
+test('publica tareas_update para marcar tareas hechas y lo enruta por el ejecutor real', async () => {
+  const list = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'update-tools', method: 'tools/list' },
+    new Headers(),
+  );
+  const toolNames = (list.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+  assert.equal(toolNames.includes('tareas_update'), true);
+  assert.equal(toolNames.includes('gbrain_search_memory'), false);
+
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'update-1',
+      method: 'tools/call',
+      params: { name: 'tareas_update', arguments: { id: 'abc', estado: 'hecho' } },
+    },
+    new Headers(),
+    async (name, args) => {
+      calls.push({ name, args });
+      return { ok: true };
+    },
+  );
+  assert.deepEqual(calls, [{ name: 'tareas_update', args: { id: 'abc', estado: 'hecho' } }]);
+});

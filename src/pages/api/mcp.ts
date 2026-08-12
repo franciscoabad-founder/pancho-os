@@ -115,8 +115,18 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
       const query = args.query && typeof args.query === 'object' ? new URLSearchParams(args.query as Record<string, string>) : new URLSearchParams();
       return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body: args.body as Record<string, unknown> | undefined };
     }
-    case 'gbrain_search_memory':
-      throw new Error('Usa el MCP de gbrain directamente para buscar memoria.');
+    case 'tareas_update': {
+      const id = String(args.id ?? '').trim();
+      if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
+      const patch: Record<string, unknown> = {};
+      if (typeof args.estado === 'string') patch.estado = args.estado;
+      if (typeof args.prioridad === 'string') patch.prioridad = args.prioridad;
+      if ('deadline' in args) patch.deadline = args.deadline;
+      if (typeof args.titulo === 'string') patch.titulo = args.titulo;
+      if (typeof args.urgente === 'boolean') patch.urgente = args.urgente;
+      if (!Object.keys(patch).length) throw new Error('Nada que actualizar: pasa estado, prioridad, deadline, titulo o urgente.');
+      return { path: `/api/tareas?id=${encodeURIComponent(id)}`, method: 'PATCH', body: patch };
+    }
     default:
       throw new Error(`Herramienta MCP no soportada: ${name}`);
   }

@@ -95,6 +95,22 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'tareas_update',
+    description: 'Actualiza una tarea existente: marcar hecha o en progreso, cambiar prioridad, deadline o título. Usa el id que devuelve tareas_list.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Id de la tarea (de tareas_list)' },
+        estado: { type: 'string', enum: ['pendiente', 'en_progreso', 'hecho'] },
+        prioridad: { type: 'string', enum: ['alta', 'media', 'baja'] },
+        deadline: { type: 'string', description: 'Fecha límite YYYY-MM-DD, o null para quitarla' },
+        titulo: { type: 'string', description: 'Nuevo título' },
+        urgente: { type: 'boolean' },
+      },
+      required: ['id'],
+    },
+  },
+  {
     name: 'finanzas_log_gasto',
     description: 'Registra un movimiento financiero de gasto.',
     requiresMRTR: true,
@@ -217,17 +233,6 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
-    name: 'gbrain_search_memory',
-    description: 'Busca conocimiento o notas en G-Brain / Cerebro de Pancho OS.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Término de búsqueda o pregunta de contexto' },
-      },
-      required: ['query'],
-    },
-  },
-  {
     name: 'os_api_request',
     description: 'Puente autenticado a los modulos existentes de Pancho OS. Preferir las herramientas semanticas cuando existan; usar este puente para un modulo del OS aun no cubierto.',
     inputSchema: {
@@ -347,8 +352,8 @@ export async function handleMcpStatelessRequest(
       case 'prioridades_semana':
       case 'crm_listar_leads':
       case 'crm_crear_lead':
+      case 'tareas_update':
       case 'finanzas_listar_gastos':
-      case 'gbrain_search_memory':
       case 'os_api_request': {
         if (executeTool) {
           try {
