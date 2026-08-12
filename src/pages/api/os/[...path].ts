@@ -44,7 +44,7 @@ export const POST: APIRoute = async (context) => {
     if (!body.nombre?.trim()) return json({ error: 'nombre requerido' }, 400);
     const costoOro = Number(body.costo_oro);
     if (!Number.isFinite(costoOro) || costoOro < 0) {
-      return json({ error: 'costo_oro debe ser un nÃºmero >= 0' }, 400);
+      return json({ error: 'costo_oro debe ser un número >= 0' }, 400);
     }
 
     const { data, error } = await sb
@@ -66,7 +66,7 @@ export const POST: APIRoute = async (context) => {
 
 // Canje: valida jugador.oro >= costo (409 con {error, faltan} si no alcanza). Registra
 // el evento 'compra_recompensa' con oro NEGATIVO y ref_id NULL (ref_id de la recompensa
-// violarÃ­a la unique parcial (tipo, ref_id) en el segundo canje de la misma recompensa;
+// violaría la unique parcial (tipo, ref_id) en el segundo canje de la misma recompensa;
 // la referencia queda en meta.recompensa_id). Incrementa veces_canjeada.
 async function canjearRecompensa(sb: ReturnType<typeof getSupabaseServer>, id: string) {
   const { data: recompensa, error: errRecompensa } = await sb
@@ -128,11 +128,11 @@ export const PATCH: APIRoute = async (context) => {
     if ('icono' in body) patch.icono = body.icono?.toString().trim() || null;
     if ('costo_oro' in body) {
       const costo = Number(body.costo_oro);
-      if (!Number.isFinite(costo) || costo < 0) return json({ error: 'costo_oro invÃ¡lido' }, 400);
+      if (!Number.isFinite(costo) || costo < 0) return json({ error: 'costo_oro inválido' }, 400);
       patch.costo_oro = Math.round(costo);
     }
     if ('estado' in body) {
-      if (!ESTADOS.includes(body.estado)) return json({ error: 'estado invÃ¡lido' }, 400);
+      if (!ESTADOS.includes(body.estado)) return json({ error: 'estado inválido' }, 400);
       patch.estado = body.estado;
     }
     if (!Object.keys(patch).length) return json({ error: 'sin campos para actualizar' }, 400);

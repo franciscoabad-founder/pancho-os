@@ -88,7 +88,7 @@ export const GET: APIRoute = async (context) => {
       return json({ alimentos, fuente: 'local', modo });
     }
 
-    // 1. BÃºsqueda por barcode: primero local, si no estÃ¡ consulta Open Food Facts.
+    // 1. Búsqueda por barcode: primero local, si no está consulta Open Food Facts.
     if (barcode) {
       const { data: local, error } = await sb
         .from('alimentos')
@@ -114,7 +114,7 @@ export const GET: APIRoute = async (context) => {
           if (data?.status === 1 && data?.product) producto = data.product as OffProduct;
         }
       } catch {
-        // OFF no disponible: devolvemos vacÃ­o sin crashear.
+        // OFF no disponible: devolvemos vacío sin crashear.
       }
       if (producto) {
         const nuevo = normalizarOff(barcode, producto);
@@ -129,8 +129,8 @@ export const GET: APIRoute = async (context) => {
       return json({ alimentos: [], fuente: 'off_no_encontrado' });
     }
 
-    // 2. BÃºsqueda por texto: RPC buscar_alimentos (unaccent, parametrizado). Insensible a
-    // acentos y sin romper tÃ©rminos con parÃ©ntesis. term vacÃ­o/null => primeros 40 por nombre.
+    // 2. Búsqueda por texto: RPC buscar_alimentos (unaccent, parametrizado). Insensible a
+    // acentos y sin romper términos con paréntesis. term vacío/null => primeros 40 por nombre.
     const { data, error } = await sb.rpc('buscar_alimentos', { term: q || null, lim: 40 });
     if (error) throw error;
     const alimentos = await conPorciones(sb, data ?? []);

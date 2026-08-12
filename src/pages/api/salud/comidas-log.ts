@@ -18,7 +18,7 @@ const SOURCES = ['manual', 'telegram', 'agente'];
 const MICROS = ['azucares_g', 'saturada_g', 'monoinsaturada_g', 'poliinsaturada_g', 'sodio_mg', 'colesterol_mg'] as const;
 
 // Escala un valor por 100 g a la cantidad de gramos consumida (mismo redondeo que
-// calcularMacros, vÃ­a r1).
+// calcularMacros, vía r1).
 function escalarMicro(valorPor100g: unknown, gramos: number): number | null {
   const v = numOrNull(valorPor100g);
   if (v == null) return null;
@@ -107,7 +107,7 @@ export const GET: APIRoute = async (context) => {
     const totales = sumarMacros(entradas);
     const tipo_dia = entradas.find((e) => e.tipo_dia)?.tipo_dia || 'normal';
 
-    // Targets del dÃ­a: salud_config es singleton (una sola fila por convenciÃ³n).
+    // Targets del día: salud_config es singleton (una sola fila por convención).
     const { data: config } = await sb
       .from('salud_config')
       .select('kcal_objetivo,proteina_objetivo_g,carbos_objetivo_g,grasa_objetivo_g')
@@ -135,7 +135,7 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
-  // Escritura externa (telegram/agente) permitida vÃ­a X-OS-Token; UI usa os_auth.
+  // Escritura externa (telegram/agente) permitida vía X-OS-Token; UI usa os_auth.
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
     return json({ error: 'Unauthorized' }, 401);
   }
@@ -151,10 +151,10 @@ export const POST: APIRoute = async (context) => {
     }
     const tipo_dia = body.tipo_dia?.trim() || 'normal';
     if (!TIPOS_DIA.includes(tipo_dia)) {
-      return json({ error: `tipo_dia invÃ¡lido` }, 400);
+      return json({ error: `tipo_dia inválido` }, 400);
     }
     const source = body.source?.trim() || 'manual';
-    if (!SOURCES.includes(source)) return json({ error: 'source invÃ¡lido' }, 400);
+    if (!SOURCES.includes(source)) return json({ error: 'source inválido' }, 400);
 
     const macros = await resolverMacros(body);
     const microsInsert: Record<string, number | null> = {};
@@ -188,7 +188,7 @@ export const POST: APIRoute = async (context) => {
     if (body.alimento_id) {
       sb.rpc('alimento_incrementar_uso', { p_id: body.alimento_id }).then(() => null).catch(() => null);
     }
-    // Anti-farming (plan B): cap de 4 eventos comida_log/dÃ­a antes de dejar de otorgar XP.
+    // Anti-farming (plan B): cap de 4 eventos comida_log/día antes de dejar de otorgar XP.
     sb.from('xp_events').select('id', { count: 'exact', head: true }).eq('tipo', 'comida_log').eq('fecha', hoyLocal())
       .then(({ count }) => {
         if ((count ?? 0) < 4) {
@@ -212,7 +212,7 @@ export const PATCH: APIRoute = async (context) => {
       return json({ error: `momento debe ser uno de: ${MOMENTOS.join(', ')}` }, 400);
     }
     if ('tipo_dia' in body && !TIPOS_DIA.includes(body.tipo_dia?.trim())) {
-      return json({ error: 'tipo_dia invÃ¡lido' }, 400);
+      return json({ error: 'tipo_dia inválido' }, 400);
     }
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
@@ -236,7 +236,7 @@ export const PATCH: APIRoute = async (context) => {
     for (const c of ['momento', 'descripcion_libre', 'foto_url', 'tipo_dia', 'notas', 'fecha']) {
       if (c in body) patch[c] = typeof body[c] === 'string' ? body[c].trim() || null : body[c];
     }
-    // Override manual de macros cuando no hubo recÃ¡lculo por alimento (entrada libre).
+    // Override manual de macros cuando no hubo recálculo por alimento (entrada libre).
     if (!recalculado) {
       for (const c of ['kcal', 'proteina_g', 'carbos_g', 'grasa_g', 'fibra_g']) {
         if (c in body) patch[c] = numOrNull(body[c]);

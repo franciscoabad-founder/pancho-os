@@ -9,10 +9,10 @@ import { estimar1RM } from '../../../lib/gfit/rm';
 import { sugerirProgresion, type SerieReciente } from '../../../lib/gfit/progresion';
 import { evaluarLogros, type ContextoLogros, type CatalogoLogro, type SerieConGrupo } from '../../../lib/gfit/logros';
 
-// GET: catÃ¡logo completo + quÃ© niveles ya se obtuvieron de cada uno (para la UI de logros).
+// GET: catálogo completo + qué niveles ya se obtuvieron de cada uno (para la UI de logros).
 // POST {evaluar:true}: recalcula evaluarLogros() sobre los datos reales, inserta los
 // logros nuevos en gfit_logros_obtenidos y dispara el evento 'logro' en xp_events por
-// cada uno (fire-and-forget, mismo patrÃ³n que api/os/salud/sesiones.ts).
+// cada uno (fire-and-forget, mismo patrón que api/os/salud/sesiones.ts).
 
 interface LogroRow {
   id: string;
@@ -115,7 +115,7 @@ export const POST: APIRoute = async (context) => {
     const seriesRows = (seriesRaw ?? []) as unknown as SerieRow[];
 
     // Series expandidas: una entrada por (serie, grupo primario) -- un set compuesto
-    // cuenta hacia cada grupo que trabaja (misma convenciÃ³n que muscleBreakdown).
+    // cuenta hacia cada grupo que trabaja (misma convención que muscleBreakdown).
     const seriesHistoricas: SerieConGrupo[] = [];
     for (const s of seriesRows) {
       const fecha = s.sesion?.fecha;
@@ -130,7 +130,7 @@ export const POST: APIRoute = async (context) => {
       }
     }
 
-    // â”€â”€â”€ prNuevo: Â¿alguna serie de HOY supera el 1RM histÃ³rico previo (antes de hoy) de su ejercicio? â”€â”€
+    // ─── prNuevo: ¿alguna serie de HOY supera el 1RM histórico previo (antes de hoy) de su ejercicio? ──
     const mejorPrevio = new Map<string, number>();
     for (const s of seriesRows) {
       const fecha = s.sesion?.fecha;
@@ -143,19 +143,19 @@ export const POST: APIRoute = async (context) => {
       const fecha = s.sesion?.fecha;
       if (fecha !== hoy || s.tipo !== 'working' || s.peso_kg == null || s.reps == null) continue;
       const previo = mejorPrevio.get(s.ejercicio_id);
-      if (!previo) continue; // sin baseline previo: no cuenta como "rÃ©cord", ver primera_sesion
+      if (!previo) continue; // sin baseline previo: no cuenta como "récord", ver primera_sesion
       if (estimar1RM(s.peso_kg, s.reps) > previo) {
         prNuevo = true;
         break;
       }
     }
 
-    // â”€â”€â”€ dobleProgresionCompletada: heurÃ­stica best-effort. Si antes de hoy la
-    // sugerencia de progresiÃ³n doble era "subir_carga" para un ejercicio (tocÃ³ el
-    // tope de reps 2 sesiones seguidas) y hoy el peso mÃ¡ximo usado en ese ejercicio
-    // subiÃ³ respecto a la sesiÃ³n anterior, se interpreta como que el ciclo se
-    // completÃ³. Objetivo por defecto 'hipertrofia' (no se resuelve la rutina real
-    // del dÃ­a por simplicidad: la lib no depende de ese contexto).
+    // ─── dobleProgresionCompletada: heurística best-effort. Si antes de hoy la
+    // sugerencia de progresión doble era "subir_carga" para un ejercicio (tocó el
+    // tope de reps 2 sesiones seguidas) y hoy el peso máximo usado en ese ejercicio
+    // subió respecto a la sesión anterior, se interpreta como que el ciclo se
+    // completó. Objetivo por defecto 'hipertrofia' (no se resuelve la rutina real
+    // del día por simplicidad: la lib no depende de ese contexto).
     const porEjercicio = new Map<string, SerieRow[]>();
     for (const s of seriesRows) {
       if (!porEjercicio.has(s.ejercicio_id)) porEjercicio.set(s.ejercicio_id, []);
@@ -205,7 +205,7 @@ export const POST: APIRoute = async (context) => {
         .select('id')
         .single();
       if (errInsert) {
-        // 23505 = ya obtenido (colisiÃ³n de unique logro_id+nivel): ignorar, no es un error real.
+        // 23505 = ya obtenido (colisión de unique logro_id+nivel): ignorar, no es un error real.
         if ((errInsert as { code?: string }).code === '23505') continue;
         continue;
       }

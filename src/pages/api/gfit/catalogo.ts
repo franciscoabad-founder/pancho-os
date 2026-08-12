@@ -25,8 +25,8 @@ async function cargarTaxonomia(sb: ReturnType<typeof getSupabaseServer>) {
   return grupos;
 }
 
-// Alternativas para el Swap sheet: ejercicios que comparten patrÃ³n o algÃºn grupo
-// muscular primario con el ejercicio dado, excluyÃ©ndolo, tope 20.
+// Alternativas para el Swap sheet: ejercicios que comparten patrón o algún grupo
+// muscular primario con el ejercicio dado, excluyéndolo, tope 20.
 async function cargarAlternativas(sb: ReturnType<typeof getSupabaseServer>, ejercicioId: string) {
   const { data: base, error: errBase } = await sb
     .from('ejercicios_catalogo')
@@ -93,7 +93,7 @@ export const GET: APIRoute = async (context) => {
     let query = sb.from('ejercicios_catalogo').select('*', { count: 'exact' });
 
     if (q) {
-      // Sin comas: rompen la sintaxis .or() de PostgREST. Es una bÃºsqueda simple ilike.
+      // Sin comas: rompen la sintaxis .or() de PostgREST. Es una búsqueda simple ilike.
       const termino = q.replace(/,/g, ' ').trim();
       query = query.or(`nombre_en.ilike.%${termino}%,nombre_es.ilike.%${termino}%,slug.ilike.%${termino}%`);
     }

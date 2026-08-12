@@ -9,7 +9,7 @@ import { nivelDesdeXp } from '../../../lib/juego/nivel';
 const errMsg = (err: unknown) =>
   err instanceof Error ? err.message : (err as any)?.message ?? JSON.stringify(err);
 
-// GET: jugador (fila Ãºnica) + nivel derivado + eventos de hoy (suma xp/oro) + quests activas.
+// GET: jugador (fila única) + nivel derivado + eventos de hoy (suma xp/oro) + quests activas.
 // Contrato: { jugador: {...fila, nivel}, eventosHoy: { xp, oro, conteo }, quests: [...] }
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);

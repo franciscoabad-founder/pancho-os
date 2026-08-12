@@ -22,12 +22,12 @@ function diasSemanaValidos(v: unknown): v is number[] {
   );
 }
 
-// Progreso del criterio (tipo 'checks') de una etapa: busca el hÃ¡bito que el criterio
-// referencia (por criterio.habito_id si estÃ¡ presente; si no, por journey_id + nombre
-// como fallback para etapas sembradas antes de que se guardara el habito_id) y evalÃºa
-// sus checks de la ventana mÃ³vil con la lib pura evaluarEtapa. null si el criterio no
-// es de tipo 'checks' o el hÃ¡bito aÃºn no existe (no deberÃ­a pasar en operaciÃ³n normal:
-// el hÃ¡bito se crea al entrar a la etapa).
+// Progreso del criterio (tipo 'checks') de una etapa: busca el hábito que el criterio
+// referencia (por criterio.habito_id si está presente; si no, por journey_id + nombre
+// como fallback para etapas sembradas antes de que se guardara el habito_id) y evalúa
+// sus checks de la ventana móvil con la lib pura evaluarEtapa. null si el criterio no
+// es de tipo 'checks' o el hábito aún no existe (no debería pasar en operación normal:
+// el hábito se crea al entrar a la etapa).
 async function evaluarProgresoEtapa(
   sb: SB,
   journeyId: string,
@@ -73,13 +73,13 @@ async function evaluarProgresoEtapa(
   return { ...resultado, meta: criterio.meta };
 }
 
-// Crea los hÃ¡bitos que una etapa desbloquea (etapa.habitos_desbloquea, specs sembradas
-// en la migraciÃ³n/seed). Idempotente: no crea si ya existe un hÃ¡bito con ese nombre
-// dentro del mismo journey. Devuelve solo los hÃ¡bitos reciÃ©n creados.
+// Crea los hábitos que una etapa desbloquea (etapa.habitos_desbloquea, specs sembradas
+// en la migración/seed). Idempotente: no crea si ya existe un hábito con ese nombre
+// dentro del mismo journey. Devuelve solo los hábitos recién creados.
 //
-// Si el criterio de la etapa referencia al hÃ¡bito reciÃ©n creado por nombre
-// (criterio.habito_nombre), guarda su id en journey_etapas.criterio.habito_id: asÃ­ el
-// criterio queda anclado por id y renombrar el hÃ¡bito despuÃ©s no rompe la evaluaciÃ³n
+// Si el criterio de la etapa referencia al hábito recién creado por nombre
+// (criterio.habito_nombre), guarda su id en journey_etapas.criterio.habito_id: así el
+// criterio queda anclado por id y renombrar el hábito después no rompe la evaluación
 // del progreso (ver evaluarProgresoEtapa / progresoEtapaActual en brief.ts).
 async function crearHabitosEtapa(
   sb: SB,
@@ -133,7 +133,7 @@ async function crearHabitosEtapa(
   return creados;
 }
 
-// GET: catÃ¡logo completo de journeys (ordenados por orden) con sus etapas (ordenadas por
+// GET: catálogo completo de journeys (ordenados por orden) con sus etapas (ordenadas por
 // orden). Para el journey en_curso, incluye progresoEtapa de la etapa actual.
 // Respuesta: { journeys: [{ ...journey, etapas: [...journey_etapas], progresoEtapa?:
 //   { cumplida, progreso, hechos, meta } }] }
@@ -186,12 +186,12 @@ export const GET: APIRoute = async (context) => {
   }
 };
 
-// POST {accion:'iniciar', slug}: arranca un journey 'disponible' (400 si estÃ¡
+// POST {accion:'iniciar', slug}: arranca un journey 'disponible' (400 si está
 //   'bloqueado' o en cualquier otro estado), marca en_curso + etapa_actual=1 +
-//   iniciado_at, y crea los hÃ¡bitos de la etapa 1 (idempotente).
-// POST {accion:'avanzar', journey_id}: evalÃºa el criterio de la etapa actual; si no se
+//   iniciado_at, y crea los hábitos de la etapa 1 (idempotente).
+// POST {accion:'avanzar', journey_id}: evalúa el criterio de la etapa actual; si no se
 //   cumple, 409 {error, progreso}. Si se cumple, marca completada_at de la etapa; si hay
-//   etapa siguiente, avanza etapa_actual y crea sus hÃ¡bitos; si era la Ãºltima, marca el
+//   etapa siguiente, avanza etapa_actual y crea sus hábitos; si era la última, marca el
 //   journey 'completado' y desbloquea el siguiente journey por orden.
 // Respuesta: { ok, journey, etapaNueva?, habitosCreados?, completado? }
 export const POST: APIRoute = async (context) => {
@@ -254,7 +254,7 @@ export const POST: APIRoute = async (context) => {
       if (errJourney) throw errJourney;
       if (!journey) return json({ error: 'journey no encontrado' }, 404);
       if (journey.estado !== 'en_curso') {
-        return json({ error: `journey en estado '${journey.estado}', no estÃ¡ en curso` }, 400);
+        return json({ error: `journey en estado '${journey.estado}', no está en curso` }, 400);
       }
 
       const { data: etapasData, error: errEtapas } = await sb
@@ -270,10 +270,10 @@ export const POST: APIRoute = async (context) => {
       const hoy = hoyLocal();
       const progreso = await evaluarProgresoEtapa(sb, journey.id, etapaActual, hoy);
       if (!progreso) {
-        return json({ error: 'no se pudo evaluar el criterio de esta etapa (hÃ¡bito no encontrado)' }, 502);
+        return json({ error: 'no se pudo evaluar el criterio de esta etapa (hábito no encontrado)' }, 502);
       }
       if (!progreso.cumplida) {
-        return json({ error: 'aÃºn no se cumple el criterio de esta etapa', progreso }, 409);
+        return json({ error: 'aún no se cumple el criterio de esta etapa', progreso }, 409);
       }
 
       const { error: errCompletar } = await sb
@@ -314,7 +314,7 @@ export const POST: APIRoute = async (context) => {
         .single();
       if (errCompletado) throw errCompletado;
 
-      // Desbloquea el siguiente journey del catÃ¡logo (por orden global), si existe y
+      // Desbloquea el siguiente journey del catálogo (por orden global), si existe y
       // sigue 'bloqueado'.
       const { data: siguienteJourney, error: errSiguiente } = await sb
         .from('journeys')

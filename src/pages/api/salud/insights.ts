@@ -37,7 +37,7 @@ async function insightsComidas(sb: SB, hoy: string): Promise<Insight[]> {
   if (!diasSinLog.length) return [];
   const mensaje = diasSinLog.length === 3
     ? 'No estas trackeando comidas hace 3 dias. Registra aunque sea lo basico: el dato de hoy vale mas que la precision perfecta.'
-    : `Te faltÃ³ registrar comidas ${diasSinLog.length === 1 ? 'un dÃ­a' : `${diasSinLog.length} dÃ­as`} de los Ãºltimos 3.`;
+    : `Te faltó registrar comidas ${diasSinLog.length === 1 ? 'un día' : `${diasSinLog.length} días`} de los últimos 3.`;
   return [{ tipo: 'comidas', severidad: 'nudge', mensaje, data: { dias_sin_log: diasSinLog } }];
 }
 
@@ -102,7 +102,7 @@ async function insightsEntreno(sb: SB, hoy: string): Promise<Insight[]> {
         out.push({
           tipo: 'entreno',
           severidad: 'nudge',
-          mensaje: `Llevas ${dias} dÃ­as sin entrenar. Retoma aunque sea con una sesiÃ³n corta.`,
+          mensaje: `Llevas ${dias} días sin entrenar. Retoma aunque sea con una sesión corta.`,
           data: { dias_sin_entrenar: dias },
         });
       }

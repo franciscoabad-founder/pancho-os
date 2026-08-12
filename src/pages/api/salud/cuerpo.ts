@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
-  // Acepta escritura externa (balanza Renpho / Fitbit vÃ­a n8n) con header X-OS-Token.
+  // Acepta escritura externa (balanza Renpho / Fitbit vía n8n) con header X-OS-Token.
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
     return json({ error: 'Unauthorized' }, 401);
   }
@@ -33,10 +33,10 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const source = body.source?.trim() || 'manual';
     if (!SOURCES.includes(source)) return json({ error: `source debe ser: ${SOURCES.join(', ')}` }, 400);
-    // Cualquier mediciÃ³n cuenta, incluido solo sueÃ±o (alimenta la regla de recuperaciÃ³n).
+    // Cualquier medición cuenta, incluido solo sueño (alimenta la regla de recuperación).
     const MEDICIONES = ['peso_kg', 'grasa_pct', 'musculo_kg', 'agua_pct', 'cintura_cm', 'sueno_horas'];
     if (MEDICIONES.every((f) => numOrNull(body[f]) == null)) {
-      return json({ error: 'al menos una mediciÃ³n requerida' }, 400);
+      return json({ error: 'al menos una medición requerida' }, 400);
     }
     const sb = getSupabaseServer();
     const { data, error } = await sb

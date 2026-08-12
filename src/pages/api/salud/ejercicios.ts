@@ -13,7 +13,7 @@ export const GET: APIRoute = async (context) => {
   try {
     const sb = getSupabaseServer();
     // RPC buscar_ejercicios (unaccent, parametrizado): busca en nombre/nombre_en y filtra
-    // por grupo/patrÃ³n. Insensible a acentos y sin romper tÃ©rminos con parÃ©ntesis.
+    // por grupo/patrón. Insensible a acentos y sin romper términos con paréntesis.
     const texto = url.searchParams.get('q')?.trim() || null;
     const grupo = url.searchParams.get('grupo')?.trim() || null;
     const patron = url.searchParams.get('patron')?.trim() || null;
@@ -33,7 +33,7 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     if (!body.nombre?.trim()) return json({ error: 'nombre requerido' }, 400);
     if (body.patron && !PATRONES.includes(body.patron)) {
-      return json({ error: 'patron invÃ¡lido' }, 400);
+      return json({ error: 'patron inválido' }, 400);
     }
     const sb = getSupabaseServer();
     const { data, error } = await sb
@@ -64,7 +64,7 @@ export const PATCH: APIRoute = async (context) => {
   if (!id) return json({ error: 'id requerido' }, 400);
   try {
     const body = await context.request.json();
-    if (body.patron && !PATRONES.includes(body.patron)) return json({ error: 'patron invÃ¡lido' }, 400);
+    if (body.patron && !PATRONES.includes(body.patron)) return json({ error: 'patron inválido' }, 400);
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const c of ['nombre', 'nombre_en', 'grupo_muscular_primario', 'patron', 'equipamiento', 'instrucciones', 'media_url']) {
       if (c in body) patch[c] = typeof body[c] === 'string' ? body[c].trim() || null : body[c];

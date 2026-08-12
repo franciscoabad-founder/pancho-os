@@ -30,10 +30,10 @@ interface FalladaDetalle {
   es_core: boolean;
 }
 
-// b) DaÃ±o HP: por cada dÃ­a reciÃ©n cerrado, por cada diaria fallada es_core, registra
-// 'diaria_fallo' con hp negativo. Soporta resÃºmenes viejos (solo array de nombres, sin
-// detalle): en ese caso no hay forma de saber es_core/dificultad, asÃ­ que se ignoran
-// (comportamiento previo a este cambio: sin daÃ±o HP retroactivo).
+// b) Daño HP: por cada día recién cerrado, por cada diaria fallada es_core, registra
+// 'diaria_fallo' con hp negativo. Soporta resúmenes viejos (solo array de nombres, sin
+// detalle): en ese caso no hay forma de saber es_core/dificultad, así que se ignoran
+// (comportamiento previo a este cambio: sin daño HP retroactivo).
 async function aplicarDanioPorFallos(
   sb: SB,
   resumenes: Record<string, unknown>,
@@ -67,8 +67,8 @@ async function aplicarDanioPorFallos(
   return hpPerdidoTotal;
 }
 
-// c) DÃ­a perfecto: por cada dÃ­a reciÃ©n cerrado marcado dia_perfecto, registra el evento
-// y agenda una celebraciÃ³n peak-end (Kahneman) en Telegram ~1 min despuÃ©s.
+// c) Día perfecto: por cada día recién cerrado marcado dia_perfecto, registra el evento
+// y agenda una celebración peak-end (Kahneman) en Telegram ~1 min después.
 async function celebrarDiasPerfectos(sb: SB, resumenes: Record<string, unknown>): Promise<boolean> {
   let huboDiaPerfecto = false;
   for (const [fecha, resumenRaw] of Object.entries(resumenes)) {
@@ -79,7 +79,7 @@ async function celebrarDiasPerfectos(sb: SB, resumenes: Record<string, unknown>)
 
     const recordarAt = new Date(Date.now() + 60 * 1000);
     await sb.from('recordatorios').insert([{
-      mensaje: 'DÃ­a perfecto ayer: ninguna diaria fallÃ³. Que se sienta ese impulso hoy tambiÃ©n.',
+      mensaje: 'Día perfecto ayer: ninguna diaria falló. Que se sienta ese impulso hoy también.',
       recordar_at: recordarAt.toISOString(),
       canal: 'telegram',
     }]);
@@ -87,11 +87,11 @@ async function celebrarDiasPerfectos(sb: SB, resumenes: Record<string, unknown>)
   return huboDiaPerfecto;
 }
 
-// e) Ayuno: nudge manual-first (Fase 5 Salud OS). Por cada dÃ­a reciÃ©n cerrado, si nadie
-// tocÃ³ el mÃ³dulo de ayuno ese dÃ­a (ni iniciÃ³ ni cerrÃ³ uno) y hay un protocolo configurado
+// e) Ayuno: nudge manual-first (Fase 5 Salud OS). Por cada día recién cerrado, si nadie
+// tocó el módulo de ayuno ese día (ni inició ni cerró uno) y hay un protocolo configurado
 // en salud_config, agenda un recordatorio de Telegram preguntando el estado. NUNCA abre
-// ni cierra un ayuno por su cuenta, solo pregunta. Idempotente por dÃ­a: el mensaje incluye
-// la fecha, asÃ­ que un segundo intento del mismo dÃ­a no duplica el recordatorio.
+// ni cierra un ayuno por su cuenta, solo pregunta. Idempotente por día: el mensaje incluye
+// la fecha, así que un segundo intento del mismo día no duplica el recordatorio.
 async function sugerirAyunoSinRegistro(sb: SB, cerrados: string[]): Promise<number> {
   if (!cerrados.length) return 0;
 
@@ -101,8 +101,8 @@ async function sugerirAyunoSinRegistro(sb: SB, cerrados: string[]): Promise<numb
     .order('created_at', { ascending: true })
     .limit(1);
   if (errConfig) throw errConfig;
-  // Columna existente (not null, default '16_8'): si no hay fila de config todavÃ­a,
-  // no hay mÃ³dulo de salud activo y no se sugiere nada.
+  // Columna existente (not null, default '16_8'): si no hay fila de config todavía,
+  // no hay módulo de salud activo y no se sugiere nada.
   const protocolo = configRows?.[0]?.protocolo_ayuno_default;
   if (!protocolo) return 0;
 
@@ -120,9 +120,9 @@ async function sugerirAyunoSinRegistro(sb: SB, cerrados: string[]): Promise<numb
       )
       .limit(1);
     if (errTocados) throw errTocados;
-    if (tocados && tocados.length) continue; // hubo actividad de ayuno ese dÃ­a
+    if (tocados && tocados.length) continue; // hubo actividad de ayuno ese día
 
-    const mensaje = `Â¿Sigues comiendo o ya estÃ¡s ayunando? No se registrÃ³ tu estado de ayuno el ${dia}.`;
+    const mensaje = `¿Sigues comiendo o ya estás ayunando? No se registró tu estado de ayuno el ${dia}.`;
     const { data: yaExiste, error: errYa } = await sb
       .from('recordatorios')
       .select('id')
@@ -141,7 +141,7 @@ async function sugerirAyunoSinRegistro(sb: SB, cerrados: string[]): Promise<numb
   return sugeridos;
 }
 
-// d) Fresh start de lunes: resuelve las quests de la semana pasada, resetea HP al mÃ¡ximo,
+// d) Fresh start de lunes: resuelve las quests de la semana pasada, resetea HP al máximo,
 // y agenda el resumen semanal a Telegram. Idempotente: siembra un evento 'ajuste' con
 // meta.fresh_start_semana = lunes de hoy, y no repite si ya existe.
 async function procesarLunes(
@@ -220,7 +220,7 @@ async function procesarLunes(
     questsResueltas += 1;
   }
 
-  // Fresh start HP (Milkman): resetea al mÃ¡ximo.
+  // Fresh start HP (Milkman): resetea al máximo.
   const { data: jugadorRows, error: errJugador } = await sb
     .from('jugador')
     .select('id, hp_max')
@@ -277,7 +277,7 @@ async function procesarLunes(
   const mensaje = [
     'Resumen semanal:',
     `XP ganado: ${xpTotalSemana}.`,
-    `Mejor racha activa: ${mejorRachaActual} dÃ­as.`,
+    `Mejor racha activa: ${mejorRachaActual} días.`,
     questsResueltas > 0
       ? `Quests: ${questsGanadas}/${questsResueltas} ganadas.`
       : 'Sin quests la semana pasada.',
@@ -292,9 +292,9 @@ async function procesarLunes(
   return { questsResueltas, resumenEnviado: true };
 }
 
-// POST: orquesta el cierre nocturno completo (habitos + daÃ±o HP + dÃ­a perfecto + fresh
-// start de lunes). Autorizado por cookie de sesiÃ³n (Pancho) o X-OS-Token (n8n, 00:05
-// Guayaquil, corre despuÃ©s del cierre de habitos/cierre.ts o lo dispara Ã©l mismo).
+// POST: orquesta el cierre nocturno completo (habitos + daño HP + día perfecto + fresh
+// start de lunes). Autorizado por cookie de sesión (Pancho) o X-OS-Token (n8n, 00:05
+// Guayaquil, corre después del cierre de habitos/cierre.ts o lo dispara él mismo).
 export const POST: APIRoute = async (context) => {
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
     return json({ error: 'Unauthorized' }, 401);

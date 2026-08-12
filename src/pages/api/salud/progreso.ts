@@ -5,9 +5,9 @@ import { getSupabaseServer } from '../../../lib/supabase';
 import { isOsAuthorized, json } from '../../../os/lib/osAuth';
 import { errMsg, hoyGuayaquil } from '../../../lib/salud/apiHelpers';
 
-// Devuelve los datos crudos para analytics de progreso. La lÃ³gica (progressIndex,
-// sugerenciaOverload, e1RM, promedio mÃ³vil) vive en src/lib/salud/progresion.ts y la
-// consumen la UI de progreso y el modo sesiÃ³n activa (una sola fuente de verdad testeada).
+// Devuelve los datos crudos para analytics de progreso. La lógica (progressIndex,
+// sugerenciaOverload, e1RM, promedio móvil) vive en src/lib/salud/progresion.ts y la
+// consumen la UI de progreso y el modo sesión activa (una sola fuente de verdad testeada).
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   const { url } = context;
@@ -15,12 +15,12 @@ export const GET: APIRoute = async (context) => {
     const sb = getSupabaseServer();
     const dias = Number(url.searchParams.get('dias')) || 120;
     // Ventana anclada a la fecha local de Guayaquil (las columnas `fecha` son locales UTC-5).
-    // Se ancla a mediodÃ­a para que restar dÃ­as completos no cruce el borde de zona horaria.
+    // Se ancla a mediodía para que restar días completos no cruce el borde de zona horaria.
     const anchor = new Date(hoyGuayaquil() + 'T12:00:00');
     anchor.setDate(anchor.getDate() - dias);
     const desde = anchor.toLocaleDateString('en-CA');
 
-    // Sets con datos de ejercicio y fecha de sesiÃ³n.
+    // Sets con datos de ejercicio y fecha de sesión.
     const { data: sesiones, error } = await sb
       .from('sesiones')
       .select('id, fecha, sets_log(reps, peso_kg, tipo_set, ejercicio_id, ejercicio:ejercicios(nombre, patron, grupo_muscular_primario))')
@@ -47,7 +47,7 @@ export const GET: APIRoute = async (context) => {
       }
     }
 
-    // Serie de peso corporal (para promedio mÃ³vil de 7 dÃ­as en el cliente).
+    // Serie de peso corporal (para promedio móvil de 7 días en el cliente).
     const { data: cuerpo, error: errCuerpo } = await sb
       .from('cuerpo_log')
       .select('fecha, peso_kg, sueno_horas')

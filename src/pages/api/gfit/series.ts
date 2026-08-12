@@ -8,8 +8,8 @@ import { pesoDesdeInput, type UnidadPeso } from '../../../lib/gfit/unidades';
 
 const TIPOS = ['warmup', 'working', 'drop', 'failure'];
 
-// Acepta peso_kg directo (ya canÃ³nico) o {peso, unidad} en la unidad preferida
-// del usuario, convertido aquÃ­ a peso_kg canÃ³nico. Nunca se guarda en libras.
+// Acepta peso_kg directo (ya canónico) o {peso, unidad} en la unidad preferida
+// del usuario, convertido aquí a peso_kg canónico. Nunca se guarda en libras.
 function resolverPesoKg(body: Record<string, unknown>): number | null | undefined {
   if ('peso_kg' in body) return numOrNull(body.peso_kg);
   if ('peso' in body) {
@@ -17,7 +17,7 @@ function resolverPesoKg(body: Record<string, unknown>): number | null | undefine
     const peso = numOrNull(body.peso);
     return peso == null ? null : pesoDesdeInput(peso, unidad);
   }
-  return undefined; // no se enviÃ³ peso: no tocar el campo (PATCH) / null (POST)
+  return undefined; // no se envió peso: no tocar el campo (PATCH) / null (POST)
 }
 
 async function reordenar(sb: ReturnType<typeof getSupabaseServer>, items: unknown) {
@@ -80,7 +80,7 @@ export const PATCH: APIRoute = async (context) => {
     const body = await context.request.json();
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if ('tipo' in body) {
-      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo invÃ¡lido' }, 400);
+      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo inválido' }, 400);
       patch.tipo = body.tipo;
     }
     if ('orden' in body) patch.orden = numOrNull(body.orden) ?? 0;

@@ -26,7 +26,7 @@ function extraerBase64(foto: string): string {
   return foto;
 }
 
-// TamaÃ±o decodificado aproximado de un string base64, sin materializar el buffer completo.
+// Tamaño decodificado aproximado de un string base64, sin materializar el buffer completo.
 function tamanoDecodificadoAprox(base64: string): number {
   const limpio = base64.replace(/\s/g, '');
   if (!limpio.length) return 0;
@@ -35,7 +35,7 @@ function tamanoDecodificadoAprox(base64: string): number {
 }
 
 // Valida el shape de la respuesta del webhook. Devuelve null si no cumple el contrato
-// mÃ­nimo (asÃ­ el endpoint responde 502 en vez de pasar basura al cliente).
+// mínimo (así el endpoint responde 502 en vez de pasar basura al cliente).
 function validarAlimentos(data: unknown): AlimentoEstimado[] | null {
   if (!data || typeof data !== 'object') return null;
   const alimentos = (data as Record<string, unknown>).alimentos;
@@ -59,9 +59,9 @@ function validarAlimentos(data: unknown): AlimentoEstimado[] | null {
   return out;
 }
 
-// POST: recibe una foto (+ descripciÃ³n opcional) y la reenvÃ­a al flujo n8n multimodal
+// POST: recibe una foto (+ descripción opcional) y la reenvía al flujo n8n multimodal
 // para estimar los alimentos. NO registra nada en comidas_log: el frontend confirma o
-// edita la estimaciÃ³n y luego llama a /api/salud/comidas-log Ã©l mismo
+// edita la estimación y luego llama a /api/salud/comidas-log él mismo
 // (principio manual-first, igual que ayunos).
 export const POST: APIRoute = async (context) => {
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
@@ -77,7 +77,7 @@ export const POST: APIRoute = async (context) => {
   try {
     body = await context.request.json();
   } catch {
-    return json({ error: 'JSON invÃ¡lido' }, 400);
+    return json({ error: 'JSON inválido' }, 400);
   }
 
   const fotoBase64 = typeof body.foto_base64 === 'string' ? body.foto_base64.trim() : '';
@@ -86,7 +86,7 @@ export const POST: APIRoute = async (context) => {
   const soloBase64 = extraerBase64(fotoBase64);
   const bytes = tamanoDecodificadoAprox(soloBase64);
   if (bytes > MAX_BYTES) {
-    return json({ error: `Foto demasiado grande (${(bytes / 1024 / 1024).toFixed(1)}MB, mÃ¡x 4MB)` }, 413);
+    return json({ error: `Foto demasiado grande (${(bytes / 1024 / 1024).toFixed(1)}MB, máx 4MB)` }, 413);
   }
 
   const descripcion = typeof body.descripcion === 'string' ? body.descripcion.trim() : undefined;
@@ -116,7 +116,7 @@ export const POST: APIRoute = async (context) => {
 
     if (!res.ok) {
       const msg = (data as Record<string, unknown> | null)?.error;
-      return json({ error: typeof msg === 'string' ? msg : `El flujo de foto respondiÃ³ ${res.status}` }, 502);
+      return json({ error: typeof msg === 'string' ? msg : `El flujo de foto respondió ${res.status}` }, 502);
     }
 
     const alimentos = validarAlimentos(data);
@@ -131,7 +131,7 @@ export const POST: APIRoute = async (context) => {
     return json({ estimacion: { alimentos, confianza, notas } });
   } catch (err) {
     const abortado = err instanceof Error && err.name === 'AbortError';
-    return json({ error: abortado ? 'El flujo de foto no respondiÃ³ a tiempo (25s)' : errMsg(err) }, 502);
+    return json({ error: abortado ? 'El flujo de foto no respondió a tiempo (25s)' : errMsg(err) }, 502);
   } finally {
     clearTimeout(timeout);
   }

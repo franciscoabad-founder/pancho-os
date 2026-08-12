@@ -16,7 +16,7 @@ function lunesDeSemana(fecha: string): string {
   return addDias(fecha, -(iso - 1));
 }
 
-// GET: quest(s) de la semana actual + historial de las Ãºltimas 8 (cualquier estado).
+// GET: quest(s) de la semana actual + historial de las últimas 8 (cualquier estado).
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   try {
@@ -90,9 +90,9 @@ export const POST: APIRoute = async (context) => {
     const apuestaOro = Number(body.apuesta_oro ?? 0);
     const premioXp = Number(body.premio_xp ?? 0);
     const premioOro = Number(body.premio_oro ?? 0);
-    if (!Number.isFinite(apuestaOro) || apuestaOro < 0) return json({ error: 'apuesta_oro invÃ¡lida' }, 400);
-    if (!Number.isFinite(premioXp) || premioXp < 0) return json({ error: 'premio_xp invÃ¡lido' }, 400);
-    if (!Number.isFinite(premioOro) || premioOro < 0) return json({ error: 'premio_oro invÃ¡lido' }, 400);
+    if (!Number.isFinite(apuestaOro) || apuestaOro < 0) return json({ error: 'apuesta_oro inválida' }, 400);
+    if (!Number.isFinite(premioXp) || premioXp < 0) return json({ error: 'premio_xp inválido' }, 400);
+    if (!Number.isFinite(premioOro) || premioOro < 0) return json({ error: 'premio_oro inválido' }, 400);
 
     const sb = getSupabaseServer();
 
@@ -153,7 +153,7 @@ export const PATCH: APIRoute = async (context) => {
     const id = context.url.searchParams.get('id');
     if (!id) return json({ error: 'id requerido' }, 400);
     const body = await context.request.json();
-    if (body.accion !== 'cancelar') return json({ error: 'acciÃ³n no soportada' }, 400);
+    if (body.accion !== 'cancelar') return json({ error: 'acción no soportada' }, 400);
 
     const sb = getSupabaseServer();
     const { data: quest, error: errQuest } = await sb

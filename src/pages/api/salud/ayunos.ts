@@ -9,29 +9,29 @@ import { duracionHoras } from '../../../lib/salud/ayuno';
 
 type SB = ReturnType<typeof getSupabaseServer>;
 
-// Valores admitidos por la columna ayunos.protocolo (check constraint en la migraciÃ³n
-// 20260715000000). Los presets nuevos del UI (Fase 5) NO amplÃ­an ese enum: se mapean.
+// Valores admitidos por la columna ayunos.protocolo (check constraint en la migración
+// 20260715000000). Los presets nuevos del UI (Fase 5) NO amplían ese enum: se mapean.
 const PROTOCOLOS = ['16_8', '18_6', '20_4', 'omad', 'extendido', 'custom'];
-// Horas objetivo por defecto segÃºn protocolo (legacy + presets Fase 5).
+// Horas objetivo por defecto según protocolo (legacy + presets Fase 5).
 const OBJETIVO_POR_PROTOCOLO: Record<string, number> = {
   '16_8': 16, '18_6': 18, '20_4': 20, omad: 23, extendido: 36,
   '24h': 24, '36h': 36,
 };
-// Presets Fase 5 -> valor vÃ¡lido para la columna ayunos.protocolo. '24h' no tiene token
-// legacy exacto (omad es 23h) asÃ­ que cae a 'custom'; '36h' coincide con 'extendido'.
+// Presets Fase 5 -> valor válido para la columna ayunos.protocolo. '24h' no tiene token
+// legacy exacto (omad es 23h) así que cae a 'custom'; '36h' coincide con 'extendido'.
 // Las horas reales viajan siempre en objetivo_horas, no dependen de este mapeo.
 const PRESET_A_LEGACY: Record<string, string> = { '24h': 'custom', '36h': 'extendido' };
 
-// Horas por defecto tras las que, sin ayuno abierto, se sugiere "Â¿sigues comiendo o ya
-// estÃ¡s ayunando?" en el GET (informativo, el recordatorio del cierre diario vive en
+// Horas por defecto tras las que, sin ayuno abierto, se sugiere "¿sigues comiendo o ya
+// estás ayunando?" en el GET (informativo, el recordatorio del cierre diario vive en
 // juego/cierre.ts). No confundir con el objetivo del protocolo: esto es solo el umbral
 // de la sugerencia manual-first.
 const HORAS_SIN_REGISTRO = 24;
 
 // Protocolo + objetivo por defecto (Fase 5). El protocolo vive en la columna existente
 // salud_config.protocolo_ayuno_default; las horas custom en salud_config.ayuno_objetivo_h
-// (Ãºnica columna nueva, ver 20260720000100). El PATCH que los actualiza vive en
-// /api/salud/config.ts, no acÃ¡.
+// (única columna nueva, ver 20260720000100). El PATCH que los actualiza vive en
+// /api/salud/config.ts, no acá.
 async function getAyunoConfig(sb: SB): Promise<{ protocolo: string; objetivo_h: number }> {
   const { data, error } = await sb
     .from('salud_config')
@@ -56,7 +56,7 @@ export const GET: APIRoute = async (context) => {
     const sb = getSupabaseServer();
     const config = await getAyunoConfig(sb);
 
-    // Ayuno abierto (sin fin). Usado por NutriciÃ³n para ofrecer cierre y por el timer.
+    // Ayuno abierto (sin fin). Usado por Nutrición para ofrecer cierre y por el timer.
     if (url.searchParams.get('abierto') === '1') {
       const { data, error } = await sb
         .from('ayunos')
@@ -78,8 +78,8 @@ export const GET: APIRoute = async (context) => {
           new Date(ayuno.inicio).getTime() + objetivoRef * 3_600_000,
         ).toISOString();
       } else {
-        // Sugerencia manual-first: sin ayuno abierto y el Ãºltimo cerrado terminÃ³ hace
-        // mÃ¡s de HORAS_SIN_REGISTRO. Nunca abre ni cierra nada, solo informa al UI.
+        // Sugerencia manual-first: sin ayuno abierto y el último cerrado terminó hace
+        // más de HORAS_SIN_REGISTRO. Nunca abre ni cierra nada, solo informa al UI.
         const { data: ultimoCerrado, error: errUltimo } = await sb
           .from('ayunos')
           .select('fin')
@@ -110,7 +110,7 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
-  // Escritura externa (agente/telegram) permitida vÃ­a X-OS-Token.
+  // Escritura externa (agente/telegram) permitida vía X-OS-Token.
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
     return json({ error: 'Unauthorized' }, 401);
   }
@@ -137,8 +137,8 @@ export const POST: APIRoute = async (context) => {
       config.objetivo_h;
 
     // Cierra cualquier ayuno abierto antes de iniciar uno nuevo (no solapar). Esto es
-    // consecuencia directa de la acciÃ³n manual del usuario al iniciar uno nuevo (existe
-    // ademÃ¡s el Ã­ndice Ãºnico ayunos_un_solo_abierto); no es un auto-cierre por tiempo.
+    // consecuencia directa de la acción manual del usuario al iniciar uno nuevo (existe
+    // además el índice único ayunos_un_solo_abierto); no es un auto-cierre por tiempo.
     await sb.from('ayunos').update({ fin: new Date().toISOString() }).is('fin', null);
 
     const { data, error } = await sb
@@ -174,7 +174,7 @@ export const PATCH: APIRoute = async (context) => {
     if ('notas' in body) patch.notas = body.notas?.trim() || null;
     if ('objetivo_horas' in body) patch.objetivo_horas = numOrNull(body.objetivo_horas);
     if ('protocolo' in body) {
-      if (!PROTOCOLOS.includes(body.protocolo)) return json({ error: 'protocolo invÃ¡lido' }, 400);
+      if (!PROTOCOLOS.includes(body.protocolo)) return json({ error: 'protocolo inválido' }, 400);
       patch.protocolo = body.protocolo;
     }
     const sb = getSupabaseServer();

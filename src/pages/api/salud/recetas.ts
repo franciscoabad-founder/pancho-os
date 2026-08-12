@@ -178,7 +178,7 @@ async function importarRecetaDeUrl(url: string): Promise<RecetaImportada> {
   const nodos = aplanarNodos(extraerBloquesJsonLd(html));
   const recipe = nodos.find(esRecipe);
   if (!recipe) {
-    throw new Error('No se encontrÃ³ un bloque Recipe (JSON-LD) en la URL.');
+    throw new Error('No se encontró un bloque Recipe (JSON-LD) en la URL.');
   }
   const mapeada = mapearRecipeJsonLd(recipe);
   if (!mapeada.nombre) {
@@ -238,7 +238,7 @@ export const POST: APIRoute = async (context) => {
   try {
     const body = await context.request.json();
 
-    // Rama de importaciÃ³n: POST { importar_url }.
+    // Rama de importación: POST { importar_url }.
     if (body.importar_url?.trim()) {
       const sourceUrl = body.importar_url.trim();
       let importada: RecetaImportada;

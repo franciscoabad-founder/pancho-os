@@ -23,10 +23,10 @@ import { addDias } from '../../../lib/habitos/fechas';
 
 // Devuelve TODO lo necesario para el dashboard de progreso de GFIT en un solo golpe:
 // calendario de entrenos, volumen/tiempo por rango, breakdown muscular (3 meses),
-// top 1RM por ejercicio (6 meses) y estado de recuperaciÃ³n por grupo (7 dÃ­as).
-// Molde: query paralela (Promise.all) + cÃ³mputo en memoria con las libs puras
-// (lib/gfit/volumen.ts, lib/gfit/recovery.ts, lib/gfit/rm.ts), sin lÃ³gica de negocio
-// aquÃ­ (mismo patrÃ³n que api/os/salud/progreso.ts).
+// top 1RM por ejercicio (6 meses) y estado de recuperación por grupo (7 días).
+// Molde: query paralela (Promise.all) + cómputo en memoria con las libs puras
+// (lib/gfit/volumen.ts, lib/gfit/recovery.ts, lib/gfit/rm.ts), sin lógica de negocio
+// aquí (mismo patrón que api/os/salud/progreso.ts).
 
 interface SesionRow {
   id: string;
@@ -87,10 +87,10 @@ export const GET: APIRoute = async (context) => {
     const sesiones = (sesionesRes.data ?? []) as SesionRow[];
     const seriesRaw = (seriesRes.data ?? []) as unknown as SerieRow[];
 
-    // â”€â”€â”€ calendario: todas las fechas con al menos una sesiÃ³n registrada â”€â”€â”€â”€â”€â”€
+    // ─── calendario: todas las fechas con al menos una sesión registrada ──────
     const calendario = calendarioEntrenos(sesiones.map((s) => ({ fecha: s.fecha })));
 
-    // â”€â”€â”€ series normalizadas (fecha de la sesiÃ³n, no de la serie) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── series normalizadas (fecha de la sesión, no de la serie) ─────────────
     const seriesVolumen: SerieVolumen[] = seriesRaw
       .filter((s) => s.sesion?.fecha)
       .map((s) => ({ fecha: s.sesion!.fecha, pesoKg: s.peso_kg, reps: s.reps, tipo: s.tipo, ejercicioId: s.ejercicio_id }));
@@ -115,7 +115,7 @@ export const GET: APIRoute = async (context) => {
     }));
     const breakdown3m = muscleBreakdown(seriesVolumen, ejerciciosParaBreakdown, 3, hoy);
 
-    // â”€â”€â”€ 1RM histÃ³rico "de todos los tiempos" por ejercicio (denominador de intensidad) â”€â”€
+    // ─── 1RM histórico "de todos los tiempos" por ejercicio (denominador de intensidad) ──
     const rmHistoricoTodo = new Map<string, number>();
     for (const s of seriesRaw) {
       if (s.tipo !== 'working' || s.peso_kg == null || s.reps == null) continue;
@@ -124,7 +124,7 @@ export const GET: APIRoute = async (context) => {
       if (est > (rmHistoricoTodo.get(s.ejercicio_id) ?? 0)) rmHistoricoTodo.set(s.ejercicio_id, est);
     }
 
-    // â”€â”€â”€ top 1RM por ejercicio (Ãºltimos 6 meses, top 12) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── top 1RM por ejercicio (últimos 6 meses, top 12) ──────────────────────
     const desde6m = addDias(hoy, -180);
     const mejoresRecientes = new Map<string, { est: number; nombre: string }>();
     for (const s of seriesRaw) {
@@ -146,7 +146,7 @@ export const GET: APIRoute = async (context) => {
       .sort((a, b) => b.est_1rm - a.est_1rm)
       .slice(0, 12);
 
-    // â”€â”€â”€ recovery: Ãºltimos 7 dÃ­as, agregado por sesiÃ³n+grupo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── recovery: últimos 7 días, agregado por sesión+grupo ──────────────────
     const desde7d = addDias(hoy, -6);
     interface Acumulado {
       workingSets: number;

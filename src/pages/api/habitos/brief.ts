@@ -18,7 +18,7 @@ const errMsg = (err: unknown) =>
 // Deliberadamente NO lee el contenido MDX (el campo `resumen` del frontmatter no vive
 // en DB y este endpoint es de solo lectura de datos): el micro_contenido se arma desde
 // journey_etapas.nombre + el criterio evaluado contra habito_checks.
-// Busca el hÃ¡bito por criterio.habito_id si estÃ¡ presente; si no, cae al fallback por
+// Busca el hábito por criterio.habito_id si está presente; si no, cae al fallback por
 // journey_id + nombre (etapas sembradas antes de que se guardara el habito_id).
 async function progresoEtapaActual(
   sb: SB,
@@ -72,8 +72,8 @@ async function progresoEtapaActual(
 }
 
 // GET: contrato del daily brief para el agente (Cortex/Hermes lo consume para el brief
-// de Telegram). Solo lectura, sin escrituras. Autorizado por cookie de sesiÃ³n o por
-// X-OS-Token (integraciÃ³n VPS).
+// de Telegram). Solo lectura, sin escrituras. Autorizado por cookie de sesión o por
+// X-OS-Token (integración VPS).
 // Respuesta: { fecha, diarias_hoy: [{nombre, intencion, hecho, es_core, racha_actual}],
 //   en_riesgo: string[], journey: null | {nombre, etapa_actual, etapa_nombre,
 //   progreso:{hechos,meta}, micro_contenido}, alerta_no_fallar_dos: string|null,
@@ -97,7 +97,7 @@ export const GET: APIRoute = async (context) => {
     const diarias = habitosData ?? [];
     const ids = diarias.map((h) => h.id);
 
-    // Una sola query de checks (120 dÃ­as) para todas las diarias activas; se agrupa en
+    // Una sola query de checks (120 días) para todas las diarias activas; se agrupa en
     // memoria tanto para diarias_hoy (racha, hecho) como para en_riesgo (falloAyer).
     const checksPorHabito = new Map<string, Set<string>>();
     if (ids.length) {
@@ -129,9 +129,9 @@ export const GET: APIRoute = async (context) => {
         };
       });
 
-    // en_riesgo no se limita a las diarias de hoy: cualquier diaria activa que existÃ­a
+    // en_riesgo no se limita a las diarias de hoy: cualquier diaria activa que existía
     // ayer, estaba programada ayer y no tuvo check cuenta para la alerta "no falles dos
-    // veces", sin importar si hoy tambiÃ©n estÃ¡ programada.
+    // veces", sin importar si hoy también está programada.
     const enRiesgo = diarias
       .filter((h) => {
         const existiaAyer = (h.created_at ?? '').slice(0, 10) <= ayer;

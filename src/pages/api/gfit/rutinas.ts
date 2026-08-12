@@ -48,7 +48,7 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     if (!body.nombre?.trim()) return json({ error: 'nombre requerido' }, 400);
     if (body.objetivo && !OBJETIVOS.includes(body.objetivo)) {
-      return json({ error: 'objetivo invÃ¡lido' }, 400);
+      return json({ error: 'objetivo inválido' }, 400);
     }
     const sb = getSupabaseServer();
     const { data, error } = await sb
@@ -82,11 +82,11 @@ export const PATCH: APIRoute = async (context) => {
     }
     if ('descripcion' in body) patch.descripcion = body.descripcion?.toString().trim() || null;
     if ('objetivo' in body) {
-      if (body.objetivo && !OBJETIVOS.includes(body.objetivo)) return json({ error: 'objetivo invÃ¡lido' }, 400);
+      if (body.objetivo && !OBJETIVOS.includes(body.objetivo)) return json({ error: 'objetivo inválido' }, 400);
       patch.objetivo = body.objetivo || null;
     }
     if ('estado' in body) {
-      if (!ESTADOS.includes(body.estado)) return json({ error: 'estado invÃ¡lido' }, 400);
+      if (!ESTADOS.includes(body.estado)) return json({ error: 'estado inválido' }, 400);
       patch.estado = body.estado;
     }
     if (!Object.keys(patch).length) return json({ error: 'sin campos para actualizar' }, 400);

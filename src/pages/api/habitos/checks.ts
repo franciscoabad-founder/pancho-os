@@ -21,9 +21,9 @@ function esFechaValida(fecha: string): boolean {
 }
 
 // POST {habito_id, signo?='mas', fecha?}: registra un check, calcula recompensa con la
-// lib pura, actualiza el valor cache del hÃ¡bito y el xp_total del perfil.
+// lib pura, actualiza el valor cache del hábito y el xp_total del perfil.
 // Respuesta 201: { ok, xp, oro, valor, racha, nivel, subioNivel }.
-//   racha solo se calcula para 'diaria' (null en hÃ¡bitos +/-).
+//   racha solo se calcula para 'diaria' (null en hábitos +/-).
 export const POST: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   try {
@@ -38,7 +38,7 @@ export const POST: APIRoute = async (context) => {
     let fecha = hoyLocal();
     if (body.fecha !== undefined && body.fecha !== null && body.fecha !== '') {
       const f = body.fecha.toString();
-      if (!esFechaValida(f)) return json({ error: 'fecha invÃ¡lida, use formato YYYY-MM-DD' }, 400);
+      if (!esFechaValida(f)) return json({ error: 'fecha inválida, use formato YYYY-MM-DD' }, 400);
       fecha = f;
     }
     if (fecha > hoyLocal()) return json({ error: 'no se puede registrar una fecha futura' }, 400);
@@ -50,7 +50,7 @@ export const POST: APIRoute = async (context) => {
       .eq('id', body.habito_id)
       .maybeSingle();
     if (errHabito) throw errHabito;
-    if (!habito || habito.estado === 'archivado') return json({ error: 'hÃ¡bito no encontrado' }, 404);
+    if (!habito || habito.estado === 'archivado') return json({ error: 'hábito no encontrado' }, 404);
 
     if (habito.tipo === 'diaria') {
       if (signo === 'menos') return json({ error: 'las diarias solo aceptan signo mas' }, 400);
@@ -64,10 +64,10 @@ export const POST: APIRoute = async (context) => {
       if (existente) return json({ error: 'ya registrado hoy' }, 409);
     } else {
       if (signo === 'mas' && !habito.permite_mas) {
-        return json({ error: 'este hÃ¡bito no permite signo mas' }, 400);
+        return json({ error: 'este hábito no permite signo mas' }, 400);
       }
       if (signo === 'menos' && !habito.permite_menos) {
-        return json({ error: 'este hÃ¡bito no permite signo menos' }, 400);
+        return json({ error: 'este hábito no permite signo menos' }, 400);
       }
     }
 
@@ -94,8 +94,8 @@ export const POST: APIRoute = async (context) => {
     if (errUpdateHabito) throw errUpdateHabito;
 
     // Motor transversal (Version B): registra el evento gamificable y devuelve el
-    // estado agregado (xp/oro/nivel) a travÃ©s de `jugador`. Si el motor no puede
-    // operar (tabla `jugador` aÃºn no migrada), cae de vuelta a `habitos_perfil`
+    // estado agregado (xp/oro/nivel) a través de `jugador`. Si el motor no puede
+    // operar (tabla `jugador` aún no migrada), cae de vuelta a `habitos_perfil`
     // para no romper la rama A mientras B no se ha aplicado en Supabase.
     const tipoEvento = habito.tipo === 'diaria' ? 'diaria_check' : 'habito_check';
     let resultadoMotor: Awaited<ReturnType<typeof registrarEvento>> = null;
@@ -117,13 +117,13 @@ export const POST: APIRoute = async (context) => {
     let subioNivel: boolean;
 
     if (resultadoMotor) {
-      // El motor ya actualizÃ³ `jugador`; releemos xp_total para armar el NivelInfo
+      // El motor ya actualizó `jugador`; releemos xp_total para armar el NivelInfo
       // completo (xpEnNivel/xpSiguiente/progreso) que la UI espera.
       const { data: jugadorFila } = await sb.from('jugador').select('xp_total').limit(1).maybeSingle();
       nivelDespues = nivelDesdeXp(jugadorFila?.xp_total ?? 0);
       subioNivel = resultadoMotor.subioNivel;
     } else {
-      // Fallback: motor no disponible (tabla `jugador` aÃºn no migrada). Mantiene el
+      // Fallback: motor no disponible (tabla `jugador` aún no migrada). Mantiene el
       // comportamiento previo escribiendo en `habitos_perfil` directamente.
       const { data: perfil, error: errPerfil } = await sb
         .from('habitos_perfil')
@@ -172,8 +172,8 @@ export const POST: APIRoute = async (context) => {
   }
 };
 
-// DELETE {habito_id, fecha} (body o query): deshace el ÃšLTIMO check de ese hÃ¡bito+fecha.
-// Solo se permite deshacer el dÃ­a de hoy (protege el ledger histÃ³rico).
+// DELETE {habito_id, fecha} (body o query): deshace el ÚLTIMO check de ese hábito+fecha.
+// Solo se permite deshacer el día de hoy (protege el ledger histórico).
 export const DELETE: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   try {
@@ -208,10 +208,10 @@ export const DELETE: APIRoute = async (context) => {
     const { error: errDelete } = await sb.from('habito_checks').delete().eq('id', ultimo.id);
     if (errDelete) throw errDelete;
 
-    // ReversiÃ³n del valor: `habitos.valor` es un acumulado de TODA la vida del hÃ¡bito
-    // (no reinicia por dÃ­a), asÃ­ que el valor correcto tras deshacer es el valor_despues
+    // Reversión del valor: `habitos.valor` es un acumulado de TODA la vida del hábito
+    // (no reinicia por día), así que el valor correcto tras deshacer es el valor_despues
     // del check inmediatamente anterior en el tiempo (de cualquier fecha), o 0 si el check
-    // borrado era el primero que existÃ­a para este hÃ¡bito.
+    // borrado era el primero que existía para este hábito.
     const { data: anterior, error: errAnterior } = await sb
       .from('habito_checks')
       .select('valor_despues')

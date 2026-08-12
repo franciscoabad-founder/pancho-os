@@ -5,9 +5,9 @@ import { getSupabaseServer } from '../../../lib/supabase';
 import { isOsAuthorized, json } from '../../../os/lib/osAuth';
 import { errMsg, numOrNull } from '../../../lib/salud/apiHelpers';
 
-// Series de trabajo por defecto al agregar un ejercicio a un dÃ­a: 3 series de
+// Series de trabajo por defecto al agregar un ejercicio a un día: 3 series de
 // trabajo, reps objetivo 10 (punto medio del rango convencional 8-12) y 90s de
-// descanso. Es solo un punto de partida cÃ³modo; el usuario las ajusta despuÃ©s.
+// descanso. Es solo un punto de partida cómodo; el usuario las ajusta después.
 const SERIES_DEFAULT = { cantidad: 3, tipo: 'working', reps: 10, descansoS: 90 };
 
 export const GET: APIRoute = async (context) => {
@@ -108,7 +108,7 @@ export const POST: APIRoute = async (context) => {
 };
 
 // PATCH ?id= {orden?, superset_grupo?, notas?, ejercicio_id?}: cambiar ejercicio_id
-// es un SWAP (mantiene las series planificadas tal cual, solo cambia el ejercicio de catÃ¡logo).
+// es un SWAP (mantiene las series planificadas tal cual, solo cambia el ejercicio de catálogo).
 export const PATCH: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   const id = context.url.searchParams.get('id');
@@ -120,7 +120,7 @@ export const PATCH: APIRoute = async (context) => {
     if ('superset_grupo' in body) patch.superset_grupo = body.superset_grupo?.toString().trim() || null;
     if ('notas' in body) patch.notas = body.notas?.toString().trim() || null;
     if ('ejercicio_id' in body) {
-      if (!body.ejercicio_id) return json({ error: 'ejercicio_id invÃ¡lido' }, 400);
+      if (!body.ejercicio_id) return json({ error: 'ejercicio_id inválido' }, 400);
       patch.ejercicio_id = body.ejercicio_id;
     }
     const sb = getSupabaseServer();

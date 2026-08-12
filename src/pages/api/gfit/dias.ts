@@ -46,13 +46,13 @@ export const GET: APIRoute = async (context) => {
   }
 };
 
-// Duplica un dÃ­a completo (ejercicios + series) dentro de la misma rutina (o de otra,
+// Duplica un día completo (ejercicios + series) dentro de la misma rutina (o de otra,
 // si se pasa rutina_id). Inserta de forma secuencial: si algo falla a mitad de camino
-// puede quedar una copia parcial (no hay transacciÃ³n atÃ³mica desde el cliente); se
-// devuelve 502 y el llamador puede revisar/borrar el dÃ­a parcial manualmente.
+// puede quedar una copia parcial (no hay transacción atómica desde el cliente); se
+// devuelve 502 y el llamador puede revisar/borrar el día parcial manualmente.
 async function copiarDia(sb: SupabaseServer, diaId: string, overrides: Record<string, unknown>) {
   const original = await cargarDia(sb, diaId);
-  if (!original) throw new Error('dÃ­a origen no encontrado');
+  if (!original) throw new Error('día origen no encontrado');
 
   const { data: nuevoDia, error: errDia } = await sb
     .from('gfit_dias')
@@ -116,7 +116,7 @@ export const POST: APIRoute = async (context) => {
     const tipo = TIPOS.includes(body.tipo) ? body.tipo : (body.weekday ? 'weekday' : 'orden');
     if (tipo === 'weekday') {
       const wd = Number(body.weekday);
-      if (!Number.isInteger(wd) || wd < 1 || wd > 7) return json({ error: 'weekday invÃ¡lido (1-7)' }, 400);
+      if (!Number.isInteger(wd) || wd < 1 || wd > 7) return json({ error: 'weekday inválido (1-7)' }, 400);
     }
 
     const { data, error } = await sb
@@ -151,7 +151,7 @@ export const PATCH: APIRoute = async (context) => {
       patch.nombre = nombre;
     }
     if ('tipo' in body) {
-      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo invÃ¡lido' }, 400);
+      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo inválido' }, 400);
       patch.tipo = body.tipo;
     }
     if ('weekday' in body) patch.weekday = body.weekday == null ? null : Number(body.weekday);

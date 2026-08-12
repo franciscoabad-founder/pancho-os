@@ -9,7 +9,7 @@ import { registrarEvento } from '../../../lib/juego/motor';
 const TIPOS = ['gym', 'caminata', 'cardio', 'movilidad', 'estiramiento'];
 const TIPOS_SET = ['warmup', 'working', 'dropset', 'superset', 'amrap', 'failure'];
 
-// Inserta la lista de sets de una sesiÃ³n (reemplaza los existentes).
+// Inserta la lista de sets de una sesión (reemplaza los existentes).
 async function guardarSets(sb: ReturnType<typeof getSupabaseServer>, sesionId: string, sets: unknown) {
   if (!Array.isArray(sets)) return;
   await sb.from('sets_log').delete().eq('sesion_id', sesionId);
@@ -60,7 +60,7 @@ export const POST: APIRoute = async (context) => {
   try {
     const body = await context.request.json();
     const tipo = body.tipo?.trim() || 'gym';
-    if (!TIPOS.includes(tipo)) return json({ error: `tipo invÃ¡lido` }, 400);
+    if (!TIPOS.includes(tipo)) return json({ error: `tipo inválido` }, 400);
     const sb = getSupabaseServer();
     const { data, error } = await sb
       .from('sesiones')
@@ -100,7 +100,7 @@ export const PATCH: APIRoute = async (context) => {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const c of ['notas', 'fecha']) if (c in body) patch[c] = body[c]?.trim?.() ?? body[c];
     if ('tipo' in body) {
-      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo invÃ¡lido' }, 400);
+      if (!TIPOS.includes(body.tipo)) return json({ error: 'tipo inválido' }, 400);
       patch.tipo = body.tipo;
     }
     for (const c of ['duracion_min', 'rpe_sesion']) if (c in body) patch[c] = numOrNull(body[c]);

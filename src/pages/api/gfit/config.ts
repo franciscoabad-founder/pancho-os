@@ -7,8 +7,8 @@ import { errMsg } from '../../../lib/salud/apiHelpers';
 
 const UNIDADES = ['kg', 'lb'];
 
-// unidad_peso vive en salud_config (fila Ãºnica, compartida con el mÃ³dulo Salud):
-// mismo patrÃ³n de "leer o crear" que api/os/salud/config.ts.
+// unidad_peso vive en salud_config (fila única, compartida con el módulo Salud):
+// mismo patrón de "leer o crear" que api/os/salud/config.ts.
 async function getConfig() {
   const sb = getSupabaseServer();
   const { data, error } = await sb
@@ -41,7 +41,7 @@ export const PATCH: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   try {
     const body = await context.request.json();
-    if (!UNIDADES.includes(body.unidad_peso)) return json({ error: 'unidad_peso invÃ¡lida (kg|lb)' }, 400);
+    if (!UNIDADES.includes(body.unidad_peso)) return json({ error: 'unidad_peso inválida (kg|lb)' }, 400);
     const current = await getConfig();
     const sb = getSupabaseServer();
     const { data, error } = await sb
