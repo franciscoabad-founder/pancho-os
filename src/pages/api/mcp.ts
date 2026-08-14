@@ -115,6 +115,58 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
       const query = args.query && typeof args.query === 'object' ? new URLSearchParams(args.query as Record<string, string>) : new URLSearchParams();
       return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body: args.body as Record<string, unknown> | undefined };
     }
+    case 'sueno_hoy':
+      return { path: '/api/salud/sueno/hoy', method: 'GET' };
+    case 'sueno_registrar':
+      return {
+        path: '/api/salud/sueno',
+        method: 'POST',
+        body: {
+          inicio: args.inicio,
+          fin: args.fin,
+          siesta: args.siesta,
+          calidad: args.calidad,
+          notas: args.notas,
+          fuente: args.fuente,
+        },
+      };
+    case 'biometricas_registrar':
+      // El endpoint MERGEA por fecha: mandar solo las metricas presentes evita
+      // que un registro parcial (solo pasos) borre el peso que ya estaba.
+      return {
+        path: '/api/biometricas',
+        method: 'POST',
+        body: {
+          fecha: args.fecha,
+          pasos: args.pasos,
+          sueno_min: args.sueno_min,
+          peso_kg: args.peso_kg,
+          fc_reposo: args.fc_reposo,
+          fuente: args.fuente,
+        },
+      };
+    case 'biometricas_listar': {
+      const query = new URLSearchParams();
+      for (const k of ['desde', 'hasta', 'fecha'] as const) {
+        if (typeof args[k] === 'string' && args[k]) query.set(k, String(args[k]));
+      }
+      return { path: `/api/biometricas${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
+    case 'cuerpo_registrar':
+      return {
+        path: '/api/salud/cuerpo',
+        method: 'POST',
+        body: {
+          fecha: args.fecha,
+          peso_kg: args.peso_kg,
+          grasa_pct: args.grasa_pct,
+          musculo_kg: args.musculo_kg,
+          agua_pct: args.agua_pct,
+          cintura_cm: args.cintura_cm,
+          notas: args.notas,
+          source: args.source,
+        },
+      };
     case 'tareas_update': {
       const id = String(args.id ?? '').trim();
       if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');

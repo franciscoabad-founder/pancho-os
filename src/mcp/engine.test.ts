@@ -157,3 +157,34 @@ test('publica tareas_update para marcar tareas hechas y lo enruta por el ejecuto
   );
   assert.deepEqual(calls, [{ name: 'tareas_update', args: { id: 'abc', estado: 'hecho' } }]);
 });
+
+test('publica herramientas de salud para sueno, biometricas y cuerpo', async () => {
+  const response = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'salud-tools', method: 'tools/list' },
+    new Headers(),
+  );
+  const toolNames = (response.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+  assert.deepEqual(
+    ['sueno_hoy', 'sueno_registrar', 'biometricas_registrar', 'biometricas_listar', 'cuerpo_registrar']
+      .every((name) => toolNames.includes(name)),
+    true,
+  );
+});
+
+test('enruta biometricas_registrar por el ejecutor real conservando solo lo enviado', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'bio-1',
+      method: 'tools/call',
+      params: { name: 'biometricas_registrar', arguments: { pasos: 8200, fuente: 'fitbit' } },
+    },
+    new Headers(),
+    async (name, args) => {
+      calls.push({ name, args });
+      return { biometrica: { pasos: 8200 } };
+    },
+  );
+  assert.deepEqual(calls, [{ name: 'biometricas_registrar', args: { pasos: 8200, fuente: 'fitbit' } }]);
+});

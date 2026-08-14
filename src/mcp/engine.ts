@@ -167,6 +167,71 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'sueno_hoy',
+    description: 'Estado de sueno de hoy: deuda acumulada, ventanas del dia y plan de pago con horas concretas. Corre el modelo de dos procesos. Usalo para el brief de la manana y antes de sugerir horarios.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'sueno_registrar',
+    description: 'Registra una sesion de sueno o una siesta ya ocurrida. inicio y fin en ISO 8601 con zona horaria.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        inicio: { type: 'string', description: 'Inicio ISO 8601, ej. 2026-08-14T23:30:00-05:00' },
+        fin: { type: 'string', description: 'Fin ISO 8601, posterior a inicio' },
+        siesta: { type: 'boolean', description: 'true si fue siesta y no el sueno principal' },
+        calidad: { type: 'number', description: 'Calidad percibida 1 a 5' },
+        notas: { type: 'string' },
+        fuente: { type: 'string', description: 'Origen del dato: manual, fitbit, google_health. Default manual.' },
+      },
+      required: ['inicio', 'fin'],
+    },
+  },
+  {
+    name: 'biometricas_registrar',
+    description: 'Registra metricas diarias del cuerpo: pasos, minutos de sueno, peso y frecuencia cardiaca en reposo. El upsert MERGEA por fecha, asi que enviar solo pasos no borra el peso ya registrado.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Omite para hoy en Guayaquil.' },
+        pasos: { type: 'number', description: 'Entero no negativo' },
+        sueno_min: { type: 'number', description: 'Minutos dormidos, entero no negativo' },
+        peso_kg: { type: 'number', description: 'Mayor a 0' },
+        fc_reposo: { type: 'number', description: 'Pulsaciones en reposo, entero no negativo' },
+        fuente: { type: 'string', description: 'Origen: manual, fitbit, google_health. Default google_health.' },
+      },
+    },
+  },
+  {
+    name: 'biometricas_listar',
+    description: 'Lista las metricas diarias por rango de fechas. Sin parametros devuelve los ultimos 30 dias.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        desde: { type: 'string', description: 'YYYY-MM-DD' },
+        hasta: { type: 'string', description: 'YYYY-MM-DD' },
+        fecha: { type: 'string', description: 'Un dia puntual YYYY-MM-DD' },
+      },
+    },
+  },
+  {
+    name: 'cuerpo_registrar',
+    description: 'Registra una medicion corporal: peso, grasa, musculo, agua, cintura. Requiere al menos una medicion.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'YYYY-MM-DD. Omite para hoy.' },
+        peso_kg: { type: 'number' },
+        grasa_pct: { type: 'number' },
+        musculo_kg: { type: 'number' },
+        agua_pct: { type: 'number' },
+        cintura_cm: { type: 'number' },
+        notas: { type: 'string' },
+        source: { type: 'string', description: 'manual, renpho, fitbit. Default manual.' },
+      },
+    },
+  },
+  {
     name: 'inbox_listar',
     description: 'Lista items de la bandeja de entrada canonica del OS.',
     inputSchema: { type: 'object', properties: { leido: { type: 'boolean' } } },
@@ -343,6 +408,11 @@ export async function handleMcpStatelessRequest(
       case 'nutricion_buscar_alimentos':
       case 'nutricion_resumen_dia':
       case 'nutricion_registrar_comida':
+      case 'sueno_hoy':
+      case 'sueno_registrar':
+      case 'biometricas_registrar':
+      case 'biometricas_listar':
+      case 'cuerpo_registrar':
       case 'inbox_listar':
       case 'inbox_capturar':
       case 'aprobaciones_listar':
