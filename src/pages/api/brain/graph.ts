@@ -136,9 +136,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   const brain = createGbrainClient(gbrainToken);
 
   try {
-    // Pull every live page (not just the last 100). 500 is comfortably above
-    // the current corpus size (~240) and cheap for list_pages.
-    const allPages = await brain.listPages({ limit: 500, sort: 'updated_desc' });
+    // Pull every live page: el server capa list_pages a 100 por llamada, asi
+    // que listAllPages pagina por offset hasta traer el corpus completo.
+    const allPages = await brain.listAllPages({ sort: 'updated_desc' });
     const pages = allPages.filter((p) => !EXCLUDED_SLUGS.has(p.slug));
     const slugSet = new Set(pages.map((p) => p.slug));
 

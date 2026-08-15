@@ -79,7 +79,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
   try {
     // Primary: ask gbrain for pages tagged `tag`.
-    let pages = await brain.listPagesByTag(tag, 50).catch(() => [] as Awaited<ReturnType<typeof brain.listPagesByTag>>);
+    let pages = await brain.listAllPages({ tag, sort: 'updated_desc' }).catch(() => [] as Awaited<ReturnType<typeof brain.listAllPages>>);
 
     // Fallback: if the structured tag index returns nothing, scan recent pages
     // and match on inline/structured tags ourselves (some pages tag inline only).

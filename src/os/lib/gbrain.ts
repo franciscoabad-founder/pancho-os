@@ -53,10 +53,28 @@ export interface BrainSearchResult {
   score: number;
 }
 
+// El server de gbrain capa list_pages a 100 filas por llamada aunque se pida
+// mas. Este helper pagina por offset hasta traer el corpus completo.
+const PAGE_CAP = 100;
+const MAX_BATCHES = 20; // tope de seguridad: 2000 paginas
+
 export function createGbrainClient(token: string) {
+  const listPages = (args: { limit?: number; offset?: number; sort?: string; tag?: string; type?: string } = {}) =>
+    callTool('list_pages', args as Record<string, unknown>, token) as Promise<BrainPage[]>;
+
+  const listAllPages = async (args: { sort?: string; tag?: string; type?: string } = {}) => {
+    const all: BrainPage[] = [];
+    for (let i = 0; i < MAX_BATCHES; i++) {
+      const batch = await listPages({ ...args, limit: PAGE_CAP, offset: i * PAGE_CAP });
+      all.push(...batch);
+      if (batch.length < PAGE_CAP) break;
+    }
+    return all;
+  };
+
   return {
-    listPages: (args: { limit?: number; sort?: string; tag?: string; type?: string } = {}) =>
-      callTool('list_pages', args as Record<string, unknown>, token) as Promise<BrainPage[]>,
+    listPages,
+    listAllPages,
 
     listPagesByTag: (tag: string, limit = 50) =>
       callTool('list_pages', { tag, limit, sort: 'updated_desc' }, token) as Promise<BrainPage[]>,

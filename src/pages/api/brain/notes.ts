@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   try {
     // list_pages filtra por tag server-side; con limit alto obtenemos el total
     // real del corpus (o del tag) y paginamos aqui.
-    const allPages = await brain.listPages({ limit: 500, sort: 'updated_desc', ...(tag ? { tag } : {}) });
+    const allPages = await brain.listAllPages({ sort: 'updated_desc', ...(tag ? { tag } : {}) });
     const total = allPages.length;
     const pages = Math.max(Math.ceil(total / limit), 1);
     const offset = (Math.min(page, pages) - 1) * limit;
