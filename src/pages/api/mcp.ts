@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { handleMcpStatelessRequest, type McpJsonRpcRequest } from '../../mcp/engine';
+import { handleMcpStatelessRequest, type McpJsonRpcRequest } from '../../mcp/engine.ts';
 
 export const prerender = false;
 
@@ -18,11 +18,14 @@ const MCP_OS_MODULES = new Set([
   'salud/comidas-log', 'salud/config', 'salud/cuerpo', 'salud/ejercicios',
   'salud/estiramiento', 'salud/insights', 'salud/meals', 'salud/progreso',
   'salud/recetas', 'salud/rutinas', 'salud/sesiones', 'salud/sueno/cafeina',
-  'salud/sueno/config', 'salud/sueno/hoy', 'salud/sueno/index', 'semana',
+  'salud/sueno/config', 'salud/sueno/hoy', 'salud/sueno', 'semana',
   'system', 'tareas',
 ]);
 
-function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest {
+// La API de tareas guarda prioridades en ingles; el catalogo MCP habla espanol.
+const PRIORIDAD_MCP: Record<string, string> = { baja: 'low', media: 'medium', alta: 'high', critica: 'critical' };
+
+export function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest {
   switch (name) {
     case 'agenda_get_eventos': {
       const query = new URLSearchParams();
@@ -31,9 +34,11 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
       return { path: `/api/agenda${query.size ? `?${query}` : ''}`, method: 'GET' };
     }
     case 'agenda_create_evento': {
+      // Offset explicito de Guayaquil: sin el, Postgres interpreta el
+      // timestamp naive como UTC y un evento de 09:00 se guarda a las 04:00.
       const date = String(args.fecha ?? '');
-      const start = typeof args.hora_inicio === 'string' ? `${date}T${args.hora_inicio}:00` : date;
-      const end = typeof args.hora_fin === 'string' ? `${date}T${args.hora_fin}:00` : undefined;
+      const start = typeof args.hora_inicio === 'string' ? `${date}T${args.hora_inicio}:00-05:00` : date;
+      const end = typeof args.hora_fin === 'string' ? `${date}T${args.hora_fin}:00-05:00` : undefined;
       return { path: '/api/agenda', method: 'POST', body: { titulo: args.titulo, fecha: start, fin: end, descripcion: args.descripcion } };
     }
     case 'agenda_delete_evento':
@@ -41,15 +46,20 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
     case 'tareas_list':
       return { path: '/api/tareas', method: 'GET' };
     case 'tareas_create':
-      return { path: '/api/tareas', method: 'POST', body: { titulo: args.titulo, prioridad: args.prioridad, deadline: args.fecha_limite } };
+      return { path: '/api/tareas', method: 'POST', body: { titulo: args.titulo, prioridad: PRIORIDAD_MCP[String(args.prioridad)] ?? args.prioridad, deadline: args.fecha_limite } };
     case 'finanzas_log_gasto':
       return { path: '/api/gastos', method: 'POST', body: { monto: args.monto, categoria: args.categoria, descripcion: args.descripcion } };
     case 'nutricion_buscar_alimentos': {
+      // Acepta alias comunes del termino de busqueda: los agentes mandan
+      // query/q/texto y antes se descartaban en silencio, devolviendo el
+      // catalogo completo como si fuera un resultado valido.
+      const consulta = [args.consulta, args.query, args.q, args.texto].find((v) => typeof v === 'string' && v.trim());
       const query = new URLSearchParams();
-      if (typeof args.consulta === 'string') query.set('q', args.consulta);
+      if (typeof consulta === 'string') query.set('q', consulta.trim());
       if (typeof args.codigo_barras === 'string') query.set('barcode', args.codigo_barras);
       if (typeof args.modo === 'string') query.set('modo', args.modo);
-      return { path: `/api/salud/alimentos${query.size ? `?${query}` : ''}`, method: 'GET' };
+      if (!query.size) throw new Error('Falta el termino: pasa consulta (texto a buscar), codigo_barras o modo.');
+      return { path: `/api/salud/alimentos?${query}`, method: 'GET' };
     }
     case 'nutricion_resumen_dia': {
       const query = new URLSearchParams();
@@ -113,7 +123,9 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
         throw new Error('Modulo o metodo no permitido para os_api_request. Usa una herramienta semantica cuando exista.');
       }
       const query = args.query && typeof args.query === 'object' ? new URLSearchParams(args.query as Record<string, string>) : new URLSearchParams();
-      return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body: args.body as Record<string, unknown> | undefined };
+      // GET/DELETE con body revientan en undici con un TypeError opaco.
+      const body = ['GET', 'DELETE'].includes(method) ? undefined : (args.body as Record<string, unknown> | undefined);
+      return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body };
     }
     case 'sueno_hoy':
       return { path: '/api/salud/sueno/hoy', method: 'GET' };
@@ -172,7 +184,7 @@ function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest
       if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
       const patch: Record<string, unknown> = {};
       if (typeof args.estado === 'string') patch.estado = args.estado;
-      if (typeof args.prioridad === 'string') patch.prioridad = args.prioridad;
+      if (typeof args.prioridad === 'string') patch.prioridad = PRIORIDAD_MCP[args.prioridad] ?? args.prioridad;
       if ('deadline' in args) patch.deadline = args.deadline;
       if (typeof args.titulo === 'string') patch.titulo = args.titulo;
       if (typeof args.urgente === 'boolean') patch.urgente = args.urgente;

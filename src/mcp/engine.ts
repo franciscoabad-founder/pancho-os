@@ -65,7 +65,6 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         evento_id: { type: 'string', description: 'ID del evento a eliminar' },
-        razon: { type: 'string', description: 'Motivo de la cancelación' },
       },
       required: ['evento_id'],
     },
@@ -77,7 +76,6 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         estado: { type: 'string', enum: ['pendientes', 'completadas', 'todas'] },
-        categoria: { type: 'string', description: 'Categoría opcional' },
       },
     },
   },
@@ -88,7 +86,7 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         titulo: { type: 'string', description: 'Nombre de la tarea' },
-        prioridad: { type: 'string', enum: ['alta', 'media', 'baja'] },
+        prioridad: { type: 'string', enum: ['baja', 'media', 'alta', 'critica'] },
         fecha_limite: { type: 'string', description: 'Fecha límite YYYY-MM-DD' },
       },
       required: ['titulo'],
@@ -102,7 +100,7 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
       properties: {
         id: { type: 'string', description: 'Id de la tarea (de tareas_list)' },
         estado: { type: 'string', enum: ['pendiente', 'en_progreso', 'hecho'] },
-        prioridad: { type: 'string', enum: ['alta', 'media', 'baja'] },
+        prioridad: { type: 'string', enum: ['baja', 'media', 'alta', 'critica'] },
         deadline: { type: 'string', description: 'Fecha límite YYYY-MM-DD, o null para quitarla' },
         titulo: { type: 'string', description: 'Nuevo título' },
         urgente: { type: 'boolean' },
@@ -299,7 +297,7 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'os_api_request',
-    description: 'Puente autenticado a los modulos existentes de Pancho OS. Preferir las herramientas semanticas cuando existan; usar este puente para un modulo del OS aun no cubierto.',
+    description: 'Puente autenticado a los modulos existentes de Pancho OS. Preferir las herramientas semanticas cuando existan; usar este puente para un modulo del OS aun no cubierto. El module va pelado (tareas, cuentas, salud/sueno), el id va en query.id, nunca en el module. Trampas conocidas: revision usa GET con query.tipo (semanal|mensual|reset90) y escribe con PUT; gfit/dias requiere query.rutina_id; salud/sueno registra con POST; habitos/checks marca con POST {habito_id, fecha}.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -352,7 +350,7 @@ export async function handleMcpStatelessRequest(
       id: requestId,
       result: {
         tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => tool),
-        ttlMs: 3600000, // 1 hora de caché para el cliente IA
+        ttlMs: 300000, // 5 min: con 1h cada fix de catálogo tardaba una hora en verse
         cacheScope: 'global',
       },
     };
