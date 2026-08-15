@@ -19,18 +19,18 @@
     "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\""
   },
   "dependencies": {
-    "@astrojs/mdx": "^5.0.4",
-    "@astrojs/node": "^10.0.0",
-    "@astrojs/react": "^5.0.4",
+    "@astrojs/mdx": "^7.0.5",
+    "@astrojs/node": "^11.1.2",
+    "@astrojs/react": "^6.0.2",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^6.2.1",
+    "astro": "^7.2.2",
     "d3": "^7.9.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
