@@ -250,7 +250,7 @@ export default function OSHabitos() {
           action={
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button className="m-btn" onClick={() => setFormAbierto('nuevo')}>+ Crear primer hábito</button>
-              <a href="/os/habitos/journeys" className="m-btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Ver journeys</a>
+              <a href="/habitos/journeys" className="m-btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Ver journeys</a>
             </div>
           }
         />

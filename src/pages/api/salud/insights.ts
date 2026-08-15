@@ -283,7 +283,7 @@ async function insightsSueno(sb: SB, hoy: string): Promise<Insight[]> {
     out.push({
       tipo: 'sueno_deuda',
       severidad,
-      mensaje: `Deuda de sueno de ${formatearHoras(deuda.horas)}. El plan de hoy esta en /os/salud/sueno: se paga con 45 min mas temprano a la cama, no con una noche heroica el fin de semana.`,
+      mensaje: `Deuda de sueno de ${formatearHoras(deuda.horas)}. El plan de hoy esta en /salud/sueno: se paga con 45 min mas temprano a la cama, no con una noche heroica el fin de semana.`,
       data: { deuda_h: deuda.horas, nivel: deuda.nivel, objetivo_h: objetivo, necesidad_h: necesidad },
     });
   }

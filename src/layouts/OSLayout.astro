@@ -82,7 +82,6 @@ const navGroups = [
     { href: '/gfit', label: 'GFIT' },
     { href: '/habitos', label: 'Hábitos' },
     { href: '/juego', label: 'Juego' },
-    { href: '/comidas', label: 'Comidas' },
   ]},
   { label: 'Conocimiento', items: [
     { href: '/cerebro', label: 'Cerebro' },
@@ -95,8 +94,8 @@ const navGroups = [
 // - Movil: bottom-nav con 5 destinos primarios (Hoy, Sistema, Tareas,
 //   Agenda, Salud) DERIVADOS de navGroups, + boton "Mas" que abre el
 //   drawer con los mismos navGroups. Nada se define dos veces.
-const primariosMovil = ['/os', '/os/sistema', '/os/tareas', '/os/agenda', '/os/salud'];
-const etiquetaCorta: Record<string, string> = { '/os/sistema': 'Sistema' };
+const primariosMovil = ['/', '/sistema', '/tareas', '/agenda', '/salud'];
+const etiquetaCorta: Record<string, string> = { '/sistema': 'Sistema' };
 const todosLosItems = navGroups.flatMap((g) => g.items);
 const bottomNav = primariosMovil.map((href) => {
   const item = todosLosItems.find((i) => i.href === href);
@@ -108,7 +107,7 @@ const bottomNav = primariosMovil.map((href) => {
 });
 
 function isActive(href: string): boolean {
-  if (href === '/os') return pathname === '/os' || pathname === '/os/';
+  if (href === '/') return pathname === '/';
   return pathname === href || pathname === href + '/';
 }
 const anyBottomActive = bottomNav.some(i => isActive(i.href));
@@ -696,7 +695,7 @@ const anyBottomActive = bottomNav.some(i => isActive(i.href));
       // ── PWA: registrar service worker ──
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js', { scope: '/os' }).catch(() => {});
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
         });
       }
     </script>

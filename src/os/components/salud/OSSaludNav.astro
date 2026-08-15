@@ -6,14 +6,14 @@ interface Props {
 const { activo } = Astro.props;
 
 const items = [
-  { key: 'dashboard',    href: '/os/salud',                label: 'Resumen',      icon: 'favorite' },
-  { key: 'nutricion',    href: '/os/salud/nutricion',      label: 'Nutrición',    icon: 'nutrition' },
-  { key: 'ayuno',        href: '/os/salud/ayuno',          label: 'Ayuno',        icon: 'timer' },
-  { key: 'entrenamiento',href: '/os/gfit',                 label: 'Entreno',      icon: 'fitness_center' },
-  { key: 'progreso',     href: '/os/salud/progreso',       label: 'Progreso',     icon: 'trending_up' },
-  { key: 'cuerpo',       href: '/os/salud/cuerpo',         label: 'Cuerpo',       icon: 'monitor_weight' },
-  { key: 'sueno',        href: '/os/salud/sueno',          label: 'Sueño',        icon: 'bedtime' },
-  { key: 'estiramiento', href: '/os/salud/estiramiento',   label: 'Estiramiento', icon: 'self_improvement' },
+  { key: 'dashboard',    href: '/salud',                label: 'Resumen',      icon: 'favorite' },
+  { key: 'nutricion',    href: '/salud/nutricion',      label: 'Nutrición',    icon: 'nutrition' },
+  { key: 'ayuno',        href: '/salud/ayuno',          label: 'Ayuno',        icon: 'timer' },
+  { key: 'entrenamiento',href: '/gfit',                 label: 'Entreno',      icon: 'fitness_center' },
+  { key: 'progreso',     href: '/salud/progreso',       label: 'Progreso',     icon: 'trending_up' },
+  { key: 'cuerpo',       href: '/salud/cuerpo',         label: 'Cuerpo',       icon: 'monitor_weight' },
+  { key: 'sueno',        href: '/salud/sueno',          label: 'Sueño',        icon: 'bedtime' },
+  { key: 'estiramiento', href: '/salud/estiramiento',   label: 'Estiramiento', icon: 'self_improvement' },
 ];
 ---
 <nav class="os-hscroll" style="display:flex;gap:6px;margin-bottom:1.25rem;padding-bottom:4px;">

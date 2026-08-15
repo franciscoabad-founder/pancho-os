@@ -137,7 +137,7 @@ export default function OSSaludProgreso() {
         icon="trending_up"
         title="Aún no hay datos"
         text="Registra sesiones de entrenamiento y mediciones corporales para ver tu progreso."
-        action={<Button size="sm" onClick={() => { window.location.href = '/os/gfit'; }}>Ir a Entrenamiento</Button>}
+        action={<Button size="sm" onClick={() => { window.location.href = '/gfit'; }}>Ir a Entrenamiento</Button>}
       />
     );
   }

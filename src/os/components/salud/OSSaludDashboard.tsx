@@ -7,12 +7,12 @@ const card: React.CSSProperties = {
 };
 
 const submodulos = [
-  { href: '/os/salud/nutricion', label: 'Nutrición', icon: 'nutrition', desc: 'Macros y comidas' },
-  { href: '/os/salud/ayuno', label: 'Ayuno', icon: 'timer', desc: 'Timer y fases' },
-  { href: '/os/gfit', label: 'Entrenamiento', icon: 'fitness_center', desc: 'GFIT: rutinas y sesiones' },
-  { href: '/os/salud/progreso', label: 'Progreso', icon: 'trending_up', desc: 'Fuerza y volumen' },
-  { href: '/os/salud/cuerpo', label: 'Cuerpo', icon: 'monitor_weight', desc: 'Peso y medidas' },
-  { href: '/os/salud/estiramiento', label: 'Estiramiento', icon: 'self_improvement', desc: 'Rutinas guiadas' },
+  { href: '/salud/nutricion', label: 'Nutrición', icon: 'nutrition', desc: 'Macros y comidas' },
+  { href: '/salud/ayuno', label: 'Ayuno', icon: 'timer', desc: 'Timer y fases' },
+  { href: '/gfit', label: 'Entrenamiento', icon: 'fitness_center', desc: 'GFIT: rutinas y sesiones' },
+  { href: '/salud/progreso', label: 'Progreso', icon: 'trending_up', desc: 'Fuerza y volumen' },
+  { href: '/salud/cuerpo', label: 'Cuerpo', icon: 'monitor_weight', desc: 'Peso y medidas' },
+  { href: '/salud/estiramiento', label: 'Estiramiento', icon: 'self_improvement', desc: 'Rutinas guiadas' },
 ];
 
 export default function OSSaludDashboard() {
@@ -45,7 +45,7 @@ export default function OSSaludDashboard() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Resumen del día */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
-        <a href="/os/salud/nutricion" style={{ ...card, textDecoration: 'none' }}>
+        <a href="/salud/nutricion" style={{ ...card, textDecoration: 'none' }}>
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Hoy · calorías</p>
           <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--os-text)', margin: '4px 0 0' }}>
             {macros ? Math.round(macros.kcal) : '—'}<span style={{ fontSize: 12, color: 'var(--os-muted)' }}> kcal</span>
@@ -53,7 +53,7 @@ export default function OSSaludDashboard() {
           {macros && <p style={{ fontSize: 'var(--os-text-xs)', fontFamily: 'var(--os-font-mono)', color: 'var(--os-muted)', margin: '2px 0 0' }}>P{Math.round(macros.proteina_g)} C{Math.round(macros.carbos_g)} G{Math.round(macros.grasa_g)}</p>}
         </a>
 
-        <a href="/os/salud/ayuno" style={{ ...card, textDecoration: 'none' }}>
+        <a href="/salud/ayuno" style={{ ...card, textDecoration: 'none' }}>
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Ayuno</p>
           {ayuno ? (
             <>
@@ -63,7 +63,7 @@ export default function OSSaludDashboard() {
           ) : <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 16, color: 'var(--os-muted)', margin: '4px 0 0' }}>Sin ayuno</p>}
         </a>
 
-        <a href="/os/gfit" style={{ ...card, textDecoration: 'none' }}>
+        <a href="/gfit" style={{ ...card, textDecoration: 'none' }}>
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Última sesión</p>
           {sesion ? (
             <>
@@ -73,7 +73,7 @@ export default function OSSaludDashboard() {
           ) : <p style={{ fontSize: 14, color: 'var(--os-muted)', margin: '4px 0 0' }}>Ninguna</p>}
         </a>
 
-        <a href="/os/salud/cuerpo" style={{ ...card, textDecoration: 'none' }}>
+        <a href="/salud/cuerpo" style={{ ...card, textDecoration: 'none' }}>
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Último peso</p>
           {peso?.peso_kg != null ? (
             <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--os-champagne)', margin: '4px 0 0' }}>{peso.peso_kg}<span style={{ fontSize: 12, color: 'var(--os-muted)' }}> kg</span></p>

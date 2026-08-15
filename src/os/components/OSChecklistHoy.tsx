@@ -159,7 +159,7 @@ export default function OSChecklistHoy({ title }: Props) {
         </div>
       ) : habitos.length === 0 ? (
         <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-muted)', margin: 0, lineHeight: 1.5 }}>
-          Sin diarias para hoy. <a href="/os/habitos" style={{ color: 'var(--os-accent-light)' }}>Configura tus hábitos.</a>
+          Sin diarias para hoy. <a href="/habitos" style={{ color: 'var(--os-accent-light)' }}>Configura tus hábitos.</a>
         </p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -237,7 +237,7 @@ export default function OSChecklistHoy({ title }: Props) {
       )}
 
       <div style={{ marginTop: '0.625rem', textAlign: 'right' }}>
-        <a href="/os/habitos" style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', textDecoration: 'none' }}>
+        <a href="/habitos" style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', textDecoration: 'none' }}>
           Gestionar hábitos →
         </a>
       </div>
