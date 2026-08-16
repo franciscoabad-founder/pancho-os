@@ -127,6 +127,19 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       const body = ['GET', 'DELETE'].includes(method) ? undefined : (args.body as Record<string, unknown> | undefined);
       return { path: `/api/${module}${query.size ? `?${query}` : ''}`, method, body };
     }
+    case 'ayuno_iniciar':
+      return {
+        path: '/api/salud/ayunos',
+        method: 'POST',
+        body: { inicio: args.inicio, protocolo: args.protocolo, objetivo_horas: args.objetivo_horas, notas: args.notas },
+      };
+    case 'ayuno_terminar': {
+      // PATCH sin id aplica al ayuno abierto (contrato del endpoint).
+      const body: Record<string, unknown> = { fin: typeof args.fin === 'string' && args.fin.trim() ? args.fin : new Date().toISOString() };
+      if (typeof args.inicio === 'string' && args.inicio.trim()) body.inicio = args.inicio;
+      if (typeof args.notas === 'string') body.notas = args.notas;
+      return { path: '/api/salud/ayunos', method: 'PATCH', body };
+    }
     case 'sueno_hoy':
       return { path: '/api/salud/sueno/hoy', method: 'GET' };
     case 'sueno_registrar':

@@ -164,10 +164,23 @@ export const PATCH: APIRoute = async (context) => {
   if (!isOsAuthorized(context) && !isExternalTokenAuthorized(context)) {
     return json({ error: 'Unauthorized' }, 401);
   }
-  const id = context.url.searchParams.get('id');
-  if (!id) return json({ error: 'id requerido' }, 400);
+  let id = context.url.searchParams.get('id');
   try {
     const body = await context.request.json();
+    const sb = getSupabaseServer();
+    // Sin id, el PATCH aplica al ayuno abierto: permite "termina mi ayuno" o
+    // "empece a las 2pm" desde un agente sin tener que buscar el id primero.
+    if (!id) {
+      const { data: abierto } = await sb
+        .from('ayunos')
+        .select('id')
+        .is('fin', null)
+        .order('inicio', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!abierto) return json({ error: 'no hay ayuno abierto; pasa id para editar uno cerrado' }, 404);
+      id = abierto.id as string;
+    }
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if ('inicio' in body) patch.inicio = body.inicio || null;
     if ('fin' in body) patch.fin = body.fin || null;
@@ -177,7 +190,6 @@ export const PATCH: APIRoute = async (context) => {
       if (!PROTOCOLOS.includes(body.protocolo)) return json({ error: 'protocolo inválido' }, 400);
       patch.protocolo = body.protocolo;
     }
-    const sb = getSupabaseServer();
     const { data, error } = await sb.from('ayunos').update(patch).eq('id', id).select().single();
     if (error) throw error;
     if ('fin' in patch && patch.fin) {

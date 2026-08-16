@@ -43,3 +43,18 @@ test('os_api_request permite salud/sueno (la ruta real, no salud/sueno/index)', 
   assert.equal(req.path, '/api/salud/sueno');
   assert.throws(() => toToolRequest('os_api_request', { module: 'salud/sueno/index', method: 'GET' }), /no permitido/);
 });
+
+test('ayuno_iniciar pasa inicio retroactivo y ayuno_terminar cierra el abierto sin id', () => {
+  const inicio = toToolRequest('ayuno_iniciar', { inicio: '2026-08-15T14:00:00-05:00', protocolo: '16_8' });
+  assert.equal(inicio.method, 'POST');
+  assert.equal(inicio.path, '/api/salud/ayunos');
+  assert.equal(inicio.body?.inicio, '2026-08-15T14:00:00-05:00');
+
+  const fin = toToolRequest('ayuno_terminar', { fin: '2026-08-15T18:00:00-05:00' });
+  assert.equal(fin.method, 'PATCH');
+  assert.equal(fin.path, '/api/salud/ayunos');
+  assert.equal(fin.body?.fin, '2026-08-15T18:00:00-05:00');
+
+  const ahora = toToolRequest('ayuno_terminar', {});
+  assert.equal(typeof ahora.body?.fin, 'string');
+});

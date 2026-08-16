@@ -165,6 +165,31 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'ayuno_iniciar',
+    description: 'Inicia un ayuno. Acepta inicio retroactivo: si Pancho dice "empece a ayunar a las 2pm", pasa ese inicio en ISO con offset -05:00. Si hay un ayuno abierto, se cierra automaticamente al iniciar el nuevo.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        inicio: { type: 'string', description: 'ISO 8601 con zona, ej. 2026-08-15T14:00:00-05:00. Omite para ahora.' },
+        protocolo: { type: 'string', enum: ['16_8', '18_6', '20_4', 'omad', 'extendido', 'custom'] },
+        objetivo_horas: { type: 'number', description: 'Horas objetivo si el protocolo es custom' },
+        notas: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'ayuno_terminar',
+    description: 'Termina el ayuno abierto. Acepta fin retroactivo: "termine a las 6pm" pasa ese fin en ISO con offset -05:00. Sin fin, cierra ahora. Tambien corrige el inicio del ayuno abierto si se pasa inicio.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fin: { type: 'string', description: 'ISO 8601 con zona. Omite para ahora.' },
+        inicio: { type: 'string', description: 'Corregir el inicio del ayuno abierto (ISO 8601 con zona)' },
+        notas: { type: 'string' },
+      },
+    },
+  },
+  {
     name: 'sueno_hoy',
     description: 'Estado de sueno de hoy: deuda acumulada, ventanas del dia y plan de pago con horas concretas. Corre el modelo de dos procesos. Usalo para el brief de la manana y antes de sugerir horarios.',
     inputSchema: { type: 'object', properties: {} },
@@ -421,6 +446,8 @@ export async function handleMcpStatelessRequest(
       case 'crm_listar_leads':
       case 'crm_crear_lead':
       case 'tareas_update':
+      case 'ayuno_iniciar':
+      case 'ayuno_terminar':
       case 'finanzas_listar_gastos':
       case 'os_api_request': {
         if (executeTool) {

@@ -54,6 +54,8 @@ export default function OSSaludAyuno() {
   const [nowMs, setNowMs] = useState<number>(0); // tick de reloj; 0 hasta montar (evita hydration mismatch)
   const [editId, setEditId] = useState<string | null>(null);
   const [editVals, setEditVals] = useState({ inicio: '', fin: '' });
+  const [inicioRetro, setInicioRetro] = useState(''); // arrancar un ayuno que empezo antes
+  const [editInicioActivo, setEditInicioActivo] = useState(''); // corregir el inicio del ayuno en curso
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function cargar() {
@@ -115,10 +117,15 @@ export default function OSSaludAyuno() {
     try {
       const res = await fetch('/api/salud/ayunos', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ protocolo: preset, objetivo_horas: horas }),
+        body: JSON.stringify({
+          protocolo: preset,
+          objetivo_horas: horas,
+          ...(inicioRetro ? { inicio: new Date(inicioRetro).toISOString() } : {}),
+        }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      setInicioRetro('');
       cargar();
     } catch (e) { setError(e instanceof Error ? e.message : 'Error'); }
   }
@@ -243,7 +250,38 @@ export default function OSSaludAyuno() {
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: 0 }}>
                   Inició {fmtFecha(activo.inicio)} · {activo.protocolo}
+                  {' '}
+                  <button
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--os-accent-light)', fontSize: 'inherit', padding: 0 }}
+                    onClick={() => setEditInicioActivo(editInicioActivo ? '' : inputLocal(activo.inicio))}
+                  >
+                    {editInicioActivo ? 'cancelar' : 'corregir'}
+                  </button>
                 </p>
+                {editInicioActivo && (
+                  <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                    <input
+                      type="datetime-local"
+                      style={{ ...selStyle }}
+                      value={editInicioActivo}
+                      onChange={(e) => setEditInicioActivo(e.target.value)}
+                    />
+                    <Button
+                      onClick={async () => {
+                        try {
+                          await fetch(`/api/salud/ayunos?id=${activo.id}`, {
+                            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ inicio: new Date(editInicioActivo).toISOString() }),
+                          });
+                          setEditInicioActivo('');
+                          cargar();
+                        } catch (e) { setError(e instanceof Error ? e.message : 'Error'); }
+                      }}
+                    >
+                      Guardar
+                    </Button>
+                  </span>
+                )}
                 {finPrevisto && (
                   <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: '2px 0 0' }}>
                     Fin previsto {fmtFecha(finPrevisto)} (informativo, no se auto-cierra)
@@ -282,6 +320,16 @@ export default function OSSaludAyuno() {
                   />
                 </label>
               )}
+
+              <label style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                ¿Empezaste antes? (opcional)
+                <input
+                  type="datetime-local"
+                  value={inicioRetro}
+                  onChange={(e) => setInicioRetro(e.target.value)}
+                  style={{ ...selStyle }}
+                />
+              </label>
 
               <Button onClick={iniciar}>Empezar ayuno</Button>
             </div>
