@@ -16,6 +16,7 @@
     "test:brain-write": "node --experimental-strip-types --test src/lib/brain-write.test.ts",
     "test:sueno": "node --experimental-strip-types --test src/lib/sueno/*.test.ts",
     "test:contenido": "node --experimental-strip-types --test src/lib/contenido/*.test.ts",
+    "test:radar": "node --experimental-strip-types --test src/lib/contenido/radar/*.test.ts",
     "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\"",
     "test:mcp": "node --experimental-strip-types --test src/mcp/*.test.ts"
   },

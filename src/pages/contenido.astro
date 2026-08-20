@@ -3,12 +3,33 @@ export const prerender = false;
 import OSLayout from '../layouts/OSLayout.astro';
 import OSContenido from '../os/components/OSContenido';
 import PageHeader from '../os/components/ui/PageHeader';
+
+const currentTab = Astro.url.searchParams.get('tab') ?? 'pipeline';
 ---
 
 <OSLayout title="Contenido">
   <div class="os-fade-up">
 
     <PageHeader eyebrow="Pipeline editorial" title="Contenido" subtitle="Ideas, produccion y repurposing en un solo pipeline." />
+
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+      <a
+        href="/contenido"
+        class={currentTab === 'pipeline' ? 'os-pill os-pill-accent' : 'os-pill'}
+        style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid var(--os-line);"
+      >
+        <span class="material-symbols-outlined" style="font-size:14px;">edit_note</span>
+        Pipeline
+      </a>
+      <a
+        href="/os/contenido/radar"
+        class="os-pill"
+        style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid var(--os-line);color:var(--os-muted);"
+      >
+        <span class="material-symbols-outlined" style="font-size:14px;">radar</span>
+        Radar
+      </a>
+    </div>
 
     <OSContenido client:load />
   </div>
