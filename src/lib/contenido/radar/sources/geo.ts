@@ -33,3 +33,18 @@ export function countryToIso(country: string): string | undefined {
   if (/^[a-z]{2}$/.test(key)) return key;
   return COUNTRY_TO_ISO[key];
 }
+
+// Mercados que Bing (via SerpAPI) soporta en el parametro cc. Paises fuera de
+// esta lista (Ecuador, Peru, Bolivia...) provocan HTTP 400 "Unsupported
+// country": para ellos se omite cc y Bing responde con su mercado por defecto.
+const BING_SUPPORTED_CC = new Set([
+  'ar', 'au', 'at', 'be', 'br', 'ca', 'cl', 'cn', 'co', 'dk', 'fi', 'fr', 'de',
+  'hk', 'in', 'id', 'ie', 'it', 'jp', 'kr', 'my', 'mx', 'nl', 'nz', 'no', 'ph',
+  'pl', 'pt', 'ru', 'sa', 'za', 'es', 'se', 'ch', 'tw', 'tr', 'gb', 'us',
+]);
+
+/** ISO code solo si Bing lo soporta como mercado; undefined si no. */
+export function countryToBingCc(country: string): string | undefined {
+  const iso = countryToIso(country);
+  return iso && BING_SUPPORTED_CC.has(iso) ? iso : undefined;
+}

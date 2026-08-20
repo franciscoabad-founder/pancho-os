@@ -97,7 +97,7 @@ const SIGNAL_LABEL: Record<string, string> = {
 function statusLine(s: SourceStatus): { text: string; color: string } {
   switch (s.status) {
     case 'ok':
-      return { text: `conectada, ${s.resultCount} resultado(s)`, color: 'var(--os-success, #4ade80)' };
+      return { text: `conectada, ${s.resultCount} resultado(s)`, color: 'var(--os-ok)' };
     case 'empty':
       return { text: 'conectada, sin resultados', color: 'var(--os-muted)' };
     case 'error':
@@ -123,6 +123,7 @@ function OSContentRadarInner() {
   const [filterSource, setFilterSource] = useState('todos');
   const [searchText, setSearchText] = useState('');
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [savingSignalId, setSavingSignalId] = useState<string | null>(null);
   const [expandedScore, setExpandedScore] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -199,6 +200,43 @@ function OSContentRadarInner() {
     }
   }
 
+  // Fuerza de la senal segun evidencia: 5 si fue observada en 2+ fuentes,
+  // 4 si en una, 3 si solo la genero el motor local. Es una regla fija y
+  // visible, no un score disfrazado.
+  function strengthFor(opp: RadarOpportunity): number {
+    const n = opp.observedSources?.length ?? 0;
+    if (n >= 2) return 5;
+    if (n === 1) return 4;
+    return 3;
+  }
+
+  async function saveSignal(opp: RadarOpportunity) {
+    setSavingSignalId(opp.query);
+    try {
+      const observed = opp.observedSources ?? [];
+      const res = await fetch('/api/os/contenido/planner/signals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: opp.query.slice(0, 60),
+          exact_words: opp.original,
+          source: `radar:${observed.length > 0 ? observed.join('+') : 'local'}`,
+          theme: opp.cluster,
+          strength: strengthFor(opp),
+          status: 'new',
+          captured_on: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || String(res.status));
+      toast.show('Guardada como senal en el Planner', 'ok');
+    } catch (err) {
+      toast.show('Error: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    } finally {
+      setSavingSignalId(null);
+    }
+  }
+
   const filtered = useMemo(() => {
     if (!result) return [];
     return result.opportunities.filter((opp) => {
@@ -262,6 +300,7 @@ function OSContentRadarInner() {
               return (
                 <button
                   key={s.value}
+                  aria-pressed={selected}
                   onClick={() => toggleSource(s.value)}
                   title={unconfigured ? cfg.setupInstructions ?? cfg.reason : cfg?.endpoint}
                   className={selected ? 'os-pill os-pill-accent' : 'os-pill'}
@@ -287,12 +326,12 @@ function OSContentRadarInner() {
 
         <div style={{ marginTop: 12 }}>
           <Button size="sm" onClick={runRadar} disabled={loading}>
-            {loading ? 'Analizando...' : 'Ejecutar radar'}
+            {loading ? 'Analizando…' : 'Ejecutar radar'}
           </Button>
         </div>
       </Card>
 
-      {loading && <Spinner label="Analizando oportunidades..." />}
+      {loading && <Spinner label="Analizando oportunidades…" />}
 
       {result && !loading && (
         <div>
@@ -387,7 +426,7 @@ function OSContentRadarInner() {
                             fontWeight: 600,
                             letterSpacing: '0.1em',
                             textTransform: 'uppercase',
-                            color: opp.observed ? 'var(--os-success, #4ade80)' : 'var(--os-muted)',
+                            color: opp.observed ? 'var(--os-ok)' : 'var(--os-muted)',
                           }}
                         >
                           {opp.observed ? (opp.generated ? 'Observada + generada' : 'Observada') : 'Generada local'}
@@ -432,13 +471,21 @@ function OSContentRadarInner() {
                         onClick={() => promote(opp)}
                         disabled={promotingId === opp.query}
                       >
-                        {promotingId === opp.query ? 'Agregando...' : 'Agregar al Content Planner'}
+                        {promotingId === opp.query ? 'Agregando…' : 'Agregar al Content Planner'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => saveSignal(opp)}
+                        disabled={savingSignalId === opp.query}
+                      >
+                        {savingSignalId === opp.query ? 'Guardando…' : 'Guardar como senal'}
                       </Button>
                     </div>
                   </div>
 
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button
+                      aria-expanded={isExpanded}
                       onClick={() => {
                         setExpandedScore((prev) => {
                           const s = new Set(prev);

@@ -14,7 +14,7 @@
 import { readEnv } from '../env.ts';
 import type { RawRadarQuery } from '../types.ts';
 import { fetchJson } from './http.ts';
-import { countryToIso } from './geo.ts';
+import { countryToIso, countryToBingCc } from './geo.ts';
 import { disabledResult, errorResult, okResult, type SourceAdapter, type SourceRunResult } from './types.ts';
 
 const ENV_VAR = 'SERPAPI_API_KEY';
@@ -54,7 +54,7 @@ export const bingAdapter: SourceAdapter = {
         setlang: input.lang,
         api_key: apiKey,
       });
-      const cc = countryToIso(input.country);
+      const cc = countryToBingCc(input.country);
       if (cc) params.set('cc', cc);
       const { data } = await fetchJson(`https://serpapi.com/search.json?${params}`, input.timeoutMs);
       const values = parseRelatedSearches(data);

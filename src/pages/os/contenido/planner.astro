@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+import OSLayout from '../../../layouts/OSLayout.astro';
+import OSContentPlanner from '../../../os/components/contenido/OSContentPlanner';
+import PageHeader from '../../../os/components/ui/PageHeader';
+---
+
+<OSLayout title="Content Planner">
+  <div class="os-fade-up">
+    <PageHeader
+      eyebrow="Escuchar, dar forma, publicar, aprender"
+      title="Content Planner"
+      subtitle="La semana de contenido: una historia padre, maximo tres piezas, y el veredicto al final."
+    />
+    <OSContentPlanner client:load />
+  </div>
+
+  <style is:global>
+    @media (max-width: 820px) {
+      .os-card-2 { padding: 1rem; }
+    }
+  </style>
+</OSLayout>

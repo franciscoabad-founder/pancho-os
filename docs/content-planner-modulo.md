@@ -1,6 +1,6 @@
 # Planificador de contenido
 
-Este modulo guarda el metodo de la semana de contenido: **escuchar, dar forma, publicar, aprender**. Sirve para convertir una frase real de la audiencia en una semana chica que se puede reutilizar. Todavia no tiene pantalla. Vive en la logica del sistema (`src/lib/contenido/`) y en seis tablas de la base de datos.
+Este modulo guarda el metodo de la semana de contenido: **escuchar, dar forma, publicar, aprender**. Sirve para convertir una frase real de la audiencia en una semana chica que se puede reutilizar. Vive en la logica del sistema (`src/lib/contenido/`), en seis tablas de la base de datos y en la pantalla `/os/contenido/planner` (el Desk semanal).
 
 El panel actual de Contenido (ideas, formato, plataformas) sigue igual. Este modulo es el planificador semanal. No lo reemplaza.
 
@@ -81,13 +81,21 @@ Una semana puede apuntar a una campana. Una historia apunta a senal, campana y s
 
 ## Lo que este modulo todavia no hace
 
-- No tiene pantalla nueva. El Contenido que ya ves en el OS sigue siendo el de ideas.
 - No habla con Notion. El kit original era para Notion; aqui las reglas viven en codigo y en tablas.
-- No se aplico todavia la migracion SQL en produccion. Hay que correr el archivo en `supabase/migrations/`.
-- No escribe en GBrain ni en el MCP. Eso puede venir despues.
+- No escribe en GBrain ni en el MCP. Eso puede venir despues (Fase 2: mineria de PanchoAtlas como senales).
+- La publicacion automatica (Postiz/Hermes) no esta conectada todavia (Fase 3).
+
+## Pantalla y API
+
+- Desk semanal: `/os/contenido/planner` (enlazado desde la pestaña Contenido).
+- Agregado del Desk: `GET /api/os/contenido/planner/desk`.
+- CRUD por entidad: `/api/os/contenido/planner/{signals|campaigns|sprints|stories|assets|results}`.
+- Reglas en servidor: la asignacion de historias al sprint valida 1 padre + maximo 3 piezas (409 si se viola); las etapas solo avanzan por la maquina de estados; una senal usada en una historia pasa a `in_use` automaticamente.
 
 ## Donde esta el codigo
 
-- Tipos y reglas: `src/lib/contenido/`
-- Tablas: `supabase/migrations/20260815000100_contenido_planner.sql`
+- Tipos y reglas: `src/lib/contenido/` (incluye `planner.ts`: validacion y regla semanal)
+- Tablas: `supabase/migrations/20260815000100_contenido_planner.sql` (idempotente, con `set search_path = public`)
+- API: `src/pages/api/os/contenido/planner/`
+- UI: `src/os/components/contenido/OSContentPlanner.tsx`
 - Pruebas: `npm run test:contenido`

@@ -315,3 +315,12 @@ test('score: observada en fuente externa supera a solo-generada', () => {
   const observada = scoreOpportunity({ ...SCORE_BASE, observedSources: ['bing'] });
   assert.ok(observada.score > generada.score);
 });
+
+test('bing: omite cc para paises no soportados (Ecuador), lo incluye para soportados', async () => {
+  process.env.SERPAPI_API_KEY = 'test-key-123';
+  const calls = mockFetchOnce(() => jsonResponse({ related_searches: [] }));
+  await bingAdapter.fetchSuggestions(INPUT); // Ecuador
+  assert.ok(!calls[0].includes('cc='), 'Ecuador no debe mandar cc');
+  await bingAdapter.fetchSuggestions({ ...INPUT, country: 'Mexico' });
+  assert.match(calls[1], /cc=mx/);
+});

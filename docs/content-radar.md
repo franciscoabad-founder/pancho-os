@@ -154,6 +154,14 @@ Body:
 
 Si las columnas de metadata no existen todavía en Supabase, la idea base se guarda igual y la respuesta incluye un `warning` (fallback solo ante errores reales de schema; errores de auth/conexión/validación no se ocultan).
 
+## Radar → Planner (senal)
+
+Cada oportunidad tiene tambien el boton **Guardar como senal**, que crea una fila en `contenido_signals` con `source: radar:<fuentes>` y la fuerza segun evidencia real:
+
+- 5 si fue observada en 2 o mas fuentes externas
+- 4 si fue observada en 1 fuente externa
+- 3 si solo la genero el motor local (no aparece en el inbox de senales fuertes del Desk, que exige fuerza 4-5)
+
 ## Score
 
 El `opportunity_score` es una heurística entre 0 y 1 con cinco componentes (pesos entre paréntesis):

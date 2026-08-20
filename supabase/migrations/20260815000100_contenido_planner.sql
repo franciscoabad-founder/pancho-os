@@ -2,6 +2,10 @@
 -- Six entities from the Content Planner kit. Prefix contenido_.
 -- No tenant_id: OS operational tables are single-tenant and use the service role.
 
+-- Este proyecto aloja tambien el schema gbrain: sin esta linea, el DDL cae en
+-- el schema equivocado segun el search_path del rol que ejecuta.
+set search_path = public;
+
 create or replace function contenido_set_updated_at()
 returns trigger
 language plpgsql
@@ -12,7 +16,7 @@ begin
 end;
 $$;
 
-create table contenido_signals (
+create table if not exists contenido_signals (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   exact_words text not null,
@@ -28,7 +32,7 @@ create table contenido_signals (
   updated_at timestamptz not null default now()
 );
 
-create table contenido_campaigns (
+create table if not exists contenido_campaigns (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   objective text,
@@ -46,7 +50,7 @@ create table contenido_campaigns (
   updated_at timestamptz not null default now()
 );
 
-create table contenido_weekly_sprints (
+create table if not exists contenido_weekly_sprints (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   week_of date not null,
@@ -61,7 +65,7 @@ create table contenido_weekly_sprints (
   updated_at timestamptz not null default now()
 );
 
-create table contenido_stories (
+create table if not exists contenido_stories (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   signal_id uuid references contenido_signals (id) on delete set null,
@@ -84,7 +88,7 @@ create table contenido_stories (
   check (parent_story_id is distinct from id)
 );
 
-create table contenido_proof_assets (
+create table if not exists contenido_proof_assets (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   type text,
@@ -103,7 +107,7 @@ create table contenido_proof_assets (
   updated_at timestamptz not null default now()
 );
 
-create table contenido_results (
+create table if not exists contenido_results (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   story_id uuid not null references contenido_stories (id) on delete cascade,
@@ -124,39 +128,42 @@ create table contenido_results (
   updated_at timestamptz not null default now()
 );
 
-create index contenido_sprints_campaign_id_idx on contenido_weekly_sprints (campaign_id);
-create index contenido_sprints_week_of_idx on contenido_weekly_sprints (week_of);
-create index contenido_stories_signal_id_idx on contenido_stories (signal_id);
-create index contenido_stories_campaign_id_idx on contenido_stories (campaign_id);
-create index contenido_stories_sprint_id_idx on contenido_stories (sprint_id);
-create index contenido_stories_parent_story_id_idx on contenido_stories (parent_story_id);
-create index contenido_stories_stage_idx on contenido_stories (stage);
-create index contenido_stories_publish_date_idx on contenido_stories (publish_date);
-create index contenido_proof_assets_story_id_idx on contenido_proof_assets (story_id);
-create index contenido_results_story_id_idx on contenido_results (story_id);
-create index contenido_results_verdict_idx on contenido_results (verdict);
+create index if not exists contenido_sprints_campaign_id_idx on contenido_weekly_sprints (campaign_id);
+-- Un sprint por semana civil: la app valida antes de insertar y este indice
+-- es la red de seguridad ante dobles clics o retries concurrentes.
+create unique index if not exists contenido_sprints_week_of_key on contenido_weekly_sprints (week_of);
+create index if not exists contenido_sprints_week_of_idx on contenido_weekly_sprints (week_of);
+create index if not exists contenido_stories_signal_id_idx on contenido_stories (signal_id);
+create index if not exists contenido_stories_campaign_id_idx on contenido_stories (campaign_id);
+create index if not exists contenido_stories_sprint_id_idx on contenido_stories (sprint_id);
+create index if not exists contenido_stories_parent_story_id_idx on contenido_stories (parent_story_id);
+create index if not exists contenido_stories_stage_idx on contenido_stories (stage);
+create index if not exists contenido_stories_publish_date_idx on contenido_stories (publish_date);
+create index if not exists contenido_proof_assets_story_id_idx on contenido_proof_assets (story_id);
+create index if not exists contenido_results_story_id_idx on contenido_results (story_id);
+create index if not exists contenido_results_verdict_idx on contenido_results (verdict);
 
-create trigger contenido_signals_updated_at
+create or replace trigger contenido_signals_updated_at
   before update on contenido_signals
   for each row execute function contenido_set_updated_at();
 
-create trigger contenido_campaigns_updated_at
+create or replace trigger contenido_campaigns_updated_at
   before update on contenido_campaigns
   for each row execute function contenido_set_updated_at();
 
-create trigger contenido_weekly_sprints_updated_at
+create or replace trigger contenido_weekly_sprints_updated_at
   before update on contenido_weekly_sprints
   for each row execute function contenido_set_updated_at();
 
-create trigger contenido_stories_updated_at
+create or replace trigger contenido_stories_updated_at
   before update on contenido_stories
   for each row execute function contenido_set_updated_at();
 
-create trigger contenido_proof_assets_updated_at
+create or replace trigger contenido_proof_assets_updated_at
   before update on contenido_proof_assets
   for each row execute function contenido_set_updated_at();
 
-create trigger contenido_results_updated_at
+create or replace trigger contenido_results_updated_at
   before update on contenido_results
   for each row execute function contenido_set_updated_at();
 
@@ -173,3 +180,6 @@ comment on table contenido_weekly_sprints is 'Real weekly capacity and focus. Ca
 comment on table contenido_stories is 'Parent and derivative pieces with stage, date, and next action.';
 comment on table contenido_proof_assets is 'Evidence and reusable assets with rights status.';
 comment on table contenido_results is 'Learn loop: metric, verdict Reuse/Refine/Retire, reuse queue.';
+
+-- PostgREST schema cache reload (Supabase listens on the pgrst channel).
+notify pgrst, 'reload schema';
