@@ -18,4 +18,14 @@
 // su lugar. Ver deploy.yml y CLAUDE.md.
 
 process.loadEnvFile(new URL('../.env', import.meta.url));
+
+// Este VPS tiene IPv6 con ping funcional pero el handshake HTTPS por esa via
+// se cuelga contra Cloudflare (SerpAPI, YouTube): fetch() nativo tardaba
+// ~7.2s por request (Node intenta IPv6 primero, agota happy-eyeballs, cae a
+// IPv4) contra 165ms forzando IPv4 de entrada. Afecta a toda llamada saliente
+// del server (radar, futuras integraciones), por eso vive aqui y no en cada
+// adapter. Verificado en vivo el 20 ago 2026: 7199ms -> 165ms.
+const { setDefaultResultOrder } = await import('node:dns');
+setDefaultResultOrder('ipv4first');
+
 await import('../dist/server/entry.mjs');
