@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { isOsAuthorized } from '../../os/lib/osAuth';
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -8,7 +9,8 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async (context) => {
+  if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
   const adminToken = import.meta.env.CORTEX_ADMIN_TOKEN;
   if (!adminToken) return json({ error: 'CORTEX_ADMIN_TOKEN no configurado' }, 500);
 
