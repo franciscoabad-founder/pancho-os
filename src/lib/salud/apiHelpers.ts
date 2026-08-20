@@ -1,4 +1,5 @@
 import type { APIContext } from 'astro';
+import { esTokenValido } from '../osTokens.ts';
 
 /**
  * Autoriza escritura externa (balanza Renpho, Fitbit, n8n, Telegram) vía header
@@ -7,8 +8,7 @@ import type { APIContext } from 'astro';
  */
 export function isExternalTokenAuthorized(context: Pick<APIContext, 'request'>): boolean {
   const header = context.request.headers.get('x-os-token');
-  const token = import.meta.env.OS_API_TOKEN;
-  return !!(header && token && header === token);
+  return esTokenValido(header, import.meta.env.OS_API_TOKEN, import.meta.env.OS_API_TOKENS);
 }
 
 const TZ = 'America/Guayaquil';

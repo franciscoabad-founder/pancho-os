@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { handleMcpStatelessRequest, type McpJsonRpcRequest } from '../../mcp/engine.ts';
+import { esTokenValido } from '../../lib/osTokens.ts';
 
 export const prerender = false;
 
@@ -236,9 +237,11 @@ async function executeOsTool(request: Request, name: string, args: Record<string
 export const POST: APIRoute = async ({ request }) => {
   const tokenHeader = request.headers.get('X-OS-Token') || request.headers.get('Authorization')?.replace('Bearer ', '');
   const expectedToken = import.meta.env.OS_API_TOKEN || process.env.OS_API_TOKEN;
+  const listaTokens = import.meta.env.OS_API_TOKENS || process.env.OS_API_TOKENS;
 
-  // Validación de seguridad de la petición stateless
-  if (!expectedToken || tokenHeader !== expectedToken) {
+  // Validación de seguridad de la petición stateless: token maestro o key con
+  // nombre por cliente (OS_API_TOKENS).
+  if (!expectedToken || !esTokenValido(tokenHeader, expectedToken, listaTokens)) {
     return new Response(
       JSON.stringify({
         jsonrpc: '2.0',

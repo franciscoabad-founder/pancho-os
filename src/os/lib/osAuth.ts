@@ -1,4 +1,5 @@
 import type { APIContext } from 'astro';
+import { esTokenValido } from '../../lib/osTokens.ts';
 
 export function isOsAuthorized(context: Pick<APIContext, 'cookies' | 'request'>): boolean {
   const cookieToken = context.cookies.get('os_auth')?.value;
@@ -9,7 +10,8 @@ export function isOsAuthorized(context: Pick<APIContext, 'cookies' | 'request'>)
   const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1];
   const externalToken = context.request.headers.get('x-os-token');
   const apiToken = import.meta.env.OS_API_TOKEN ?? sessionToken;
-  return !!(apiToken && (bearer === apiToken || externalToken === apiToken));
+  const lista = import.meta.env.OS_API_TOKENS;
+  return esTokenValido(bearer, apiToken, lista) || esTokenValido(externalToken, apiToken, lista);
 }
 
 export const json = (data: unknown, status = 200) =>

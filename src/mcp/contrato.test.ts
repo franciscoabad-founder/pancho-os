@@ -58,3 +58,15 @@ test('ayuno_iniciar pasa inicio retroactivo y ayuno_terminar cierra el abierto s
   const ahora = toToolRequest('ayuno_terminar', {});
   assert.equal(typeof ahora.body?.fin, 'string');
 });
+
+test('esTokenValido acepta el maestro y las keys con nombre, y rechaza lo demas', async () => {
+  const { esTokenValido } = await import('../lib/osTokens.ts');
+  const lista = 'kimi:tok-kimi,grok:tok-grok';
+  assert.equal(esTokenValido('maestro', 'maestro', lista), true);
+  assert.equal(esTokenValido('tok-kimi', 'maestro', lista), true);
+  assert.equal(esTokenValido('tok-grok', 'maestro', lista), true);
+  assert.equal(esTokenValido('kimi', 'maestro', lista), false);
+  assert.equal(esTokenValido('otro', 'maestro', lista), false);
+  assert.equal(esTokenValido('', 'maestro', lista), false);
+  assert.equal(esTokenValido('tok-kimi', 'maestro', undefined), false);
+});
