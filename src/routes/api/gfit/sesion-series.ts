@@ -56,6 +56,12 @@ export const Route = createFileRoute('/api/gfit/sesion-series')({
           const body = await request.json();
           if (!body.sesion_id) return json({ error: 'sesion_id requerido' }, 400);
           if (!body.ejercicio_id) return json({ error: 'ejercicio_id requerido' }, 400);
+          // Mismo guard que salud/cuerpo.ts: sin esto, un body con solo los
+          // ids insertaba una fila con peso_kg/reps/duracion_s en null,
+          // silenciosa, que despues ensucia volumen/1RM/recovery en progreso.
+          if (body.peso_kg == null && body.peso == null && body.reps == null && body.duracion_s == null) {
+            return json({ error: 'al menos una medición requerida (peso_kg, peso, reps o duracion_s)' }, 400);
+          }
           const tipo = TIPOS.includes(body.tipo) ? body.tipo : 'working';
 
           const sb = getSupabaseServer();

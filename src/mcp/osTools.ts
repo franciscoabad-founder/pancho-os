@@ -214,6 +214,15 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       const ejercicioId = String(args.ejercicio_id ?? '').trim();
       if (!sesionId) throw new Error('sesion_id requerido: se abre con os_api_request module salud/sesiones method POST body {tipo:"gym"}, tomando el id de sesion.id en la respuesta (no existe gfit/sesiones).');
       if (!ejercicioId) throw new Error('ejercicio_id requerido: sale de dia_ejercicios (campo ejercicio_id) en gfit_dia_hoy, o del catalogo completo con os_api_request module gfit/catalogo.');
+      // El catalogo (engine.ts) promete "al menos una medicion" igual que
+      // cuerpo_registrar, pero a diferencia de ese caso ni este tool ni el
+      // endpoint (sesion-series.ts) lo chequeaban: una llamada con solo los
+      // ids pasaba y quedaba una fila con peso_kg/reps/duracion_s en null en
+      // gfit_sesion_series, la tabla que alimenta volumen/1RM/recovery en
+      // /api/gfit/progreso. Mismo molde que tareas_update (osTools.ts).
+      if (args.peso_kg == null && args.peso == null && args.reps == null && args.duracion_s == null) {
+        throw new Error('Nada que registrar: pasa al menos una medicion (peso_kg, peso, reps o duracion_s).');
+      }
       return {
         path: '/api/gfit/sesion-series',
         method: 'POST',
@@ -281,7 +290,8 @@ export function isoWeekdayHoyGuayaquil(): number {
 // incluidas) que ya viene dentro de dia.gfit_dia_ejercicios. Por eso esta funcion
 // vive fuera de toToolRequest (que solo arma un ToolRequest, no orquesta varios).
 export async function gfitDiaHoy(request: Request, headers: Headers, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  let rutinaId = typeof args.rutina_id === 'string' && args.rutina_id.trim() ? args.rutina_id.trim() : null;
+  const rutinaExplicita = typeof args.rutina_id === 'string' && args.rutina_id.trim() ? args.rutina_id.trim() : null;
+  let rutinaId = rutinaExplicita;
   if (!rutinaId) {
     const rutinasData = await fetchOsJson(request, headers, '/api/gfit/rutinas');
     const rutinas = Array.isArray(rutinasData.rutinas) ? (rutinasData.rutinas as Array<Record<string, unknown>>) : [];
@@ -291,13 +301,28 @@ export async function gfitDiaHoy(request: Request, headers: Headers, args: Recor
     }
     rutinaId = activa.id;
   }
+  // "la rutina activa" solo es correcto cuando la resolvimos nosotros; si el
+  // caller paso rutina_id explicito no consultamos ninguna rutina activa.
+  const refRutina = rutinaExplicita ? 'La rutina consultada' : 'La rutina activa';
 
   const diasData = await fetchOsJson(request, headers, `/api/gfit/dias?rutina_id=${encodeURIComponent(rutinaId)}`);
   const dias = Array.isArray(diasData.dias) ? (diasData.dias as Array<Record<string, unknown>>) : [];
+  // Los dias tipo 'orden' y 'descanso' se guardan con weekday=null (dias.ts) --
+  // nunca van a matchear el weekday de hoy. Si la rutina no tiene NINGUN dia
+  // tipo 'weekday', decir "no hay entreno hoy" seria falso (la rutina si
+  // tiene dias, solo que numerados en vez de por dia de la semana).
+  const usaWeekday = dias.some((d) => d.tipo === 'weekday' || typeof d.weekday === 'number');
+  if (dias.length > 0 && !usaWeekday) {
+    return {
+      dia: null,
+      dia_ejercicios: [],
+      mensaje: `${refRutina} no organiza sus dias por dia de la semana (es secuencial/orden). No puedo resolver "hoy" automaticamente: usa os_api_request module gfit/dias con query {rutina_id:"${rutinaId}"} para ver la lista completa y decidir cual sigue.`,
+    };
+  }
   const weekdayHoy = isoWeekdayHoyGuayaquil();
   const diaHoy = dias.find((d) => d.weekday === weekdayHoy);
   if (!diaHoy || typeof diaHoy.id !== 'string') {
-    return { dia: null, dia_ejercicios: [], mensaje: 'La rutina activa no tiene un dia programado para hoy.' };
+    return { dia: null, dia_ejercicios: [], mensaje: `${refRutina} no tiene un dia programado para hoy.` };
   }
 
   // dia_ejercicios se saca de diaHoy y se quita del objeto dia antes de devolver:

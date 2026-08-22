@@ -80,7 +80,7 @@ test('gfit_registrar_serie rechaza sesion_id o ejercicio_id de solo espacios, no
 });
 
 test('gfit_registrar_serie recorta espacios de sesion_id y ejercicio_id validos', () => {
-  const req = toToolRequest('gfit_registrar_serie', { sesion_id: ' s1 ', ejercicio_id: ' e1 ' });
+  const req = toToolRequest('gfit_registrar_serie', { sesion_id: ' s1 ', ejercicio_id: ' e1 ', reps: 5 });
   assert.equal(req.body?.sesion_id, 's1');
   assert.equal(req.body?.ejercicio_id, 'e1');
 });
@@ -89,7 +89,22 @@ test('gfit_registrar_serie acepta peso alternativo con unidad en vez de peso_kg'
   const req = toToolRequest('gfit_registrar_serie', { sesion_id: 's1', ejercicio_id: 'e1', peso: 176, unidad: 'lb' });
   assert.equal(req.body?.peso, 176);
   assert.equal(req.body?.unidad, 'lb');
-  assert.equal(req.body?.peso_kg, undefined);
+  // req.body.peso_kg SI es una clave presente (con valor undefined) -- lo que
+  // de verdad protege a resolverPesoKg (sesion-series.ts, chequea 'peso_kg' in
+  // body) es que JSON.stringify la descarta en executeOsTool. Verificar eso,
+  // no solo el valor, para no dejar pasar una regresion si algun dia se manda
+  // el body sin pasar por JSON.stringify primero.
+  assert.equal('peso_kg' in JSON.parse(JSON.stringify(req.body)), false);
+});
+
+test('gfit_registrar_serie exige al menos una medicion (peso_kg, peso, reps o duracion_s)', () => {
+  assert.throws(
+    () => toToolRequest('gfit_registrar_serie', { sesion_id: 's1', ejercicio_id: 'e1' }),
+    /al menos una medicion/,
+  );
+  // Cualquiera de las 4 alcanza.
+  assert.doesNotThrow(() => toToolRequest('gfit_registrar_serie', { sesion_id: 's1', ejercicio_id: 'e1', reps: 8 }));
+  assert.doesNotThrow(() => toToolRequest('gfit_registrar_serie', { sesion_id: 's1', ejercicio_id: 'e1', duracion_s: 30 }));
 });
 
 test('gfit_dia_hoy resuelve la rutina activa, encuentra el dia de hoy y usa los ejercicios ya anidados sin un tercer fetch', async (t) => {
@@ -120,6 +135,46 @@ test('gfit_dia_hoy resuelve la rutina activa, encuentra el dia de hoy y usa los 
   // Un solo GET a /api/gfit/dias, ningun round-trip extra a /api/gfit/dia-ejercicios.
   assert.equal(llamadas.some((u) => u.includes('/api/gfit/dia-ejercicios')), false);
   assert.equal(llamadas.length, 2);
+});
+
+test('gfit_dia_hoy no miente "no hay entreno hoy" en una rutina tipo orden (weekday null)', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (input: unknown) => {
+    const url = String(input);
+    if (url.includes('/api/gfit/rutinas')) {
+      return new Response(JSON.stringify({ rutinas: [{ id: 'rut-orden', estado: 'activa' }] }), { status: 200 });
+    }
+    if (url.includes('/api/gfit/dias')) {
+      // Rutina secuencial: dias con tipo 'orden', weekday siempre null.
+      return new Response(JSON.stringify({
+        dias: [
+          { id: 'dia-1', tipo: 'orden', weekday: null, orden: 1 },
+          { id: 'dia-2', tipo: 'orden', weekday: null, orden: 2 },
+        ],
+      }), { status: 200 });
+    }
+    throw new Error(`fetch no esperado en el test: ${url}`);
+  });
+
+  const resultado = await gfitDiaHoy(new Request('https://os.example.com/api/mcp'), new Headers(), {});
+  assert.equal(resultado.dia, null);
+  // No debe decir "no tiene un dia programado para hoy" (falso: si tiene dias,
+  // solo que no estan indexados por dia de la semana).
+  assert.doesNotMatch(String(resultado.mensaje), /no tiene un dia programado/);
+  assert.match(String(resultado.mensaje), /secuencial|orden/);
+});
+
+test('gfit_dia_hoy dice "la rutina consultada" (no "activa") cuando el caller pasa rutina_id explicito', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (input: unknown) => {
+    const url = String(input);
+    if (url.includes('/api/gfit/dias')) {
+      return new Response(JSON.stringify({ dias: [{ id: 'dia-1', tipo: 'weekday', weekday: 99 }] }), { status: 200 });
+    }
+    throw new Error(`fetch no esperado en el test: ${url}`);
+  });
+
+  const resultado = await gfitDiaHoy(new Request('https://os.example.com/api/mcp'), new Headers(), { rutina_id: 'rut-explicita' });
+  assert.match(String(resultado.mensaje), /rutina consultada/);
+  assert.doesNotMatch(String(resultado.mensaje), /rutina activa/);
 });
 
 test('gfit_dia_hoy usa rutina_id explicito sin consultar la rutina activa', async (t) => {
