@@ -5,11 +5,14 @@
   "engines": {
     "node": ">=22.12.0"
   },
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro",
+    "dev": "vite dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "vite build",
+    "preview": "vite preview",
     "test:salud": "node --experimental-strip-types --test src/lib/salud/*.test.ts",
     "test:habitos": "node --experimental-strip-types --test src/lib/habitos/*.test.ts src/lib/juego/*.test.ts",
     "test:gfit": "node --experimental-strip-types --test src/lib/gfit/*.test.ts",
@@ -17,25 +20,32 @@
     "test:sueno": "node --experimental-strip-types --test src/lib/sueno/*.test.ts",
     "test:contenido": "node --experimental-strip-types --test src/lib/contenido/*.test.ts",
     "test:radar": "node --experimental-strip-types --test src/lib/contenido/radar/*.test.ts",
-    "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\"",
-    "test:mcp": "node --experimental-strip-types --test src/mcp/*.test.ts"
+    "test:mcp": "node --experimental-strip-types --test src/mcp/*.test.ts",
+    "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\""
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.5",
-    "@astrojs/node": "^11.1.2",
-    "@astrojs/react": "^6.0.2",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.2.4",
+    "@tanstack/react-devtools": "latest",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-devtools": "latest",
+    "@tanstack/react-start": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^7.2.2",
     "d3": "^7.9.0",
+    "nitro": "3.0.260610-beta",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19"
+    "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/devtools-vite": "latest",
+    "@tanstack/router-cli": "^1.132.0",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0"
   }
 }

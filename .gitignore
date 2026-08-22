@@ -1,7 +1,10 @@
 # build output
 dist/
+.output/
 # generated types
 .astro/
+.tanstack/
+src/routeTree.gen.ts
 
 # dependencies
 node_modules/
