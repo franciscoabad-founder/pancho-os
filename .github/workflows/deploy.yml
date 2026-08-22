@@ -2,10 +2,39 @@ name: Deploy to VPS
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, tanstack-migration ]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: |
+          npm run test:salud
+          npm run test:habitos
+          npm run test:gfit
+          npm run test:brain-write
+          npm run test:sueno
+          npm run test:contenido
+          npm run test:radar
+          npm run test:mcp
+          npm run test:auth
+
   deploy:
+    needs: test
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
