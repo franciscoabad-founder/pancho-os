@@ -7,7 +7,13 @@ export const prerender = false;
 type ToolRequest = { path: string; method: string; body?: Record<string, unknown> };
 
 const MCP_OS_MODULES = new Set([
-  'agenda', 'aprobaciones', 'bandeja', 'biometricas', 'comidas', 'contenido',
+  // 'comidas' retirado (22-ago-2026): pagina 301-redirigida a
+  // /salud/nutricion desde hace tiempo, cero callers de UI confirmados por
+  // grep, pero seguia en este allowlist -- un agente podia escribir en una
+  // tabla que nadie mira. El endpoint api/comidas.ts se deja vivo por
+  // ahora (no se confirmaron cero llamadores EXTERNOS al repo, ej. n8n);
+  // se retira del todo en Fase 2 si se confirma que no hace falta.
+  'agenda', 'aprobaciones', 'bandeja', 'biometricas', 'contenido',
   'cuentas', 'deudas', 'dia', 'gastos', 'gfit/catalogo', 'gfit/config',
   'gfit/dia-ejercicios', 'gfit/dias', 'gfit/logros', 'gfit/progreso',
   'gfit/rutinas', 'gfit/series', 'gfit/sesion-series', 'habitos',

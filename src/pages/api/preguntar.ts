@@ -1,17 +1,12 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { isOsAuthorized, json } from '../../os/lib/osAuth';
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-export const POST: APIRoute = async ({ cookies, request }) => {
-  const token = cookies.get('os_auth')?.value;
-  const expected = import.meta.env.OS_AUTH_TOKEN;
-  if (!token || !expected || token !== expected) return json({ error: 'Unauthorized' }, 401);
+export const POST: APIRoute = async (context) => {
+  // Ver capturar.ts: mismo unificado a isOsAuthorized (acepta Bearer/X-OS-Token).
+  if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
+  const { request } = context;
 
   const n8nUrl = import.meta.env.N8N_ASSISTANT_URL;
   if (!n8nUrl) return json({ error: 'N8N_ASSISTANT_URL no configurado' }, 500);

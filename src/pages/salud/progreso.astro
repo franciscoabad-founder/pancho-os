@@ -1,15 +1,9 @@
 ---
 export const prerender = false;
-import OSLayout from '../../layouts/OSLayout.astro';
-import OSSaludProgreso from '../../os/components/salud/OSSaludProgreso';
-import OSSaludNav from '../../os/components/salud/OSSaludNav.astro';
-import PageHeader from '../../os/components/ui/PageHeader';
+// Bug activo confirmado (auditoria 22-ago-2026): esta pagina leia
+// sesiones -> sets_log, pero el reproductor GFIT (la fuente real de
+// entrenamiento) escribe cada set en gfit_sesion_series, nunca en
+// sets_log. Cualquiera que entrene con GFIT veia esta pantalla vacia.
+// OSGfitProgreso (en /gfit) es la fuente de verdad correcta.
+return Astro.redirect('/gfit?tab=progreso', 301);
 ---
-
-<OSLayout title="Progreso">
-  <div class="os-fade-up">
-    <PageHeader eyebrow="Salud · Progreso" title="Progreso" />
-    <OSSaludNav activo="progreso" />
-    <OSSaludProgreso client:load />
-  </div>
-</OSLayout>

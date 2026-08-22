@@ -5,8 +5,19 @@ import OSGfitRutinas from './OSGfitRutinas';
 import OSGfitBiblioteca from './OSGfitBiblioteca';
 import OSGfitProgreso from './OSGfitProgreso';
 
+type Tab = 'planes' | 'biblioteca' | 'progreso';
+
+function tabInicial(): Tab {
+  if (typeof window === 'undefined') return 'planes';
+  const t = new URLSearchParams(window.location.search).get('tab');
+  return t === 'biblioteca' || t === 'progreso' ? t : 'planes';
+}
+
 export default function OSGfit() {
-  const [tab, setTab] = useState<'planes' | 'biblioteca' | 'progreso'>('planes');
+  // Deep-link a /gfit?tab=progreso: usado por el redirect de la ex-pagina
+  // /salud/progreso (bug de datos vacios, ver salud/progreso.astro) y por
+  // el nav de Salud, para no aterrizar siempre en la pestana Planes.
+  const [tab, setTab] = useState<Tab>(tabInicial);
   const [unidad, setUnidad] = useState<UnidadPeso>('kg');
 
   useEffect(() => {

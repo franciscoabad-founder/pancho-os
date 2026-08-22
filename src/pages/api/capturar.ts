@@ -1,17 +1,14 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { isOsAuthorized, json } from '../../os/lib/osAuth';
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-export const POST: APIRoute = async ({ cookies, request }) => {
-  const token = cookies.get('os_auth')?.value;
-  const expected = import.meta.env.OS_AUTH_TOKEN;
-  if (!token || !expected || token !== expected) return json({ error: 'Unauthorized' }, 401);
+export const POST: APIRoute = async (context) => {
+  // Antes: solo cookie de navegador a mano, nunca aceptaba Bearer/X-OS-Token
+  // (un agente no podia usar este endpoint aunque quisiera). Unificado al
+  // mismo chequeo que el resto de la API.
+  if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
+  const { request } = context;
 
   const webhook = import.meta.env.CAPTURE_WEBHOOK_URL;
   if (!webhook) return json({ error: 'CAPTURE_WEBHOOK_URL no configurado' }, 500);
