@@ -9,7 +9,7 @@ import { esTokenValido } from '../../lib/osTokens.ts';
 // mientras los dos endpoints conviven durante la migracion. Se re-exporta
 // toToolRequest porque los tests de contrato (src/mcp/contrato.test.ts) lo
 // importan desde aca.
-export { toToolRequest } from '../../mcp/osTools.ts';
+export { toToolRequest, gfitDiaHoy, gfitConsultarProgreso, isoWeekdayHoyGuayaquil } from '../../mcp/osTools.ts';
 
 export const prerender = false;
 

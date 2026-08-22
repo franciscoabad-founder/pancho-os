@@ -18,7 +18,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { handleMcpStatelessRequest, type McpJsonRpcRequest } from '../../mcp/engine.ts';
 import { executeOsTool } from '../../mcp/osTools.ts';
 import { esTokenValido } from '../../lib/osTokens.ts';
-import { readEnv } from '../../lib/contenido/radar/env.ts';
+import { readEnv } from '../../lib/env.ts';
 
 export const Route = createFileRoute('/api/mcp')({
   server: {

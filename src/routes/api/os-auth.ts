@@ -5,7 +5,7 @@
 // cliente, asi que nada de esto llega al bundle del navegador.
 
 import { createFileRoute } from '@tanstack/react-router';
-import { readEnv } from '../../lib/contenido/radar/env.ts';
+import { readEnv } from '../../lib/env.ts';
 import { cookieSesionOs, cookieSesionOsBorrada } from '../../server/osAuth.ts';
 
 function redirigir(location: string, cookie?: string): Response {

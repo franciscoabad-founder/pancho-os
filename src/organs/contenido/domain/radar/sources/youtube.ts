@@ -12,7 +12,7 @@
 //
 // signalType is 'related-video-topic' — never 'autocomplete'.
 
-import { readEnv } from '../env.ts';
+import { readEnv } from '../../../../../lib/env.ts';
 import type { RawRadarQuery } from '../types.ts';
 import { fetchJson } from './http.ts';
 import { countryToIso } from './geo.ts';

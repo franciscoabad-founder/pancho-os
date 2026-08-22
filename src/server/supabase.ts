@@ -13,7 +13,7 @@
 // paginas de Astro todavia lo usan mientras conviven los dos runtimes.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { readEnv } from '../lib/contenido/radar/env.ts';
+import { readEnv } from '../lib/env.ts';
 
 export function getSupabaseServer(): SupabaseClient {
   const url = readEnv('SUPABASE_URL');

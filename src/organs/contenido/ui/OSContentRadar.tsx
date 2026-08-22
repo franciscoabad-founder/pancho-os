@@ -8,7 +8,7 @@ import {
   Spinner,
   ToastProvider,
   useToast,
-} from '../ui';
+} from '../../../os/components/ui';
 
 interface ScoreBreakdown {
   observedSignal: number;

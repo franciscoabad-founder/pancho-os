@@ -15,7 +15,7 @@
 // desde src/start.ts (ese archivo si se bundlea para el cliente).
 
 import { esTokenValido } from '../lib/osTokens.ts';
-import { readEnv } from '../lib/contenido/radar/env.ts';
+import { readEnv } from '../lib/env.ts';
 
 // Nombre y vida de la cookie de sesion del navegador. Iguales a los de la
 // version Astro: cambiarlos desloguea a todo el mundo.

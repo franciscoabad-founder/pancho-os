@@ -321,6 +321,41 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'gfit_dia_hoy',
+    description: 'Consulta el dia de entrenamiento de hoy en la rutina activa de GFIT, con sus ejercicios y series planificadas. Resuelve el dia por el weekday de hoy en Guayaquil.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rutina_id: { type: 'string', description: 'Id de la rutina a consultar. Omite para usar la rutina activa.' },
+      },
+    },
+  },
+  {
+    name: 'gfit_registrar_serie',
+    description: 'Registra una serie ejecutada durante una sesion de entrenamiento de GFIT (peso, reps, tipo). Requiere el sesion_id de la sesion abierta, el ejercicio_id del catalogo, y al menos una medicion (peso_kg, peso, reps o duracion_s).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sesion_id: { type: 'string', description: 'Id de la sesion de gym abierta. No existe gfit_sesiones: se abre con os_api_request module salud/sesiones method POST body {tipo:"gym"}, y el id sale de sesion.id en la respuesta.' },
+        ejercicio_id: { type: 'string', description: 'Id del ejercicio en el catalogo. Sale del campo ejercicio_id de cada item en dia_ejercicios (ver gfit_dia_hoy), o del catalogo completo con os_api_request module gfit/catalogo.' },
+        dia_ejercicio_id: { type: 'string', description: 'Id del ejercicio planificado del dia, si la serie viene de la rutina' },
+        tipo: { type: 'string', enum: ['warmup', 'working', 'drop', 'failure'], description: 'Tipo de serie. Default working.' },
+        peso_kg: { type: 'number', description: 'Peso en kilogramos (canonico)' },
+        peso: { type: 'number', description: 'Peso alternativo a peso_kg, junto con unidad' },
+        unidad: { type: 'string', enum: ['kg', 'lb'], description: 'Unidad de peso cuando se manda peso en vez de peso_kg' },
+        reps: { type: 'number', description: 'Repeticiones realizadas' },
+        duracion_s: { type: 'number', description: 'Duracion en segundos para series isometricas o de cardio' },
+        orden: { type: 'number', description: 'Orden dentro de la sesion. Omite para agregar al final.' },
+      },
+      required: ['sesion_id', 'ejercicio_id'],
+    },
+  },
+  {
+    name: 'gfit_consultar_progreso',
+    description: 'Consulta el progreso de entrenamiento de GFIT: calendario de entrenos, volumen y tiempo por rango, breakdown muscular, top 1RM, estado de recuperacion por grupo y logros obtenidos.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'os_api_request',
     description: 'Puente autenticado a los modulos existentes de Pancho OS. Preferir las herramientas semanticas cuando existan; usar este puente para un modulo del OS aun no cubierto. El module va pelado (tareas, cuentas, salud/sueno), el id va en query.id, nunca en el module. Trampas conocidas: revision usa GET con query.tipo (semanal|mensual|reset90) y escribe con PUT; gfit/dias requiere query.rutina_id; salud/sueno registra con POST; habitos/checks marca con POST {habito_id, fecha}.',
     inputSchema: {
@@ -449,6 +484,9 @@ export async function handleMcpStatelessRequest(
       case 'ayuno_iniciar':
       case 'ayuno_terminar':
       case 'finanzas_listar_gastos':
+      case 'gfit_dia_hoy':
+      case 'gfit_registrar_serie':
+      case 'gfit_consultar_progreso':
       case 'os_api_request': {
         if (executeTool) {
           try {

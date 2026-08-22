@@ -171,6 +171,35 @@ test('publica herramientas de salud para sueno, biometricas y cuerpo', async () 
   );
 });
 
+test('publica las 3 herramientas de GFIT y las enruta por el ejecutor real (no caen en el default -32601)', async () => {
+  const list = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'gfit-tools', method: 'tools/list' },
+    new Headers(),
+  );
+  const toolNames = (list.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+  assert.deepEqual(
+    ['gfit_dia_hoy', 'gfit_registrar_serie', 'gfit_consultar_progreso'].every((name) => toolNames.includes(name)),
+    true,
+  );
+
+  for (const name of ['gfit_dia_hoy', 'gfit_registrar_serie', 'gfit_consultar_progreso']) {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleMcpStatelessRequest(
+      { jsonrpc: '2.0', id: `${name}-1`, method: 'tools/call', params: { name, arguments: { x: 1 } } },
+      new Headers(),
+      async (toolName, args) => {
+        calls.push({ name: toolName, args });
+        return { ok: true };
+      },
+    );
+    // Si engine.ts publicara la tool en SEMANTIC_TOOLS sin agregarle un case en el
+    // switch de ejecucion, el executor real nunca se llamaria y esto respondería
+    // -32601 "Tool not found" en vez de invocar executeTool.
+    assert.deepEqual(calls, [{ name, args: { x: 1 } }]);
+    assert.equal('error' in response, false);
+  }
+});
+
 test('enruta biometricas_registrar por el ejecutor real conservando solo lo enviado', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   await handleMcpStatelessRequest(

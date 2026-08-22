@@ -11,7 +11,7 @@
 //
 // This is NOT autocomplete: signalType is 'related-search-query'.
 
-import { readEnv } from '../env.ts';
+import { readEnv } from '../../../../../lib/env.ts';
 import type { RawRadarQuery } from '../types.ts';
 import { fetchJson } from './http.ts';
 import { countryToIso, countryToBingCc } from './geo.ts';

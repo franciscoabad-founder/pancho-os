@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
+import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from '../../../os/components/ui';
 
 // Vista Contenido: pipeline editorial en vivo desde /api/contenido.
 

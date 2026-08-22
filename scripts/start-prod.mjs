@@ -3,7 +3,7 @@
 // Astro SSR (adapter node, standalone) no lee .env en runtime por si solo:
 // import.meta.env solo se hornea en build para vars referenciadas de forma
 // ESTATICA en el codigo (import.meta.env.X literal). Cualquier var leida
-// dinamicamente via process.env[name] (como hace src/lib/contenido/radar/env.ts
+// dinamicamente via process.env[name] (como hace src/lib/env.ts
 // a proposito, para funcionar igual en Astro SSR, Node plano y bajo tests)
 // se pierde si nadie carga .env al process.env real.
 //

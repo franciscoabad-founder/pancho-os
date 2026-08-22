@@ -7,7 +7,8 @@
 // endpoints conviven durante la migracion. Igual que engine.ts, este modulo no
 // sabe si lo llama Astro o Start.
 
-import { readEnv } from '../lib/contenido/radar/env.ts';
+import { readEnv } from '../lib/env.ts';
+import { hoyGuayaquil } from '../lib/salud/apiHelpers.ts';
 
 export type ToolRequest = { path: string; method: string; body?: Record<string, unknown> };
 
@@ -204,6 +205,32 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
           source: args.source,
         },
       };
+    case 'gfit_registrar_serie': {
+      // String().trim() igual que tareas_update (osTools.ts case tareas_update): un
+      // valor de solo espacios pasaba el chequeo falsy anterior, llegaba igual al
+      // endpoint (sesion-series.ts tambien usa `if (!body.sesion_id)`, mismo hueco) y
+      // terminaba en un 502 opaco de Supabase por FK invalida en vez de este mensaje.
+      const sesionId = String(args.sesion_id ?? '').trim();
+      const ejercicioId = String(args.ejercicio_id ?? '').trim();
+      if (!sesionId) throw new Error('sesion_id requerido: se abre con os_api_request module salud/sesiones method POST body {tipo:"gym"}, tomando el id de sesion.id en la respuesta (no existe gfit/sesiones).');
+      if (!ejercicioId) throw new Error('ejercicio_id requerido: sale de dia_ejercicios (campo ejercicio_id) en gfit_dia_hoy, o del catalogo completo con os_api_request module gfit/catalogo.');
+      return {
+        path: '/api/gfit/sesion-series',
+        method: 'POST',
+        body: {
+          sesion_id: sesionId,
+          dia_ejercicio_id: args.dia_ejercicio_id,
+          ejercicio_id: ejercicioId,
+          tipo: args.tipo,
+          peso_kg: args.peso_kg,
+          peso: args.peso,
+          unidad: args.unidad,
+          reps: args.reps,
+          duracion_s: args.duracion_s,
+          orden: args.orden,
+        },
+      };
+    }
     case 'tareas_update': {
       const id = String(args.id ?? '').trim();
       if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
@@ -221,18 +248,93 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
   }
 }
 
+// GET interno autenticado contra el propio servidor. Comparte credenciales con
+// executeOsTool pero se usa aparte para las herramientas compuestas (gfit_dia_hoy,
+// gfit_consultar_progreso) que necesitan mas de un request para armar la respuesta.
+async function fetchOsJson(request: Request, headers: Headers, path: string): Promise<Record<string, unknown>> {
+  const response = await fetch(new URL(path, request.url), { method: 'GET', headers });
+  const data = await response.json().catch(() => ({ error: `Respuesta no JSON HTTP ${response.status}` }));
+  if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : `OS API HTTP ${response.status}`);
+  return data as Record<string, unknown>;
+}
+
+// Weekday ISO de hoy en Guayaquil (1=lunes...7=domingo), misma convencion que
+// WEEKDAY_LABEL en os/components/gfit/tipos.ts y que gfit_dias.weekday (validado
+// 1-7 en routes/api/gfit/dias.ts). OJO: es distinta a la convencion de
+// OSGfitProgreso.tsx (lunes=0..domingo=6 via (getDay()+6)%7), esa es para otro uso
+// (indexar un calendario de 7 columnas), no confundirlas. new Date(y, m-1, d) usa
+// componentes locales del proceso, no pasa por UTC, asi que el weekday no depende
+// de la zona horaria del server.
+export function isoWeekdayHoyGuayaquil(): number {
+  const [y, m, d] = hoyGuayaquil().split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return dow === 0 ? 7 : dow;
+}
+
+// gfit_dia_hoy no es un mapeo 1:1 como el resto: primero hay que resolver la
+// rutina activa y despues buscar entre sus dias el que cae en el weekday de hoy.
+// GET /api/gfit/dias ya trae cada dia con sus ejercicios anidados (mismo select
+// que /api/gfit/dia-ejercicios: comparar el SEL de routes/api/gfit/dias.ts con el
+// de routes/api/gfit/dia-ejercicios.ts, son identicos), asi que no hace falta un
+// tercer fetch al detalle -- pedirlo de nuevo solo duplicaria en el payload que
+// entra al contexto del agente la misma lista de ejercicios (con imagenes
+// incluidas) que ya viene dentro de dia.gfit_dia_ejercicios. Por eso esta funcion
+// vive fuera de toToolRequest (que solo arma un ToolRequest, no orquesta varios).
+export async function gfitDiaHoy(request: Request, headers: Headers, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  let rutinaId = typeof args.rutina_id === 'string' && args.rutina_id.trim() ? args.rutina_id.trim() : null;
+  if (!rutinaId) {
+    const rutinasData = await fetchOsJson(request, headers, '/api/gfit/rutinas');
+    const rutinas = Array.isArray(rutinasData.rutinas) ? (rutinasData.rutinas as Array<Record<string, unknown>>) : [];
+    const activa = rutinas[0];
+    if (!activa || typeof activa.id !== 'string') {
+      return { dia: null, dia_ejercicios: [], mensaje: 'No hay ninguna rutina activa configurada en GFIT.' };
+    }
+    rutinaId = activa.id;
+  }
+
+  const diasData = await fetchOsJson(request, headers, `/api/gfit/dias?rutina_id=${encodeURIComponent(rutinaId)}`);
+  const dias = Array.isArray(diasData.dias) ? (diasData.dias as Array<Record<string, unknown>>) : [];
+  const weekdayHoy = isoWeekdayHoyGuayaquil();
+  const diaHoy = dias.find((d) => d.weekday === weekdayHoy);
+  if (!diaHoy || typeof diaHoy.id !== 'string') {
+    return { dia: null, dia_ejercicios: [], mensaje: 'La rutina activa no tiene un dia programado para hoy.' };
+  }
+
+  // dia_ejercicios se saca de diaHoy y se quita del objeto dia antes de devolver:
+  // si se dejaran las dos claves, el JSON que entra al contexto del agente
+  // serializaria la misma lista de ejercicios (con imagenes) dos veces.
+  const { gfit_dia_ejercicios, ...diaSinEjercicios } = diaHoy as Record<string, unknown> & { gfit_dia_ejercicios?: unknown };
+  return { dia: diaSinEjercicios, dia_ejercicios: gfit_dia_ejercicios ?? [] };
+}
+
+// gfit_consultar_progreso combina el dashboard de progreso (volumen, tiempo,
+// calendario, 1RM, recuperacion) con el catalogo de logros y cuales ya se
+// obtuvieron. Igual que gfit_dia_hoy, son dos GET independientes en paralelo,
+// no un solo request.
+export async function gfitConsultarProgreso(request: Request, headers: Headers): Promise<Record<string, unknown>> {
+  const [progreso, logrosData] = await Promise.all([
+    fetchOsJson(request, headers, '/api/gfit/progreso'),
+    fetchOsJson(request, headers, '/api/gfit/logros'),
+  ]);
+  return { progreso, logros: logrosData.logros ?? [] };
+}
+
 // Ejecuta la herramienta como una llamada HTTP real contra el propio servidor.
 // El origen sale de request.url (la URL absoluta de la request entrante), asi
 // que la llamada interna cae en el mismo proceso que atiende /api/* y hereda
 // host y esquema publicos. Vale igual en Astro y en TanStack Start: en las dos
 // el handler recibe un Request estandar con url absoluta.
 export async function executeOsTool(request: Request, name: string, args: Record<string, unknown>) {
-  const toolRequest = toToolRequest(name, args);
   const headers = new Headers({ Accept: 'application/json' });
   const internalToken = readEnv('OS_API_TOKEN');
   if (!internalToken) throw new Error('OS_API_TOKEN no configurado para ejecutar herramientas MCP.');
   headers.set('Authorization', `Bearer ${internalToken}`);
   headers.set('X-OS-Token', internalToken);
+
+  if (name === 'gfit_dia_hoy') return gfitDiaHoy(request, headers, args);
+  if (name === 'gfit_consultar_progreso') return gfitConsultarProgreso(request, headers);
+
+  const toolRequest = toToolRequest(name, args);
   if (toolRequest.body) headers.set('Content-Type', 'application/json');
 
   const response = await fetch(new URL(toolRequest.path, request.url), {

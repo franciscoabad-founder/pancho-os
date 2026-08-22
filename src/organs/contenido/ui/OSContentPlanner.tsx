@@ -8,9 +8,9 @@ import {
   Spinner,
   ToastProvider,
   useToast,
-} from '../ui';
-import { nextStages } from '../../../lib/contenido/stages.ts';
-import { STORY_STAGES, type StoryStage } from '../../../lib/contenido/types.ts';
+} from '../../../os/components/ui';
+import { nextStages } from '../domain/stages.ts';
+import { STORY_STAGES, type StoryStage } from '../domain/types.ts';
 
 interface Sprint {
   id: string;
