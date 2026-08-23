@@ -17,6 +17,7 @@
     "test:salud": "node --experimental-strip-types --test src/lib/salud/*.test.ts",
     "test:habitos": "node --experimental-strip-types --test src/lib/habitos/*.test.ts src/lib/juego/*.test.ts",
     "test:gfit": "node --experimental-strip-types --test src/lib/gfit/*.test.ts",
+    "test:finanzas": "node --experimental-strip-types --test src/lib/finanzas/*.test.ts",
     "test:brain-write": "node --experimental-strip-types --test src/lib/brain-write.test.ts",
     "test:sueno": "node --experimental-strip-types --test src/lib/sueno/*.test.ts",
     "test:contenido": "node --experimental-strip-types --test src/organs/contenido/domain/*.test.ts",

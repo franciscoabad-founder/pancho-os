@@ -86,8 +86,19 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       return { path: '/api/tareas', method: 'GET' };
     case 'tareas_create':
       return { path: '/api/tareas', method: 'POST', body: { titulo: args.titulo, prioridad: PRIORIDAD_MCP[String(args.prioridad)] ?? args.prioridad, deadline: args.fecha_limite } };
+    // `moneda` es opcional y aditiva: si el agente no la manda, el handler
+    // asume USD (la base del OS) y el body queda identico al de antes.
     case 'finanzas_log_gasto':
-      return { path: '/api/gastos', method: 'POST', body: { monto: args.monto, categoria: args.categoria, descripcion: args.descripcion } };
+      return {
+        path: '/api/gastos',
+        method: 'POST',
+        body: {
+          monto: args.monto,
+          categoria: args.categoria,
+          descripcion: args.descripcion,
+          ...(typeof args.moneda === 'string' && args.moneda.trim() ? { moneda: args.moneda.trim().toUpperCase() } : {}),
+        },
+      };
     case 'nutricion_buscar_alimentos': {
       // Acepta alias comunes del termino de busqueda: los agentes mandan
       // query/q/texto y antes se descartaban en silencio, devolviendo el

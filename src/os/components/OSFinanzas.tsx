@@ -13,11 +13,20 @@
 // saliendo en la caja de error inline de arriba, no en alert().
 
 import { useCallback, useEffect, useState } from 'react';
+import { MONEDAS_COMUNES, MONEDA_BASE } from '../../lib/finanzas/monedas.ts';
+import { gastoEnUsd, resumenMensual } from '../../lib/finanzas/contabilidad.ts';
 
-interface Cuenta { id: string; nombre: string; tipo?: string | null; saldo?: number | null; moneda?: string | null }
-interface Deuda { id: string; acreedor: string; monto?: number | null; cuota?: number | null; fecha_limite?: string | null; estado?: string | null }
+interface Cuenta {
+  id: string; nombre: string; tipo?: string | null; saldo?: number | null; moneda?: string | null;
+  estado?: string | null; compartida_con?: string | null; notas?: string | null;
+}
+interface Deuda { id: string; acreedor: string; monto?: number | null; cuota?: number | null; fecha_limite?: string | null; estado?: string | null; moneda?: string | null }
 interface PorCobrar { id: string; cliente: string; proyecto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_esperada?: string | null }
-interface Gasto { id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null; monto?: number | null }
+interface PorPagar { id: string; beneficiario: string; concepto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_limite?: string | null }
+interface Gasto {
+  id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null;
+  monto?: number | null; moneda?: string | null; monto_usd?: number | null; conversion_aproximada?: boolean | null;
+}
 interface Presupuesto { id: string; categoria: string; limite_mensual?: number | null }
 
 const PC_LABEL: Record<string, string> = {
@@ -33,9 +42,36 @@ const PC_COLOR: Record<string, string> = {
   cobrado: 'var(--os-champagne)',
 };
 
+const PP_LABEL: Record<string, string> = {
+  pendiente: 'Pendiente',
+  comprometido: 'Comprometido',
+  pagado: 'Pagado',
+};
+const PP_COLOR: Record<string, string> = {
+  pendiente: 'var(--os-warn)',
+  comprometido: 'var(--os-accent-light)',
+  pagado: 'var(--os-champagne)',
+};
+
+const TIPOS_CUENTA_UI: Array<{ valor: string; label: string }> = [
+  { valor: 'banco', label: 'Banco' },
+  { valor: 'wallet_crypto', label: 'Wallet cripto' },
+  { valor: 'exchange', label: 'Exchange' },
+  { valor: 'fintech', label: 'Fintech' },
+  { valor: 'efectivo', label: 'Efectivo' },
+  { valor: 'compartida', label: 'Compartida' },
+];
+
+const ESTADO_CUENTA_COLOR: Record<string, string> = {
+  activa: 'var(--os-champagne)',
+  bloqueada: 'var(--os-error)',
+  cerrada: 'var(--os-muted)',
+};
+
+/** Formato base del modulo: USD salvo que se pida otra moneda explicita. */
 function money(n: unknown, moneda?: string | null): string {
   const v = Number(n) || 0;
-  return v.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + (moneda ? ' ' + moneda : '');
+  return v.toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + (moneda || MONEDA_BASE);
 }
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 const fechaLarga = (d: string) =>
@@ -202,26 +238,30 @@ export default function OSFinanzas() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [porCobrar, setPorCobrar] = useState<PorCobrar[]>([]);
+  const [porPagar, setPorPagar] = useState<PorPagar[]>([]);
   const [finError, setFinError] = useState('');
   const [errorCarga, setErrorCarga] = useState('');
   const [pcFilter, setPcFilter] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroCat, setFiltroCat] = useState('');
+  const [mesResumen, setMesResumen] = useState(() => new Date().toISOString().slice(0, 7));
 
   const cargarTodo = useCallback(async () => {
     try {
-      const [c, d, g, p, pc] = await Promise.all([
+      const [c, d, g, p, pc, pp] = await Promise.all([
         fetch('/api/cuentas').then((r) => r.json()),
         fetch('/api/deudas').then((r) => r.json()),
         fetch('/api/gastos').then((r) => r.json()),
         fetch('/api/presupuestos').then((r) => r.json()),
         fetch('/api/por-cobrar').then((r) => r.json()),
+        fetch('/api/por-pagar').then((r) => r.json()),
       ]);
       setCuentas(c.cuentas || []);
       setDeudas(d.deudas || []);
       setGastos(g.gastos || []);
       setPresupuestos(p.presupuestos || []);
       setPorCobrar(pc.por_cobrar || []);
+      setPorPagar(pp.por_pagar || []);
       setErrorCarga('');
     } catch (e) {
       setErrorCarga(e instanceof Error ? e.message : 'error desconocido');
@@ -256,20 +296,22 @@ export default function OSFinanzas() {
     }
   }, [cargarTodo]);
 
-  // ---- Resumen ----
-  const totCuentas = cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0);
+  // ---- Resumen (todo en USD, la moneda base del OS) ----
+  // Las cuentas bloqueadas o cerradas no suman al disponible: el banco de
+  // Ecuador congelado por coactiva no es dinero con el que se pueda contar.
+  const cuentasDisponibles = cuentas.filter((c) => c.estado !== 'bloqueada' && c.estado !== 'cerrada');
+  const totCuentas = cuentasDisponibles.reduce((s, c) => s + (Number(c.saldo) || 0), 0);
   const totDeudas = deudas.reduce((s, d) => (d.estado === 'pagada' ? s : s + (Number(d.monto) || 0)), 0);
-  const monedaBase = cuentas[0] ? cuentas[0].moneda : 'MXN';
   const pcNoCobrado = porCobrar.filter((p) => p.estado !== 'cobrado');
   const totPC = pcNoCobrado.reduce((s, p) => s + (Number(p.monto) || 0), 0);
-  const monedaPC = pcNoCobrado[0] ? pcNoCobrado[0].moneda : (porCobrar[0] ? porCobrar[0].moneda : 'USD');
-  const neto = money(totCuentas - totDeudas, monedaBase);
+  const ppPendiente = porPagar.filter((p) => p.estado !== 'pagado');
+  const totPP = ppPendiente.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  const neto = money(totCuentas - totDeudas - totPP);
 
   // ---- Por cobrar ----
   const pcFilas = porCobrar.filter((p) => pcFilter === 'todos' || p.estado === pcFilter);
   const pcFilasNoCobrado = pcFilas.filter((p) => p.estado !== 'cobrado');
   const pcTotal = pcFilasNoCobrado.reduce((s, p) => s + (Number(p.monto) || 0), 0);
-  const pcMoneda = pcFilasNoCobrado[0] ? pcFilasNoCobrado[0].moneda : 'USD';
 
   // ---- Gastos ----
   const categorias = Array.from(new Set(gastos.map((g) => g.categoria).filter(Boolean) as string[])).sort();
@@ -278,15 +320,19 @@ export default function OSFinanzas() {
     if (filtroCat && g.categoria !== filtroCat) return false;
     return true;
   });
-  const totalGastos = gastosFiltrados.reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  // Se suma por monto_usd: sumar `monto` mezclaria pesos con dolares.
+  const totalGastos = gastosFiltrados.reduce((s, g) => s + gastoEnUsd(g), 0);
 
   const gastadoEsteMes = (categoria: string) => {
     const mes = thisMonth();
     return gastos.reduce(
-      (s, g) => (g.categoria === categoria && (g.fecha || '').slice(0, 7) === mes ? s + (Number(g.monto) || 0) : s),
+      (s, g) => (g.categoria === categoria && (g.fecha || '').slice(0, 7) === mes ? s + gastoEnUsd(g) : s),
       0,
     );
   };
+
+  // ---- Contabilidad simple del mes ----
+  const resumen = resumenMensual(mesResumen, gastos, porCobrar, cuentas);
 
   return (
     <>
@@ -298,7 +344,7 @@ export default function OSFinanzas() {
           <p className="os-eyebrow" style={{ marginBottom: 6 }}>Money</p>
           <h1 className="os-h1">Finanzas</h1>
           <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-muted)', margin: '4px 0 0' }}>
-            Linea base manual de cuentas, deudas y gastos
+            Linea base manual de cuentas, deudas y gastos · base {MONEDA_BASE}
           </p>
         </div>
       </div>
@@ -329,7 +375,9 @@ export default function OSFinanzas() {
           <span className="material-symbols-outlined" style={{ fontSize: 30, color: 'var(--os-accent-light)' }}>account_balance_wallet</span>
           <div>
             <p className="os-eyebrow" style={{ marginBottom: 4 }}>Patrimonio neto</p>
-            <p style={{ fontSize: 12, color: 'var(--os-muted)', margin: 0 }}>Cuentas menos deudas activas</p>
+            <p style={{ fontSize: 12, color: 'var(--os-muted)', margin: 0 }}>
+              Cuentas disponibles menos deudas activas y por pagar
+            </p>
           </div>
         </div>
         <span className="os-mono" style={{ fontSize: '2.25rem', fontWeight: 700, color: 'var(--os-champagne)', lineHeight: 1, whiteSpace: 'nowrap' }}>
@@ -338,18 +386,22 @@ export default function OSFinanzas() {
       </div>
 
       {/* Resumen KPIs */}
-      <div className="os-finance-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: '1.75rem' }}>
+      <div className="os-finance-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: '1.75rem' }}>
         <div className="os-kpi">
-          <p className="os-kpi-label">Total en cuentas</p>
-          <p className="os-kpi-value">{money(totCuentas, monedaBase)}</p>
+          <p className="os-kpi-label">Disponible en cuentas</p>
+          <p className="os-kpi-value">{money(totCuentas)}</p>
         </div>
         <div className="os-kpi">
           <p className="os-kpi-label">Total deudas</p>
-          <p className="os-kpi-value">{money(totDeudas, monedaBase)}</p>
+          <p className="os-kpi-value">{money(totDeudas)}</p>
         </div>
         <div className="os-kpi">
           <p className="os-kpi-label">Por cobrar</p>
-          <p className="os-kpi-value">{money(totPC, monedaPC)}</p>
+          <p className="os-kpi-value">{money(totPC)}</p>
+        </div>
+        <div className="os-kpi">
+          <p className="os-kpi-label">Por pagar</p>
+          <p className="os-kpi-value">{money(totPP)}</p>
         </div>
         <div className="os-kpi" style={{ borderColor: 'var(--os-line-accent)' }}>
           <p className="os-kpi-label" style={{ color: 'var(--os-accent-light)' }}>Neto</p>
@@ -357,14 +409,112 @@ export default function OSFinanzas() {
         </div>
       </div>
 
+      {/* ============ CONTABILIDAD DEL MES ============ */}
+      <section style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          <p className="os-section-title" style={{ margin: 0, flex: 1, minWidth: 180 }}>
+            Contabilidad del mes
+          </p>
+          <input
+            type="month"
+            className="os-input os-date"
+            value={mesResumen}
+            onChange={(e) => setMesResumen(e.target.value || thisMonth())}
+            aria-label="Mes del resumen"
+          />
+        </div>
+
+        <div className="os-card" style={{ padding: '1rem 1.125rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12, marginBottom: resumen.por_categoria.length ? '1.125rem' : 0 }}>
+            <div>
+              <p className="os-kpi-label">Ingresos cobrados</p>
+              <p className="os-mono" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--os-champagne)', margin: '2px 0 0' }}>
+                {money(resumen.ingresos_usd)}
+              </p>
+            </div>
+            <div>
+              <p className="os-kpi-label">Gastos</p>
+              <p className="os-mono" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--os-text)', margin: '2px 0 0' }}>
+                -{money(resumen.gastos_usd)}
+              </p>
+            </div>
+            <div>
+              <p className="os-kpi-label">Neto del mes</p>
+              <p className="os-mono" style={{ fontSize: '1.35rem', fontWeight: 700, margin: '2px 0 0', color: resumen.neto_usd < 0 ? 'var(--os-error)' : 'var(--os-champagne)' }}>
+                {money(resumen.neto_usd)}
+              </p>
+            </div>
+            <div>
+              <p className="os-kpi-label">Saldo en cuentas</p>
+              <p className="os-mono" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--os-accent-light)', margin: '2px 0 0' }}>
+                {money(resumen.saldo_cuentas_usd)}
+              </p>
+              {resumen.saldo_no_disponible_usd > 0 && (
+                <p style={{ fontSize: 11, color: 'var(--os-error)', margin: '3px 0 0' }}>
+                  + {money(resumen.saldo_no_disponible_usd)} no disponible
+                </p>
+              )}
+            </div>
+          </div>
+
+          {resumen.por_categoria.length > 0 && (
+            <>
+              <p className="os-kpi-label" style={{ marginBottom: 8 }}>Gasto por categoria</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {resumen.por_categoria.map((c) => (
+                  <div key={c.categoria} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--os-text-2)', width: 110, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.categoria}
+                    </span>
+                    <div style={{ flex: 1, height: 6, background: 'var(--os-surface-hi)', borderRadius: 99, overflow: 'hidden', minWidth: 40 }}>
+                      <div style={{ height: '100%', width: `${c.pct}%`, background: 'var(--os-accent)', borderRadius: 99 }} />
+                    </div>
+                    <span className="os-mono" style={{ fontSize: 12, color: 'var(--os-champagne)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      {money(c.total_usd)}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--os-muted)', width: 34, textAlign: 'right' }}>{c.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {!resumen.por_categoria.length && (
+            <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-muted)', margin: '0.75rem 0 0' }}>
+              Sin gastos registrados en este mes.
+            </p>
+          )}
+
+          {resumen.gastos_aproximados > 0 && (
+            <p style={{ fontSize: 11, color: 'var(--os-warn)', margin: '0.75rem 0 0' }}>
+              {resumen.gastos_aproximados} gasto(s) usaron una tasa de cambio aproximada.
+            </p>
+          )}
+        </div>
+      </section>
+
       {/* ============ CUENTAS ============ */}
       <section style={{ marginBottom: '2rem' }}>
         <p className="os-section-title">Cuentas — mi linea base</p>
+        <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 0.6rem' }}>
+          Saldos manuales a proposito: sin sincronizacion automatica con wallets, exchanges ni bancos.
+        </p>
         <FormularioApi tabla="cuentas" onCreado={cargarTodo} etiquetaBoton="Cuenta">
-          <input name="nombre" type="text" placeholder="Nombre (ej. Tampico) *" required className="os-input" style={{ flex: 2, minWidth: 160 }} />
-          <input name="tipo" type="text" placeholder="Tipo (banco, efectivo...)" className="os-input" style={{ flex: 1, minWidth: 120 }} />
+          <input name="nombre" type="text" placeholder="Nombre (ej. Wise) *" required className="os-input" style={{ flex: 2, minWidth: 150 }} />
+          <select name="tipo" className="os-input os-date" defaultValue="banco" style={{ flex: 1, minWidth: 130 }}>
+            {TIPOS_CUENTA_UI.map((t) => <option key={t.valor} value={t.valor}>{t.label}</option>)}
+          </select>
           <input name="saldo" type="number" step="any" placeholder="Saldo" className="os-input os-mono" style={{ width: 110 }} />
-          <input name="moneda" type="text" placeholder="MXN" maxLength={6} className="os-input" style={{ width: 70 }} />
+          <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 90 }}>
+            {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo}>{m.codigo}</option>)}
+          </select>
+          <select name="estado" className="os-input os-date" defaultValue="activa" style={{ width: 120 }}>
+            <option value="activa">Activa</option>
+            <option value="bloqueada">Bloqueada</option>
+            <option value="cerrada">Cerrada</option>
+          </select>
+          <input name="compartida_con" type="text" placeholder="Compartida con" className="os-input" style={{ width: 140 }} />
+          <input name="notas" type="text" placeholder="Notas" className="os-input" style={{ flex: 1, minWidth: 120 }} />
         </FormularioApi>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {errorCarga && (
@@ -374,12 +524,34 @@ export default function OSFinanzas() {
           )}
           {!errorCarga && !cuentas.length && <div style={vacioStyle}>Sin cuentas aun.</div>}
           {!errorCarga && cuentas.map((c) => (
-            <div key={c.id} style={filaStyle}>
-              <IconChip name="savings" color="var(--os-accent-light)" />
-              <p style={{ fontSize: 13, color: 'var(--os-text)', margin: 0, flex: 1, minWidth: 0 }}>
-                {c.nombre}
-                {c.tipo && <span style={{ color: 'var(--os-muted)', fontSize: 11 }}> · {c.tipo}</span>}
-              </p>
+            <div key={c.id} style={{ ...filaStyle, opacity: c.estado === 'cerrada' ? 0.55 : 1 }}>
+              <IconChip
+                name={c.estado === 'bloqueada' ? 'lock' : c.tipo === 'compartida' ? 'group' : 'savings'}
+                color={c.estado === 'bloqueada' ? 'var(--os-error)' : 'var(--os-accent-light)'}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--os-text)', margin: 0, lineHeight: 1.35 }}>
+                  {c.nombre}
+                  {c.tipo && (
+                    <span style={{ color: 'var(--os-muted)', fontSize: 11 }}>
+                      {' '}· {TIPOS_CUENTA_UI.find((t) => t.valor === c.tipo)?.label || c.tipo}
+                    </span>
+                  )}
+                  {c.compartida_con && (
+                    <span style={{ color: 'var(--os-accent-light)', fontSize: 11 }}> · con {c.compartida_con}</span>
+                  )}
+                </p>
+                {(c.estado && c.estado !== 'activa') || c.notas ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 2, flexWrap: 'wrap' }}>
+                    {c.estado && c.estado !== 'activa' && (
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: ESTADO_CUENTA_COLOR[c.estado] || 'var(--os-muted)', border: `1px solid ${ESTADO_CUENTA_COLOR[c.estado] || 'var(--os-line)'}`, borderRadius: 4, padding: '1px 6px' }}>
+                        {c.estado}
+                      </span>
+                    )}
+                    {c.notas && <span style={{ fontSize: 11, color: 'var(--os-muted)' }}>{c.notas}</span>}
+                  </div>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -441,7 +613,9 @@ export default function OSFinanzas() {
           <input name="cliente" type="text" placeholder="Cliente *" required className="os-input" style={{ flex: 2, minWidth: 150 }} />
           <input name="proyecto" type="text" placeholder="Proyecto" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="monto" type="number" step="any" placeholder="Monto" className="os-input os-mono" style={{ width: 110 }} />
-          <input name="moneda" type="text" placeholder="USD" maxLength={6} className="os-input" style={{ width: 70 }} />
+          <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 90 }} aria-label="Moneda">
+            {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo}>{m.codigo}</option>)}
+          </select>
           <select name="estado" className="os-input os-date" defaultValue="aplicando">
             <option value="aplicando">Aplicando</option>
             <option value="esperando">Esperando respuesta</option>
@@ -467,7 +641,7 @@ export default function OSFinanzas() {
             ))}
           </div>
           <span className="os-mono" style={{ fontSize: 12, color: 'var(--os-champagne)', fontWeight: 700, marginLeft: 'auto' }}>
-            {pcFilasNoCobrado.length ? 'Por entrar: ' + money(pcTotal, pcMoneda) : ''}
+            {pcFilasNoCobrado.length ? 'Por entrar: ' + money(pcTotal) : ''}
           </span>
         </div>
 
@@ -518,14 +692,88 @@ export default function OSFinanzas() {
         </div>
       </section>
 
+      {/* ============ POR PAGAR ============ */}
+      <section style={{ marginBottom: '2rem' }}>
+        <p className="os-section-title">Por pagar — dinero por salir</p>
+        <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 0.6rem' }}>
+          Compromisos puntuales a personas o servicios. La deuda de largo plazo va en Deudas.
+        </p>
+        <FormularioApi tabla="por-pagar" onCreado={cargarTodo} etiquetaBoton="Por pagar">
+          <input name="beneficiario" type="text" placeholder="A quien le debo *" required className="os-input" style={{ flex: 2, minWidth: 150 }} />
+          <input name="concepto" type="text" placeholder="Concepto" className="os-input" style={{ flex: 1, minWidth: 120 }} />
+          <input name="monto" type="number" step="any" placeholder="Monto" className="os-input os-mono" style={{ width: 110 }} />
+          <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 90 }} aria-label="Moneda">
+            {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo}>{m.codigo}</option>)}
+          </select>
+          <select name="estado" className="os-input os-date" defaultValue="pendiente">
+            <option value="pendiente">Pendiente</option>
+            <option value="comprometido">Comprometido</option>
+            <option value="pagado">Pagado</option>
+          </select>
+          <input name="fecha_limite" type="date" className="os-input os-date" />
+        </FormularioApi>
+
+        <div className="os-card" style={{ padding: '0.25rem 1rem' }}>
+          {!porPagar.length && (
+            <div style={{ color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)', padding: '0.75rem 0' }}>
+              Sin compromisos registrados.
+            </div>
+          )}
+          {porPagar.map((p, idx) => {
+            const color = PP_COLOR[p.estado ?? ''] || 'var(--os-muted)';
+            const pagado = p.estado === 'pagado';
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '0.7rem 0',
+                  borderBottom: idx < porPagar.length - 1 ? '1px solid var(--os-line-soft)' : undefined,
+                  opacity: pagado ? 0.6 : 1,
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: 999, flexShrink: 0, background: color }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, color: 'var(--os-text)', margin: 0, lineHeight: 1.35 }}>
+                    {p.beneficiario}
+                    {p.concepto && <span style={{ color: 'var(--os-muted)', fontSize: 11 }}> · {p.concepto}</span>}
+                  </p>
+                  {p.fecha_limite && (
+                    <p style={{ fontSize: 11, margin: '2px 0 0' }}>
+                      <Deadline fecha={p.fecha_limite} />
+                    </p>
+                  )}
+                </div>
+                <span style={{ fontSize: 14, color: 'var(--os-warn)', fontFamily: 'var(--os-font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {money(p.monto, p.moneda)}
+                </span>
+                <select
+                  value={p.estado ?? 'pendiente'}
+                  onChange={(e) => void patch('por-pagar', p.id, { estado: e.target.value })}
+                  style={{ background: 'var(--os-surface)', border: '1px solid var(--os-line)', borderRadius: 6, padding: '3px 7px', minHeight: 'var(--os-tap-min)', fontSize: 11, fontFamily: 'var(--os-font-display)', fontWeight: 600, color, cursor: 'pointer', outline: 'none' }}
+                >
+                  {Object.keys(PP_LABEL).map((e) => <option key={e} value={e}>{PP_LABEL[e]}</option>)}
+                </select>
+                <BotonBorrar onClick={() => { if (confirm('Eliminar este registro?')) void del('por-pagar', p.id); }} />
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ============ GASTOS ============ */}
       <section style={{ marginBottom: '2rem' }}>
         <p className="os-section-title">Gastos</p>
+        <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 0.6rem' }}>
+          Registra en la moneda en que pagaste. El OS guarda el equivalente en {MONEDA_BASE} con la tasa del dia.
+        </p>
         <FormularioApi tabla="gastos" onCreado={cargarTodo} etiquetaBoton="Gasto">
           <input name="fecha" type="date" className="os-input os-date" />
           <input name="categoria" type="text" placeholder="Categoria" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="descripcion" type="text" placeholder="Descripcion" className="os-input" style={{ flex: 2, minWidth: 160 }} />
           <input name="monto" type="number" step="any" placeholder="Monto" className="os-input os-mono" style={{ width: 110 }} />
+          <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 100 }} aria-label="Moneda">
+            {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo} title={m.nombre}>{m.codigo}</option>)}
+          </select>
         </FormularioApi>
 
         {/* Filtros */}
@@ -565,9 +813,25 @@ export default function OSFinanzas() {
                   )}
                 </div>
               </div>
-              <span style={{ fontSize: 13, color: 'var(--os-text)', fontFamily: 'var(--os-font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                -{money(g.monto)}
-              </span>
+              {(() => {
+                const monedaGasto = g.moneda || MONEDA_BASE;
+                const enOtraMoneda = monedaGasto !== MONEDA_BASE;
+                return (
+                  <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 13, color: 'var(--os-text)', fontFamily: 'var(--os-font-mono)', fontWeight: 700 }}>
+                      -{money(gastoEnUsd(g))}
+                    </span>
+                    {enOtraMoneda && (
+                      <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '1px 0 0', fontFamily: 'var(--os-font-mono)' }}>
+                        {money(g.monto, monedaGasto)}
+                        {g.conversion_aproximada && (
+                          <span title="Tasa aproximada: la API de cambio no respondio" style={{ color: 'var(--os-warn)' }}> ~</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
               <BotonBorrar onClick={() => { if (confirm('Eliminar este gasto?')) void del('gastos', g.id); }} />
             </div>
           ))}

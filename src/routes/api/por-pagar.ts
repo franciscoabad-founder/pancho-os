@@ -1,30 +1,31 @@
-// Server route de /api/cuentas, portada de src/pages/api/cuentas.ts (Astro).
+// Server route de /api/por-pagar, espejo de /api/por-cobrar.
 //
 // Delgada a proposito: auth, parseo del Request y traduccion de errores a
-// status HTTP. La logica vive en src/server/cuentas.handlers.ts.
+// status HTTP. La logica (y el porque de la tabla nueva) vive en
+// src/server/porPagar.handlers.ts.
 
 import { createFileRoute } from '@tanstack/react-router';
 import { isOsAuthorized, json } from '../../server/osAuth.ts';
 import { errMsgCrudo } from '../../server/helpers.ts';
 import {
-  actualizarCuenta,
-  crearCuenta,
-  eliminarCuenta,
-  listarCuentas,
-  type CuentaInput,
-} from '../../server/cuentas.handlers.ts';
+  actualizarPorPagar,
+  crearPorPagar,
+  eliminarPorPagar,
+  listarPorPagar,
+  type PorPagarInput,
+} from '../../server/porPagar.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
 const respuestaError = (err: unknown) => json({ error: errMsgCrudo(err) }, 502);
 const idDeQuery = (request: Request) => new URL(request.url).searchParams.get('id');
 
-export const Route = createFileRoute('/api/cuentas')({
+export const Route = createFileRoute('/api/por-pagar')({
   server: {
     handlers: {
       GET: async ({ request }) => {
         if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
-          return json({ cuentas: await listarCuentas() });
+          return json({ por_pagar: await listarPorPagar() });
         } catch (err) {
           return respuestaError(err);
         }
@@ -33,11 +34,11 @@ export const Route = createFileRoute('/api/cuentas')({
       POST: async ({ request }) => {
         if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
-          const body = (await request.json()) as CuentaInput;
-          const cuenta = await crearCuenta(body);
-          return json({ cuenta }, 201);
+          const body = (await request.json()) as PorPagarInput;
+          const creado = await crearPorPagar(body);
+          return json({ por_pagar: creado }, 201);
         } catch (err) {
-          if (err instanceof Error && ['nombre requerido', 'tipo invalido', 'estado invalido'].includes(err.message)) {
+          if (err instanceof Error && err.message === 'beneficiario requerido') {
             return json({ error: err.message }, 400);
           }
           return respuestaError(err);
@@ -50,9 +51,9 @@ export const Route = createFileRoute('/api/cuentas')({
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
           const body = (await request.json()) as Record<string, unknown>;
-          return json({ cuenta: await actualizarCuenta(id, body) });
+          return json({ por_pagar: await actualizarPorPagar(id, body) });
         } catch (err) {
-          if (err instanceof Error && ['tipo invalido', 'estado invalido'].includes(err.message)) {
+          if (err instanceof Error && err.message === 'estado invalido') {
             return json({ error: err.message }, 400);
           }
           return respuestaError(err);
@@ -64,7 +65,7 @@ export const Route = createFileRoute('/api/cuentas')({
         const id = idDeQuery(request);
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
-          await eliminarCuenta(id);
+          await eliminarPorPagar(id);
           return json({ ok: true });
         } catch (err) {
           return respuestaError(err);

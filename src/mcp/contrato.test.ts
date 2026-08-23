@@ -254,3 +254,28 @@ test('esTokenValido acepta el maestro y las keys con nombre, y rechaza lo demas'
   assert.equal(esTokenValido('', 'maestro', lista), false);
   assert.equal(esTokenValido('tok-kimi', 'maestro', undefined), false);
 });
+
+test('finanzas_log_gasto conserva el body historico cuando no se pasa moneda', () => {
+  const req = toToolRequest('finanzas_log_gasto', { monto: 25, categoria: 'comida', descripcion: 'almuerzo' });
+  assert.equal(req.method, 'POST');
+  assert.equal(req.path, '/api/gastos');
+  assert.deepEqual(req.body, { monto: 25, categoria: 'comida', descripcion: 'almuerzo' });
+  // Sin moneda explicita el handler asume USD: la clave ni siquiera viaja.
+  assert.equal('moneda' in (req.body as object), false);
+});
+
+test('finanzas_log_gasto pasa la moneda normalizada a ISO en mayusculas', () => {
+  const req = toToolRequest('finanzas_log_gasto', { monto: 370, categoria: 'comida', moneda: ' mxn ' });
+  assert.equal(req.body?.moneda, 'MXN');
+});
+
+test('finanzas_log_gasto ignora una moneda vacia en vez de mandar basura', () => {
+  const req = toToolRequest('finanzas_log_gasto', { monto: 10, categoria: 'x', moneda: '   ' });
+  assert.equal('moneda' in (req.body as object), false);
+});
+
+test('finanzas_listar_gastos sigue siendo un GET plano a /api/gastos', () => {
+  const req = toToolRequest('finanzas_listar_gastos', {});
+  assert.equal(req.method, 'GET');
+  assert.equal(req.path, '/api/gastos');
+});
