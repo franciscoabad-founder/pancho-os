@@ -11,6 +11,12 @@ mod flow;
 // Necesita un token de peer que Pancho tiene que configurar a mano: el archivo
 // documenta los pasos exactos arriba de todo.
 mod hermes;
+// Estado de Ollama local.
+mod ollama;
+// Acceso al sistema de archivos dentro del sandbox de la app.
+mod fs;
+// Ejecucion de comandos de terminal con aprobacion previa.
+mod terminal;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -48,6 +54,12 @@ pub fn run() {
       flow::flow_stop_recording,
       hermes::hermes_agent_card,
       hermes::hermes_a2a_call,
+      ollama::ollama_status,
+      fs::fs_read_file,
+      fs::fs_write_file,
+      terminal::terminal_request,
+      terminal::terminal_list_pending,
+      terminal::terminal_approve,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

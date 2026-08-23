@@ -17,17 +17,127 @@ export function isDesktop(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-export type OllamaStatus =
-  | { disponible: true; modelos: string[] }
-  | { disponible: false; error: string };
+export type OllamaStatus = {
+  available: boolean;
+  version: string | null;
+  models: string[];
+};
 
 // Ping a Ollama (local o via Tailscale, ver ollama.rs) para saber si el
 // asistente de escritorio puede usarlo. Comando Rust: "ollama_status"
 // (Fase 2.1 del plan, src-tauri/src/ollama.rs).
 export async function ollamaStatus(): Promise<OllamaStatus> {
-  if (!isDesktop()) return { disponible: false, error: 'No corre en la app de escritorio.' };
+  if (!isDesktop()) return { available: false, version: null, models: [] };
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<OllamaStatus>('ollama_status');
+}
+
+// ---------------------------------------------------------------------------
+// Sistema de archivos local (sandbox de la app)
+// ---------------------------------------------------------------------------
+// Los comandos viven en src-tauri/src/fs.rs. Las rutas son relativas al
+// directorio de config de la app; no se puede salir de ese sandbox.
+
+export type FsErrorCode =
+  | 'fs_sandbox'
+  | 'fs_ruta_invalida'
+  | 'fs_lectura'
+  | 'fs_escritura'
+  | 'sin_escritorio'
+  | 'desconocido';
+
+export type FsError = { codigo: FsErrorCode; mensaje: string };
+export type FsReadResult = { path: string; content: string };
+export type FsResult<T> = { ok: true; data: T } | { ok: false; error: FsError };
+
+async function invocarFs<T>(comando: string, args?: Record<string, unknown>): Promise<FsResult<T>> {
+  if (!isDesktop()) {
+    return { ok: false, error: { codigo: 'sin_escritorio', mensaje: 'No corre en la app de escritorio.' } };
+  }
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const data = await invoke<T>(comando, args);
+    return { ok: true, data };
+  } catch (err) {
+    if (err && typeof err === 'object' && 'codigo' in err) {
+      return { ok: false, error: err as FsError };
+    }
+    return { ok: false, error: { codigo: 'desconocido', mensaje: String(err) } };
+  }
+}
+
+export function fsReadFile(path: string): Promise<FsResult<FsReadResult>> {
+  return invocarFs<FsReadResult>('fs_read_file', { path });
+}
+
+export function fsWriteFile(path: string, content: string): Promise<FsResult<FsReadResult>> {
+  return invocarFs<FsReadResult>('fs_write_file', { path, content });
+}
+
+// ---------------------------------------------------------------------------
+// Terminal local con aprobacion
+// ---------------------------------------------------------------------------
+// Los comandos viven en src-tauri/src/terminal.rs. No hay ejecucion directa:
+// primero se pide con terminal_request, luego se aprueba con terminal_approve.
+
+export type TerminalErrorCode =
+  | 'terminal_invalido'
+  | 'terminal_lock'
+  | 'terminal_no_encontrado'
+  | 'terminal_timeout'
+  | 'terminal_ejecucion'
+  | 'sin_escritorio'
+  | 'desconocido';
+
+export type TerminalError = { codigo: TerminalErrorCode; mensaje: string };
+export type TerminalRequest = {
+  id: string;
+  command: string;
+  args: string[];
+  requested_at: number;
+};
+export type TerminalResult = {
+  id: string;
+  command: string;
+  args: string[];
+  stdout: string;
+  stderr: string;
+  exit_code: number | null;
+};
+export type TerminalResultWrapper<T> = { ok: true; data: T } | { ok: false; error: TerminalError };
+
+async function invocarTerminal<T>(
+  comando: string,
+  args?: Record<string, unknown>,
+): Promise<TerminalResultWrapper<T>> {
+  if (!isDesktop()) {
+    return {
+      ok: false,
+      error: { codigo: 'sin_escritorio', mensaje: 'No corre en la app de escritorio.' },
+    };
+  }
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const data = await invoke<T>(comando, args);
+    return { ok: true, data };
+  } catch (err) {
+    if (err && typeof err === 'object' && 'codigo' in err) {
+      return { ok: false, error: err as TerminalError };
+    }
+    return { ok: false, error: { codigo: 'desconocido', mensaje: String(err) } };
+  }
+}
+
+export function terminalRequest(command: string, args: string[] = []): Promise<TerminalResultWrapper<TerminalRequest>> {
+  return invocarTerminal<TerminalRequest>('terminal_request', { command, args });
+}
+
+export function terminalListPending(): Promise<TerminalResultWrapper<TerminalRequest[]>> {
+  return invocarTerminal<TerminalRequest[]>('terminal_list_pending');
+}
+
+export function terminalApprove(id: string): Promise<TerminalResultWrapper<TerminalResult>> {
+  return invocarTerminal<TerminalResult>('terminal_approve', { id });
 }
 
 // ---------------------------------------------------------------------------
