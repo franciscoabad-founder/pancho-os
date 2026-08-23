@@ -71,7 +71,6 @@ const ms: Record<string, string> = {
   '/pendientes': 'pending_actions',
   '/notas': 'edit_note',
   '/recordatorios': 'notifications',
-  '/cortex': 'rocket_launch',
 };
 
 const navGroups = [
@@ -81,7 +80,6 @@ const navGroups = [
     { href: '/aprobaciones', label: 'Aprobaciones' },
     { href: '/daily', label: 'Daily OS' },
     { href: '/revision', label: 'Revision' },
-    { href: '/cortex', label: 'Cortex' },
   ]},
   { label: 'Control', items: [
     { href: '/semana', label: 'Semana' },
