@@ -8,6 +8,14 @@ import { errMsg, hoyGuayaquil, numOrNull, isExternalTokenAuthorized } from '../.
 // Contrato completo del flujo n8n (Google Health API) en
 // apps/web/docs/contrato-biometricas.md.
 
+// OVERLAP DE PESO CORPORAL: peso_kg vive tambien en cuerpo_log
+// (/api/salud/cuerpo, log de composicion corporal del modulo Salud). Regla de
+// lectura acordada: cuerpo_log manda, esta tabla rellena los dias sin medicion
+// propia. Implementada y testeada en src/lib/salud/peso.ts.
+// Esta ruta NO cambia por eso: sigue siendo el ingreso crudo de fuentes
+// externas y su modelo de escritura queda igual. La reconciliacion es solo de
+// lectura y se cablea del lado de /api/salud/cuerpo cuando se porte.
+
 const DIAS_DEFAULT = 30;
 
 interface DiaBiometrico {

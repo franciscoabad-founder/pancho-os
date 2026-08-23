@@ -6,6 +6,15 @@ import { isOsAuthorized, json } from '../../../os/lib/osAuth';
 import { errMsg, numOrNull, hoyGuayaquil, isExternalTokenAuthorized } from '../../../lib/salud/apiHelpers';
 import { registrarEvento } from '../../../lib/juego/motor';
 
+// OVERLAP DE PESO CORPORAL: peso_kg vive tambien en biometricas_dia
+// (/api/biometricas, espejo diario de Google Health via n8n). Regla de lectura
+// acordada: cuerpo_log manda, biometricas_dia rellena los dias sin medicion
+// propia. Igual criterio que el sueno en src/lib/sueno/estado.ts.
+// La regla ya esta implementada y testeada en src/lib/salud/peso.ts. Este
+// endpoint NO la aplica todavia a proposito: sigue sin portar a TanStack y el
+// arbol src/pages/ no corre en esta rama. Al portarlo a src/routes/api/,
+// cablear pesoDelDia/ultimoPesoConocido/serieDePeso en el GET (receta al pie
+// de peso.ts). El modelo de escritura de esta tabla no cambia.
 const SOURCES = ['manual', 'renpho', 'fitbit'];
 
 export const GET: APIRoute = async (context) => {

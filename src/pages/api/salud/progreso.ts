@@ -48,6 +48,11 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Serie de peso corporal (para promedio móvil de 7 días en el cliente).
+    // OJO: lee SOLO cuerpo_log, asi que los dias en que el peso llego por
+    // Google Health (biometricas_dia.peso_kg) quedan como hueco en el grafico.
+    // Al portar esta ruta a TanStack, reemplazar esta consulta por
+    // serieDePeso() de src/lib/salud/peso.ts, que cruza las dos tablas con la
+    // regla "cuerpo_log manda, biometricas_dia rellena". Sin tocar escrituras.
     const { data: cuerpo, error: errCuerpo } = await sb
       .from('cuerpo_log')
       .select('fecha, peso_kg, sueno_horas')
