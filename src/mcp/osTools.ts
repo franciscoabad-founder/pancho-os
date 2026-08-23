@@ -19,6 +19,32 @@ const MCP_OS_MODULES = new Set([
   // tabla que nadie mira. El endpoint api/comidas.ts se deja vivo por
   // ahora (no se confirmaron cero llamadores EXTERNOS al repo, ej. n8n);
   // se retira del todo en Fase 2 si se confirma que no hace falta.
+  //
+  // 'salud/rutinas' y 'salud/ejercicios' retirados (22-ago-2026): eran el
+  // motor de entrenamiento viejo (tablas rutinas / rutina_ejercicios /
+  // ejercicios) que quedo solapado con GFIT (gfit_rutinas / gfit_dias /
+  // gfit_dia_ejercicios / ejercicios_catalogo). La pagina que los consumia,
+  // /salud/entrenamiento (OSSaludEntrenamiento.tsx), es huerfana de
+  // navegacion: OSSaludNav.astro enlaza "Entreno" a /gfit, no a ella.
+  // Verificado contra la base antes de retirar: rutinas = 1 fila semilla
+  // ("Full Body Casa", created_at == updated_at del seed del 15-jul-2026),
+  // rutina_ejercicios = 4 filas del mismo seed, ejercicios = 235 filas
+  // creadas todas en los batches de seed de ese mismo dia y ninguna tocada
+  // despues (cero filas posteriores al seed en las tres tablas), y sets_log,
+  // que solo escribe este flujo viejo, en 0. GFIT en cambio si tiene uso
+  // real: 5 gfit_rutinas, 5 gfit_dias, 21 gfit_dia_ejercicios, 25
+  // gfit_series_plan y 12 gfit_logros creados en fechas distintas
+  // (16-jul y 24-jul). Sin filas reales que perder, se corta el acceso de
+  // agentes para que nadie escriba en tablas que ningun humano mira.
+  // 'salud/sesiones' se queda: aunque hoy este vacia, es la tabla de sesiones
+  // que usa GFIT (gfit_registrar_serie la abre y gfit/progreso la lee).
+  //
+  // Los endpoints Astro src/pages/api/salud/rutinas.ts y ejercicios.ts NO se
+  // portan a TanStack a proposito: quedan fuera del alcance del port y se
+  // dejan morir con Astro en master. No crear src/routes/api/salud/rutinas.ts
+  // ni ejercicios.ts. Ojo: este allowlist lo comparten el endpoint MCP de
+  // Astro (src/pages/api/mcp.ts) y el de Start (src/routes/api/mcp.ts), asi
+  // que el retiro aplica a los dos.
   'agenda', 'aprobaciones', 'bandeja', 'biometricas', 'contenido',
   'cuentas', 'deudas', 'dia', 'gastos', 'gfit/catalogo', 'gfit/config',
   'gfit/dia-ejercicios', 'gfit/dias', 'gfit/logros', 'gfit/progreso',
@@ -28,9 +54,9 @@ const MCP_OS_MODULES = new Set([
   'kpis', 'leads', 'lineas', 'notas', 'objetivos', 'onboarding', 'pendientes',
   'por-cobrar', 'presupuestos', 'priority-stack', 'recordatorios',
   'redes-metricas', 'revision', 'salud/alimentos', 'salud/ayunos',
-  'salud/comidas-log', 'salud/config', 'salud/cuerpo', 'salud/ejercicios',
+  'salud/comidas-log', 'salud/config', 'salud/cuerpo',
   'salud/estiramiento', 'salud/insights', 'salud/meals', 'salud/progreso',
-  'salud/recetas', 'salud/rutinas', 'salud/sesiones', 'salud/sueno/cafeina',
+  'salud/recetas', 'salud/sesiones', 'salud/sueno/cafeina',
   'salud/sueno/config', 'salud/sueno/hoy', 'salud/sueno', 'semana',
   'system', 'tareas',
 ]);

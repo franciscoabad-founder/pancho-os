@@ -8,6 +8,15 @@
 // src/os/components/gfit/** siga funcionando sin tocarse, y para que
 // gfit_dia_hoy (src/mcp/osTools.ts) pueda seguir haciendo fetch interno a
 // /api/gfit/rutinas.
+//
+// Este es el UNICO motor de rutinas que se porta. El viejo
+// /api/salud/rutinas + /api/salud/ejercicios (tablas rutinas /
+// rutina_ejercicios / ejercicios, consumidas solo por la pagina huerfana
+// /salud/entrenamiento) queda fuera del port a proposito: se verifico en la
+// base que solo tiene filas de seed y cero uso real, y se deja morir con
+// Astro en master. Si buscas src/routes/api/salud/rutinas.ts o ejercicios.ts,
+// no existen y no hay que crearlos. Detalle de la verificacion y del retiro
+// del allowlist MCP en el comentario de MCP_OS_MODULES en src/mcp/osTools.ts.
 
 import { createFileRoute } from '@tanstack/react-router';
 import { isOsAuthorized, json } from '../../../server/osAuth.ts';
