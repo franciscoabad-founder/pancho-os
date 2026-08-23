@@ -91,6 +91,11 @@ export function createGbrainClient(token: string) {
     query: (query: string, limit = 8) =>
       callTool('query', { query, limit }, token) as Promise<BrainSearchResult[]>,
 
+    // Escritura de una pagina. gbrain expone put_page como upsert por slug, asi
+    // que re-sincronizar el mismo dia sobreescribe en vez de duplicar.
+    putPage: (args: { slug: string; title: string; body: string; type?: string; tags?: string[] }) =>
+      callTool('put_page', args as unknown as Record<string, unknown>, token) as Promise<unknown>,
+
     // Fuentes de ingesta registradas en gbrain (Telegram, repos, etc.).
     // El shape exacto depende del server; el consumidor debe normalizar.
     sourcesList: () =>

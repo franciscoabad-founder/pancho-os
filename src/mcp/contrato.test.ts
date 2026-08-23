@@ -42,6 +42,29 @@ test('semana_diseno apunta a /api/semana (no a /api/priority-stack) y pasa seman
   assert.equal(conFecha.path, '/api/semana?semana=2026-08-17');
 });
 
+test('journal_log exige contenido y fija fuente hermes', () => {
+  const req = toToolRequest('journal_log', { contenido: 'Porte el modulo de diario', tipo: 'proceso', proyecto: 'os' });
+  assert.equal(req.method, 'POST');
+  assert.equal(req.path, '/api/journal');
+  assert.equal(req.body?.contenido, 'Porte el modulo de diario');
+  assert.equal(req.body?.tipo, 'proceso');
+  // La fuente NO se toma del agente: siempre queda como hermes.
+  assert.equal(req.body?.fuente, 'hermes');
+  assert.throws(() => toToolRequest('journal_log', { contenido: '   ' }), /contenido requerido/);
+});
+
+test('journal_listar arma el GET con los filtros que el endpoint acepta', () => {
+  assert.equal(toToolRequest('journal_listar', {}).path, '/api/journal');
+  const req = toToolRequest('journal_listar', { fecha: '2026-08-23', tipo: 'win', limit: 10 });
+  assert.equal(req.method, 'GET');
+  assert.equal(req.path, '/api/journal?fecha=2026-08-23&tipo=win&limit=10');
+  assert.equal(req.body, undefined);
+});
+
+test('os_api_request permite el modulo journal', () => {
+  assert.equal(toToolRequest('os_api_request', { module: 'journal', method: 'GET' }).path, '/api/journal');
+});
+
 test('os_api_request nunca manda body en GET o DELETE', () => {
   const req = toToolRequest('os_api_request', { module: 'tareas', method: 'GET', body: { x: 1 } });
   assert.equal(req.body, undefined);

@@ -297,6 +297,34 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'journal_log',
+    description: 'Registra una entrada en el Diario de Pancho: como fue el dia, un proceso que armo, una decision que tomo, un win o una idea. Es la bitacora cruda de la que despues sale contenido y la pagina del dia en el brain. Quedan marcadas con fuente hermes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        contenido: { type: 'string', description: 'Texto de la entrada, tal como lo dicto Pancho.' },
+        tipo: { type: 'string', enum: ['dia', 'proceso', 'decision', 'win', 'idea'], description: 'Que clase de entrada es. Por defecto dia.' },
+        titulo: { type: 'string', description: 'Titulo corto opcional.' },
+        proyecto: { type: 'string', description: 'Proyecto al que pertenece: braintech, rafik, cortex, taskr, arazza, codeis, marca o personal.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Etiquetas libres en minusculas.' },
+        fecha: { type: 'string', description: 'Fecha YYYY-MM-DD. Omite para hoy.' },
+      },
+      required: ['contenido'],
+    },
+  },
+  {
+    name: 'journal_listar',
+    description: 'Lee entradas del Diario de Pancho, opcionalmente de una fecha o de un tipo concreto. Sirve para recordar que hizo un dia antes de responder o de escribir contenido.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fecha: { type: 'string', description: 'Fecha YYYY-MM-DD a consultar.' },
+        tipo: { type: 'string', enum: ['dia', 'proceso', 'decision', 'win', 'idea'] },
+        limit: { type: 'number', description: 'Maximo de entradas a devolver (tope 500).' },
+      },
+    },
+  },
+  {
     name: 'prioridades_semana',
     description: 'Consulta las tres prioridades y la lista de no hacer de una semana.',
     inputSchema: { type: 'object', properties: { semana_inicio: { type: 'string', description: 'Lunes YYYY-MM-DD. Omite para semana actual.' } } },
@@ -486,6 +514,8 @@ export async function handleMcpStatelessRequest(
       case 'aprobaciones_solicitar':
       case 'contenido_listar':
       case 'contenido_capturar':
+      case 'journal_log':
+      case 'journal_listar':
       case 'prioridades_semana':
       case 'semana_diseno':
       case 'crm_listar_leads':
