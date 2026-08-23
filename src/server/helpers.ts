@@ -17,3 +17,19 @@ export function errMsg(err: unknown): string {
   const anyErr = err as { message?: string };
   return anyErr?.message ?? 'error desconocido';
 }
+
+/**
+ * Variante literal del `catch` que usaban los endpoints de finanzas y CRM en
+ * Astro: Error -> message, objeto con message -> message, y cualquier otra cosa
+ * -> JSON.stringify. Se conserva tal cual para no cambiar el cuerpo de los 502
+ * que ya consumen el MCP y Hermes.
+ */
+export function errMsgCrudo(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return (err as { message?: string })?.message ?? JSON.stringify(err);
+}
+
+/** Codigo de error de Postgres (23505 = unique_violation), si lo hay. */
+export function pgCode(err: unknown): string | undefined {
+  return (err as { code?: string })?.code;
+}
