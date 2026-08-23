@@ -2,9 +2,12 @@
 // - MediaRecorder (audio/webm;codecs=opus) con chunks de ~30s guardados en
 //   IndexedDB durante la grabacion para sobrevivir crashes o cierres.
 // - Wake Lock mientras graba para que la pantalla no se apague en movil.
-// - Al detener se ensambla el Blob y se sube DIRECTO a Supabase Storage con una
-//   signed URL (el audio nunca pasa por Vercel). Luego /api/grabaciones
-//   action=done dispara el pipeline de transcripcion en n8n.
+// - Al detener se ensambla el Blob y se sube con un PUT a la URL que devuelve
+//   /api/grabaciones action=start. Esa URL apuntaba antes a Supabase Storage y
+//   hoy apunta a la propia route, que escribe el audio en el disco del servidor
+//   (ver la cabecera de src/routes/api/grabaciones.ts). El flujo del cliente es
+//   identico. Luego /api/grabaciones action=done dispara el pipeline de
+//   transcripcion en n8n.
 // - Si al cargar hay una grabacion sin subir en IndexedDB, se ofrece recuperarla.
 import { useEffect, useRef, useState } from 'react';
 import { Button, Card, FieldInput, Spinner } from './ui';
@@ -355,7 +358,7 @@ export default function OSGrabar() {
         headers: { 'Content-Type': mime },
         body: blob,
       });
-      if (!resUp.ok) throw new Error(`Fallo la subida a Storage (HTTP ${resUp.status})`);
+      if (!resUp.ok) throw new Error(`Fallo la subida del audio (HTTP ${resUp.status})`);
 
       setProgreso('Enviando a transcripcion...');
       const resDone = await fetch('/api/grabaciones', {
