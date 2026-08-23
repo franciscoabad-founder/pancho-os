@@ -23,6 +23,7 @@
     "test:radar": "node --experimental-strip-types --test src/organs/contenido/domain/radar/*.test.ts",
     "test:mcp": "node --experimental-strip-types --test src/mcp/*.test.ts",
     "test:auth": "node --experimental-strip-types --test src/lib/osTokens.test.ts src/server/*.test.ts",
+    "test:qr": "node --experimental-strip-types --test src/lib/qr.test.ts",
     "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\""
   },
   "dependencies": {

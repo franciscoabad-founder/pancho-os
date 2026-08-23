@@ -72,7 +72,7 @@ export const Route = createFileRoute('/api/semana')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const semanaParam = new URL(request.url).searchParams.get('semana');
           const semanaInicio = semanaParam
@@ -177,7 +177,7 @@ export const Route = createFileRoute('/api/semana')({
 
       // PATCH ?dia=N -> cambia el modo/etiqueta/sale/nota de un dia de la semana.
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const dia = numOrNull(new URL(request.url).searchParams.get('dia'));
           if (dia === null || dia < 1 || dia > 7) return json({ error: 'dia debe ser 1..7 (ISO, 1=Lunes)' }, 400);
@@ -204,7 +204,7 @@ export const Route = createFileRoute('/api/semana')({
       //   { log: {...} }         -> registra minutos reales de una funcion
       //   { presupuesto: {...} } -> ajusta el objetivo semanal de una funcion
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         let body: Record<string, any>;
         try {
           body = await request.json();
@@ -292,7 +292,7 @@ export const Route = createFileRoute('/api/semana')({
       // DELETE ?bloque_id= -> baja logica del bloque (activo=false), para no romper los logs
       // historicos que lo referencian.
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const bloqueId = new URL(request.url).searchParams.get('bloque_id');
           if (!bloqueId) return json({ error: 'bloque_id requerido' }, 400);

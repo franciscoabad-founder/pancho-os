@@ -46,7 +46,7 @@ export const Route = createFileRoute('/api/tareas')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           return json({ tareas: await listarTareas() });
         } catch (err) {
@@ -55,7 +55,7 @@ export const Route = createFileRoute('/api/tareas')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const tarea = await crearTarea(await leerCuerpo(request));
           return json({ ok: true, tarea }, 201);
@@ -65,7 +65,7 @@ export const Route = createFileRoute('/api/tareas')({
       },
 
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await leerCuerpo(request);
           // El id puede venir por query (?id=) o dentro del cuerpo, igual que en
@@ -80,7 +80,7 @@ export const Route = createFileRoute('/api/tareas')({
       },
 
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         try {
           await eliminarTarea(id);

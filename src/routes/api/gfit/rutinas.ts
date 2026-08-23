@@ -32,7 +32,7 @@ export const Route = createFileRoute('/api/gfit/rutinas')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const url = new URL(request.url);
         try {
           const sb = getSupabaseServer();
@@ -66,7 +66,7 @@ export const Route = createFileRoute('/api/gfit/rutinas')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await request.json();
           if (!body.nombre?.trim()) return json({ error: 'nombre requerido' }, 400);
@@ -92,7 +92,7 @@ export const Route = createFileRoute('/api/gfit/rutinas')({
       },
 
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
@@ -124,7 +124,7 @@ export const Route = createFileRoute('/api/gfit/rutinas')({
 
       // Soft delete: no borra la rutina, la marca como archivada (conserva historial de sesiones).
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {

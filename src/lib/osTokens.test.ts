@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { esTokenValido, parseNamedTokens } from './osTokens.ts';
+import { esTokenValido, parseNamedTokens, parseNombresTokens } from './osTokens.ts';
 
 test('parseNamedTokens devuelve lista vacia sin configuracion', () => {
   assert.deepEqual(parseNamedTokens(undefined), []);
@@ -66,4 +66,28 @@ test('revocar una key es quitarla de la lista', () => {
   const despues = 'grok:xyz789';
   assert.equal(esTokenValido('abc123', 'maestro', antes), true);
   assert.equal(esTokenValido('abc123', 'maestro', despues), false);
+});
+
+// --- parseNombresTokens (visibilidad en /sistema) --------------------------
+//
+// Lo unico que esta funcion no puede hacer JAMAS es devolver un valor de token:
+// alimenta la tabla de "Mis dispositivos", que se pinta en pantalla.
+
+test('parseNombresTokens devuelve los nombres, nunca los secretos', () => {
+  const nombres = parseNombresTokens('kimi:abc123,grok:xyz789');
+  assert.deepEqual(nombres, ['kimi', 'grok']);
+  assert.equal(nombres.includes('abc123'), false);
+  assert.equal(nombres.includes('xyz789'), false);
+});
+
+test('parseNombresTokens omite las entradas sin nombre (formato viejo)', () => {
+  // 'tokenpelado' no tiene ':': mostrarlo seria filtrar el token a la pantalla.
+  assert.deepEqual(parseNombresTokens('tokenpelado,kimi:abc123'), ['kimi']);
+  assert.deepEqual(parseNombresTokens(':abc123'), []);
+});
+
+test('parseNombresTokens tolera espacios y lista vacia', () => {
+  assert.deepEqual(parseNombresTokens(' kimi : abc123 , grok:xyz789 '), ['kimi', 'grok']);
+  assert.deepEqual(parseNombresTokens(undefined), []);
+  assert.deepEqual(parseNombresTokens(''), []);
 });

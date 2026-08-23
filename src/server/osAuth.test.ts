@@ -8,27 +8,45 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   OS_AUTH_COOKIE,
+  claveClienteRequest,
   cookieSesionOs,
   cookieSesionOsBorrada,
   isOsAuthorized,
+  isOsAuthorizedSync,
   leerCookie,
+  origenPermitido,
+  setVerificadorDispositivo,
   tieneSesionOs,
 } from './osAuth.ts';
 
 const ENV_AUTH = ['OS_AUTH_TOKEN', 'OS_API_TOKEN', 'OS_API_TOKENS'] as const;
 
-function conEnv(valores: Partial<Record<(typeof ENV_AUTH)[number], string>>, fn: () => void) {
+// conEnv es async desde que isOsAuthorized lo es (el tercer camino de auth,
+// os_devices, consulta Supabase). Los casos que no usan await siguen andando:
+// `await fn()` sobre una funcion sincrona corre el cuerpo igual.
+async function conEnv(
+  valores: Partial<Record<(typeof ENV_AUTH)[number], string>>,
+  fn: () => void | Promise<void>,
+) {
   const previo = ENV_AUTH.map((k) => [k, process.env[k]] as const);
   for (const k of ENV_AUTH) delete process.env[k];
   for (const [k, v] of Object.entries(valores)) process.env[k] = v;
   try {
-    fn();
+    await fn();
   } finally {
     for (const [k, v] of previo) {
       if (v === undefined) delete process.env[k];
       else process.env[k] = v;
     }
   }
+}
+
+// Doble del lookup de os_devices. Sin esto, cada test de isOsAuthorized
+// intentaria abrir un cliente de Supabase real. `tokensValidos` vacio = ningun
+// dispositivo emparejado, que es el estado previo a aplicar la migracion.
+function conDispositivos(tokensValidos: string[], fn: () => Promise<void>) {
+  setVerificadorDispositivo(async (token) => tokensValidos.includes(token));
+  return fn().finally(() => setVerificadorDispositivo(null));
 }
 
 function req(headers: Record<string, string> = {}): Request {
@@ -101,53 +119,114 @@ test('la cookie que emite el login abre sesion al volver como header', () => {
 });
 
 // --- isOsAuthorized --------------------------------------------------------
+//
+// isOsAuthorized es async: cuando ni la cookie ni el .env matchean, hashea el
+// token y lo busca en os_devices. Todos los casos van con await y con el
+// verificador de dispositivos mockeado.
 
-test('isOsAuthorized falla cerrado sin ninguna env var', () => {
-  conEnv({}, () => {
-    assert.equal(isOsAuthorized(req()), false);
-    assert.equal(isOsAuthorized(req({ cookie: 'os_auth=x' })), false);
-    assert.equal(isOsAuthorized(req({ authorization: 'Bearer x' })), false);
-    assert.equal(isOsAuthorized(req({ 'x-os-token': 'x' })), false);
-  });
+test('isOsAuthorized falla cerrado sin ninguna env var', async () => {
+  await conEnv({}, () => conDispositivos([], async () => {
+    assert.equal(await isOsAuthorized(req()), false);
+    assert.equal(await isOsAuthorized(req({ cookie: 'os_auth=x' })), false);
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer x' })), false);
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'x' })), false);
+  }));
 });
 
-test('isOsAuthorized acepta la sesion de navegador', () => {
-  conEnv({ OS_AUTH_TOKEN: 'tok-sesion' }, () => {
-    assert.equal(isOsAuthorized(req({ cookie: 'os_auth=tok-sesion' })), true);
-  });
+test('isOsAuthorized acepta la sesion de navegador', async () => {
+  await conEnv({ OS_AUTH_TOKEN: 'tok-sesion' }, () => conDispositivos([], async () => {
+    assert.equal(await isOsAuthorized(req({ cookie: 'os_auth=tok-sesion' })), true);
+  }));
 });
 
-test('isOsAuthorized acepta Bearer y X-OS-Token con el token maestro', () => {
-  conEnv({ OS_API_TOKEN: 'tok-api' }, () => {
-    assert.equal(isOsAuthorized(req({ authorization: 'Bearer tok-api' })), true);
-    assert.equal(isOsAuthorized(req({ authorization: 'bearer tok-api' })), true);
-    assert.equal(isOsAuthorized(req({ 'x-os-token': 'tok-api' })), true);
-    assert.equal(isOsAuthorized(req({ authorization: 'Bearer otro' })), false);
-  });
+test('isOsAuthorized acepta Bearer y X-OS-Token con el token maestro', async () => {
+  await conEnv({ OS_API_TOKEN: 'tok-api' }, () => conDispositivos([], async () => {
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer tok-api' })), true);
+    assert.equal(await isOsAuthorized(req({ authorization: 'bearer tok-api' })), true);
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'tok-api' })), true);
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer otro' })), false);
+  }));
 });
 
-test('isOsAuthorized cae a OS_AUTH_TOKEN como token de API si no hay OS_API_TOKEN', () => {
+test('isOsAuthorized cae a OS_AUTH_TOKEN como token de API si no hay OS_API_TOKEN', async () => {
   // Comportamiento heredado de Astro (`OS_API_TOKEN ?? sessionToken`): Hermes
   // y el MCP funcionaban con una sola env var configurada.
-  conEnv({ OS_AUTH_TOKEN: 'tok-sesion' }, () => {
-    assert.equal(isOsAuthorized(req({ authorization: 'Bearer tok-sesion' })), true);
-  });
+  await conEnv({ OS_AUTH_TOKEN: 'tok-sesion' }, () => conDispositivos([], async () => {
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer tok-sesion' })), true);
+  }));
 });
 
-test('isOsAuthorized acepta una key con nombre de OS_API_TOKENS', () => {
-  conEnv({ OS_API_TOKEN: 'tok-api', OS_API_TOKENS: 'kimi:abc123,grok:xyz789' }, () => {
-    assert.equal(isOsAuthorized(req({ 'x-os-token': 'abc123' })), true);
-    assert.equal(isOsAuthorized(req({ authorization: 'Bearer xyz789' })), true);
-    assert.equal(isOsAuthorized(req({ 'x-os-token': 'kimi' })), false);
-    assert.equal(isOsAuthorized(req({ 'x-os-token': 'revocado' })), false);
-  });
+test('isOsAuthorized acepta una key con nombre de OS_API_TOKENS', async () => {
+  await conEnv({ OS_API_TOKEN: 'tok-api', OS_API_TOKENS: 'kimi:abc123,grok:xyz789' }, () => conDispositivos([], async () => {
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'abc123' })), true);
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer xyz789' })), true);
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'kimi' })), false);
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'revocado' })), false);
+  }));
 });
 
-test('isOsAuthorized no lanza con cookie mal codificada y token de API valido', () => {
-  conEnv({ OS_API_TOKEN: 'tok-api' }, () => {
+test('isOsAuthorized no lanza con cookie mal codificada y token de API valido', async () => {
+  await conEnv({ OS_API_TOKEN: 'tok-api' }, () => conDispositivos([], async () => {
     const r = req({ cookie: 'os_auth=%', 'x-os-token': 'tok-api' });
-    assert.equal(isOsAuthorized(r), true);
-  });
+    assert.equal(await isOsAuthorized(r), true);
+  }));
+});
+
+// --- tercer camino: dispositivos emparejados -------------------------------
+
+test('isOsAuthorized acepta el token de un dispositivo emparejado', async () => {
+  await conEnv({ OS_API_TOKEN: 'tok-api' }, () => conDispositivos(['tok-dispositivo'], async () => {
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'tok-dispositivo' })), true);
+    assert.equal(await isOsAuthorized(req({ authorization: 'Bearer tok-dispositivo' })), true);
+    assert.equal(await isOsAuthorized(req({ 'x-os-token': 'otro-cualquiera' })), false);
+  }));
+});
+
+test('el camino de dispositivos no se consulta si el .env ya autorizo', async () => {
+  let consultas = 0;
+  setVerificadorDispositivo(async () => { consultas++; return false; });
+  try {
+    await conEnv({ OS_API_TOKEN: 'tok-api' }, async () => {
+      assert.equal(await isOsAuthorized(req({ 'x-os-token': 'tok-api' })), true);
+      assert.equal(consultas, 0, 'no debe pegarle a Supabase con un token del .env');
+    });
+  } finally {
+    setVerificadorDispositivo(null);
+  }
+});
+
+test('un fallo del lookup de dispositivos NO tumba los otros dos caminos', async () => {
+  // Es el escenario real de "la migracion todavia no se aplico": Supabase
+  // responde 42P01. La cookie y OS_API_TOKENS tienen que seguir andando.
+  setVerificadorDispositivo(async () => { throw new Error('relation "os_devices" does not exist'); });
+  try {
+    await conEnv({ OS_AUTH_TOKEN: 'tok-sesion', OS_API_TOKENS: 'kimi:abc123' }, async () => {
+      assert.equal(await isOsAuthorized(req({ cookie: 'os_auth=tok-sesion' })), true);
+      assert.equal(await isOsAuthorized(req({ 'x-os-token': 'abc123' })), true);
+      // Y el token desconocido cae a "no autorizado", sin propagar la excepcion.
+      assert.equal(await isOsAuthorized(req({ 'x-os-token': 'desconocido' })), false);
+    });
+  } finally {
+    setVerificadorDispositivo(null);
+  }
+});
+
+// --- isOsAuthorizedSync ----------------------------------------------------
+
+test('isOsAuthorizedSync resuelve cookie y .env sin tocar la base', async () => {
+  let consultas = 0;
+  setVerificadorDispositivo(async () => { consultas++; return true; });
+  try {
+    await conEnv({ OS_AUTH_TOKEN: 'tok-sesion', OS_API_TOKENS: 'kimi:abc123' }, () => {
+      assert.equal(isOsAuthorizedSync(req({ cookie: 'os_auth=tok-sesion' })), true);
+      assert.equal(isOsAuthorizedSync(req({ 'x-os-token': 'abc123' })), true);
+      // Un token de dispositivo valido NO lo autoriza: para eso hace falta await.
+      assert.equal(isOsAuthorizedSync(req({ 'x-os-token': 'tok-dispositivo' })), false);
+      assert.equal(consultas, 0);
+    });
+  } finally {
+    setVerificadorDispositivo(null);
+  }
 });
 
 // --- Set-Cookie ------------------------------------------------------------
@@ -174,4 +253,74 @@ test('cookieSesionOsBorrada borra de verdad (Max-Age=0 y mismo Path)', () => {
   assert.match(c, /(^|; )HttpOnly(;|$)/);
   assert.match(c, /(^|; )Secure(;|$)/);
   assert.match(c, /(^|; )SameSite=Lax(;|$)/);
+});
+
+// --- origenPermitido -------------------------------------------------------
+//
+// Es la defensa CSRF de /api/os-auth/pair/confirm y del DELETE de devices/$id:
+// el CSRF middleware de src/start.ts solo filtra server functions, asi que no
+// llega a los server routes. Lo que se protege es que un origen hermano
+// (cualquier subdominio de franciscoabad.com, que puede setear cookies de host)
+// no pueda hacer que el navegador de Pancho acuñe o revoque credenciales.
+
+test('origenPermitido acepta la request que sale de la propia pantalla', () => {
+  assert.equal(origenPermitido(req({ 'sec-fetch-site': 'same-origin' })), true);
+});
+
+test('origenPermitido acepta la navegacion escrita a mano (Sec-Fetch-Site: none)', () => {
+  assert.equal(origenPermitido(req({ 'sec-fetch-site': 'none' })), true);
+});
+
+test('origenPermitido rechaza cross-site Y same-site', () => {
+  // 'same-site' es el caso que SameSite=Lax no tapa: otro subdominio de
+  // franciscoabad.com. Ese es justamente el atacante que nos preocupa.
+  assert.equal(origenPermitido(req({ 'sec-fetch-site': 'same-site' })), false);
+  assert.equal(origenPermitido(req({ 'sec-fetch-site': 'cross-site' })), false);
+});
+
+test('sin Sec-Fetch-Site, origenPermitido compara el host del Origin', () => {
+  assert.equal(origenPermitido(req({ origin: 'https://os.franciscoabad.com' })), true);
+  // El esquema no se compara: detras de Caddy la URL que reconstruye el server
+  // puede decir http mientras el navegador manda https, y eso seria un falso
+  // negativo que rompe la pantalla sin ganar nada.
+  assert.equal(origenPermitido(req({ origin: 'http://os.franciscoabad.com' })), true);
+  assert.equal(origenPermitido(req({ origin: 'https://otro.franciscoabad.com' })), false);
+  assert.equal(origenPermitido(req({ origin: 'https://malicioso.com' })), false);
+  assert.equal(origenPermitido(req({ origin: 'no-es-una-url' })), false);
+});
+
+test('sin ninguna de las dos cabeceras se permite: no es un navegador', () => {
+  // curl, Hermes, el MCP, un agente con Bearer. A esos CSRF no les aplica:
+  // nadie puede hacer que manden cabeceras con la cookie de la victima.
+  assert.equal(origenPermitido(req()), true);
+});
+
+test('Sec-Fetch-Site manda sobre Origin', () => {
+  // Un atacante controla el Origin que su pagina manda, pero no puede fabricar
+  // Sec-Fetch-Site: lo pone el navegador. Si estan los dos, gana el confiable.
+  assert.equal(
+    origenPermitido(req({ 'sec-fetch-site': 'cross-site', origin: 'https://os.franciscoabad.com' })),
+    false,
+  );
+});
+
+// --- claveClienteRequest ---------------------------------------------------
+
+test('claveClienteRequest toma la ULTIMA entrada de X-Forwarded-For', () => {
+  // Caddy apenda su peer al final. La primera entrada la controla el cliente
+  // (puede mandar su propio X-Forwarded-For), asi que usarla haria trivial
+  // saltarse el limite de frecuencia rotando un header.
+  assert.equal(claveClienteRequest(req({ 'x-forwarded-for': '203.0.113.9' })), '203.0.113.9');
+  assert.equal(
+    claveClienteRequest(req({ 'x-forwarded-for': '1.1.1.1, 2.2.2.2, 203.0.113.9' })),
+    '203.0.113.9',
+  );
+});
+
+test('claveClienteRequest cae a X-Real-IP y despues a una clave compartida', () => {
+  assert.equal(claveClienteRequest(req({ 'x-real-ip': '198.51.100.4' })), '198.51.100.4');
+  // Sin cabeceras de proxy todos comparten cupo. Es conservador a proposito:
+  // mejor apretar de mas que dar cupo infinito a quien no manda la cabecera.
+  assert.equal(claveClienteRequest(req()), 'desconocido');
+  assert.equal(claveClienteRequest(req({ 'x-forwarded-for': '  ' })), 'desconocido');
 });

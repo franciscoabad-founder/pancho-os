@@ -30,7 +30,7 @@ export const Route = createFileRoute('/api/gfit/dia-ejercicios')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const url = new URL(request.url);
         const id = url.searchParams.get('id');
         const diaId = url.searchParams.get('dia_id');
@@ -57,7 +57,7 @@ export const Route = createFileRoute('/api/gfit/dia-ejercicios')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await request.json();
           const sb = getSupabaseServer();
@@ -119,7 +119,7 @@ export const Route = createFileRoute('/api/gfit/dia-ejercicios')({
       // PATCH ?id= {orden?, superset_grupo?, notas?, ejercicio_id?}: cambiar ejercicio_id
       // es un SWAP (mantiene las series planificadas tal cual, solo cambia el ejercicio de catálogo).
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
@@ -148,7 +148,7 @@ export const Route = createFileRoute('/api/gfit/dia-ejercicios')({
       },
 
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {

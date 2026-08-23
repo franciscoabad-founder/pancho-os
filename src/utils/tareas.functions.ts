@@ -26,7 +26,7 @@ export const getTareas = createServerFn({ method: 'GET' }).handler(async (): Pro
   // segunda verificacion es defensa en profundidad: si alguien agrega /tareas o
   // el prefijo de server functions a la lista publica por error, la consulta a
   // Supabase sigue sin ejecutarse.
-  if (!isOsAuthorized(getRequest())) {
+  if (!(await isOsAuthorized(getRequest()))) {
     throw new Error('Unauthorized');
   }
 

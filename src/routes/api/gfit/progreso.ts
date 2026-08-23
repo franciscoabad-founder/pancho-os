@@ -74,7 +74,7 @@ export const Route = createFileRoute('/api/gfit/progreso')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const sb = getSupabaseServer();
           const hoy = hoyGuayaquil();

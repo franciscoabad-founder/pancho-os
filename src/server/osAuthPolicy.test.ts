@@ -47,6 +47,12 @@ test('las paginas del OS no son publicas', () => {
   }
 });
 
+test('la pantalla de emparejamiento del dispositivo nuevo es publica', () => {
+  // El que la abre todavia no tiene credencial: si el middleware la mandara a
+  // /login, el pairing por QR no podria completarse nunca.
+  assert.equal(esRutaPublica('/pair/0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0'), true);
+});
+
 test('la lista publica no se abre por prefijo accidental', () => {
   // '/login' es exacto, no prefijo: '/logins-secretos' no debe colarse.
   assert.equal(esRutaPublica('/loginsecreto'), false);
@@ -54,6 +60,9 @@ test('la lista publica no se abre por prefijo accidental', () => {
   // '/api/' lleva barra: '/apix' no es la API.
   assert.equal(esRutaPublica('/apix'), false);
   assert.equal(esRutaPublica('/api'), false);
+  // '/pair/' idem: la barra es lo que impide que '/pairing-secreto' se cuele.
+  assert.equal(esRutaPublica('/pairx'), false);
+  assert.equal(esRutaPublica('/pair'), false);
 });
 
 test('las server functions NO son publicas', () => {

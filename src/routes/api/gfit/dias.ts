@@ -87,7 +87,7 @@ export const Route = createFileRoute('/api/gfit/dias')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const url = new URL(request.url);
         try {
           const sb = getSupabaseServer();
@@ -109,7 +109,7 @@ export const Route = createFileRoute('/api/gfit/dias')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await request.json();
           const sb = getSupabaseServer();
@@ -147,7 +147,7 @@ export const Route = createFileRoute('/api/gfit/dias')({
       },
 
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
@@ -175,7 +175,7 @@ export const Route = createFileRoute('/api/gfit/dias')({
       },
 
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {

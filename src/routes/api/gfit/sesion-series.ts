@@ -32,7 +32,7 @@ export const Route = createFileRoute('/api/gfit/sesion-series')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const url = new URL(request.url);
         try {
           const sesionId = url.searchParams.get('sesion_id');
@@ -51,7 +51,7 @@ export const Route = createFileRoute('/api/gfit/sesion-series')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await request.json();
           if (!body.sesion_id) return json({ error: 'sesion_id requerido' }, 400);
@@ -95,7 +95,7 @@ export const Route = createFileRoute('/api/gfit/sesion-series')({
       },
 
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
@@ -122,7 +122,7 @@ export const Route = createFileRoute('/api/gfit/sesion-series')({
       },
 
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         const id = new URL(request.url).searchParams.get('id');
         if (!id) return json({ error: 'id requerido' }, 400);
         try {

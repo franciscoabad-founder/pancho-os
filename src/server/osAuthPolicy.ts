@@ -12,8 +12,13 @@ import { tieneSesionOs } from './osAuth.ts';
 // Rutas que no exigen sesion de navegador:
 // - /api/*: cada endpoint valida su propia auth (cookie O Bearer/X-OS-Token,
 //   que es como entran Hermes y los agentes; el middleware no debe romperlos).
+// - /pair/*: la pantalla que abre el dispositivo NUEVO al escanear el QR de
+//   emparejamiento. Tiene que ser publica por definicion: el que la abre
+//   todavia no tiene credencial, la esta pidiendo. No expone nada por si sola
+//   (sin la confirmacion de Pancho responde "esperando"), y el token que
+//   entrega sale una unica vez. Ver src/routes/pair/$id.tsx.
 // - /login y estaticos de PWA.
-export const PUBLIC_PREFIXES = ['/api/'];
+export const PUBLIC_PREFIXES = ['/api/', '/pair/'];
 export const PUBLIC_EXACT = new Set([
   '/login',
   '/sw.js',

@@ -55,7 +55,7 @@ export const Route = createFileRoute('/api/gfit/logros')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const sb = getSupabaseServer();
           const [{ data: catalogo, error: errCat }, { data: obtenidos, error: errObt }] = await Promise.all([
@@ -85,7 +85,7 @@ export const Route = createFileRoute('/api/gfit/logros')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = await request.json().catch(() => ({}));
           if (!body?.evaluar) return json({ error: 'body.evaluar debe ser true' }, 400);

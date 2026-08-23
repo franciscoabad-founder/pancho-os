@@ -54,7 +54,7 @@ export const Route = createFileRoute('/api/contenido')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const status = new URL(request.url).searchParams.get('status');
           return json({ ideas: await listarIdeas(status) });
@@ -64,7 +64,7 @@ export const Route = createFileRoute('/api/contenido')({
       },
 
       POST: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const idea = await crearIdea(await leerCuerpo(request));
           return json({ idea }, 201);
@@ -74,7 +74,7 @@ export const Route = createFileRoute('/api/contenido')({
       },
 
       PATCH: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         // El id se valida antes de tocar el cuerpo, igual que en Astro: un
         // PATCH sin ?id= responde 400 'id requerido' aunque el JSON venga roto.
         const id = idDeQuery(request);
@@ -88,7 +88,7 @@ export const Route = createFileRoute('/api/contenido')({
       },
 
       DELETE: async ({ request }) => {
-        if (!isOsAuthorized(request)) return noAutorizado();
+        if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           await eliminarIdea(idDeQuery(request));
           return json({ ok: true });
