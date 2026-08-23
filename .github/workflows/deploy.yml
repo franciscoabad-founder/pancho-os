@@ -51,10 +51,14 @@ jobs:
         env:
           VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
 
+      # Produccion real desde el 23-ago-2026: TanStack Start en /opt/pancho-os-next,
+      # proceso PM2 "pancho-os-next" en el puerto 4323 (Caddy apunta
+      # os.franciscoabad.com ahi). El proceso Astro viejo (/opt/pancho-os, 4322)
+      # queda solo como rollback manual y NO se toca desde CI.
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "cd /opt/pancho-os && ( [ -d .git ] || ( git init && git remote add origin https://github.com/franciscoabad-founder/pancho-os.git ) ) && git fetch origin && git reset --hard origin/master && git clean -fd && npm install && npm run build && (NODE_ENV=production pm2 restart pancho-os --update-env || NODE_ENV=production pm2 start scripts/start-prod.mjs --name pancho-os) && pm2 save"
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "cd /opt/pancho-os-next && git fetch origin && git reset --hard origin/master && git clean -fd -e .env -e data && npm ci && npm run build && (NODE_ENV=production pm2 restart pancho-os-next --update-env || NODE_ENV=production pm2 start scripts/start-prod-next.mjs --name pancho-os-next) && pm2 save"
 
       - name: Verify deployment
         run: |
-          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "curl -fsS http://localhost:4322/ > /dev/null"
+          ssh -i ~/.ssh/pancho_deploy root@178.105.163.120 "curl -fsS http://localhost:4323/login > /dev/null"
