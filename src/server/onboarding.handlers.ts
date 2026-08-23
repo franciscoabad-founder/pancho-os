@@ -6,6 +6,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
 import { resumenModos } from '../os/components/onboarding/flujoOs';
+import {
+  mecanicasDelOnboarding,
+  questDelOnboarding,
+  recompensasDelOnboarding,
+} from '../os/components/onboarding/flujoJuego';
+import { hoyLocal, addDias, diaIso } from '../lib/habitos/fechas.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -207,6 +213,73 @@ export async function aplicarOs(sb: SB, respuestas: Record<string, unknown>) {
   };
 }
 
+// Deriva la linea base del modulo Juego a partir de las respuestas del
+// onboarding: config de mecanicas sobre el jugador, recompensas iniciales de la
+// tienda y (opcional) la quest de la semana en curso. No toca xp_total ni oro:
+// el onboarding define el contrato, no regala progreso.
+export async function aplicarJuego(sb: SB, respuestas: Record<string, unknown>) {
+  const r = respuestas ?? {};
+
+  const { data: jugadorRows, error: errJugador } = await sb
+    .from('jugador')
+    .select('id, oro, config')
+    .limit(1);
+  if (errJugador) throw errJugador;
+  const jugador = jugadorRows?.[0] as { id: string; oro?: number; config?: Record<string, unknown> } | undefined;
+  if (!jugador) throw new Error('jugador no encontrado');
+
+  const mecanicas = mecanicasDelOnboarding(r);
+  const { error: errConfig } = await sb
+    .from('jugador')
+    .update({
+      config: { ...(jugador.config ?? {}), ...mecanicas },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', jugador.id);
+  if (errConfig) throw errConfig;
+
+  // Rehacer el onboarding no debe duplicar la tienda: se saltan los nombres que
+  // ya existen.
+  const recompensas = recompensasDelOnboarding(r);
+  let recompensasCreadas = 0;
+  if (recompensas.length) {
+    const { data: existentes, error: errExistentes } = await sb.from('recompensas').select('nombre');
+    if (errExistentes) throw errExistentes;
+    const yaEstan = new Set(
+      ((existentes ?? []) as Array<{ nombre?: string }>).map((x) => (x.nombre ?? '').trim().toLowerCase()),
+    );
+    const nuevas = recompensas.filter((x) => !yaEstan.has(x.nombre.toLowerCase()));
+    if (nuevas.length) {
+      const { error } = await sb
+        .from('recompensas')
+        .insert(nuevas.map((x) => ({ nombre: x.nombre, costo_oro: x.costo_oro })));
+      if (error) throw error;
+      recompensasCreadas = nuevas.length;
+    }
+  }
+
+  const quest = questDelOnboarding(r);
+  let questCreada = false;
+  if (quest) {
+    const hoy = hoyLocal();
+    const semanaInicio = addDias(hoy, -(diaIso(hoy) - 1));
+    const { error } = await sb.from('quests').insert([{
+      titulo: quest.titulo,
+      objetivo: { tipo: 'conteo_eventos', evento: quest.evento, meta: quest.meta },
+      // La apuesta solo se registra si el jugador ya tiene ese oro. Arrancando
+      // en cero queda en cero: no se apuesta oro que no existe.
+      apuesta_oro: Math.min(quest.apuesta_oro, Number(jugador.oro ?? 0)),
+      premio_xp: quest.premio_xp,
+      premio_oro: 0,
+      semana_inicio: semanaInicio,
+    }]);
+    if (error) throw error;
+    questCreada = true;
+  }
+
+  return { mecanicas, recompensas: recompensasCreadas, quest: questCreada };
+}
+
 export async function guardarOnboarding(
   modulo: string,
   body: Record<string, unknown>,
@@ -243,8 +316,19 @@ export async function guardarOnboarding(
   return data as EstadoOnboarding;
 }
 
-export async function aplicarOnboarding(tipo: 'salud' | 'os'): Promise<Record<string, unknown>> {
+export async function aplicarOnboarding(tipo: 'salud' | 'os' | 'juego'): Promise<Record<string, unknown>> {
   const sb = clienteActual();
+
+  if (tipo === 'juego') {
+    const { data: estado, error } = await sb
+      .from('onboarding_estado')
+      .select('respuestas')
+      .eq('modulo', 'juego')
+      .maybeSingle();
+    if (error) throw error;
+    const aplicado = await aplicarJuego(sb, (estado?.respuestas ?? {}) as Record<string, unknown>);
+    return { ok: true, aplicado };
+  }
 
   if (tipo === 'salud') {
     const { data: estado, error } = await sb

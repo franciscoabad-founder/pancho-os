@@ -47,9 +47,9 @@ export const Route = createFileRoute('/api/onboarding')({
           return json({ error: 'JSON invalido' }, 400);
         }
 
-        if (body.aplicar === 'salud' || body.aplicar === 'os') {
+        if (body.aplicar === 'salud' || body.aplicar === 'os' || body.aplicar === 'juego') {
           try {
-            return json(await aplicarOnboarding(body.aplicar as 'salud' | 'os'));
+            return json(await aplicarOnboarding(body.aplicar as 'salud' | 'os' | 'juego'));
           } catch (err) {
             return respuestaError(err);
           }
