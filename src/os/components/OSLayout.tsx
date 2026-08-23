@@ -414,9 +414,8 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
   }, []);
 
   // ── Chat con el cerebro ──
-  // NOTA: /api/preguntar y /api/capturar todavia son endpoints de Astro; se
-  // portan en una sub-fase posterior del plan. Hasta entonces estos dos flujos
-  // fallan con el mensaje de error que ya manejaban, sin romper la pagina.
+  // /api/preguntar y /api/capturar ya son server routes de TanStack
+  // (src/routes/api/preguntar.ts y src/routes/api/capturar.ts).
   const [chatAbierto, setChatAbierto] = useState(false);
   const [historial, setHistorial] = useState<TurnoChat[]>([]);
   const [pendiente, setPendiente] = useState(false);
