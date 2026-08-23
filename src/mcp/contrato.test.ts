@@ -33,6 +33,15 @@ test('agenda_create_evento fija offset de Guayaquil en los timestamps', () => {
   assert.equal(req.body?.fin, '2026-08-20T10:00:00-05:00');
 });
 
+test('semana_diseno apunta a /api/semana (no a /api/priority-stack) y pasa semana_inicio como query semana', () => {
+  const sinFecha = toToolRequest('semana_diseno', {});
+  assert.equal(sinFecha.method, 'GET');
+  assert.equal(sinFecha.path, '/api/semana');
+
+  const conFecha = toToolRequest('semana_diseno', { semana_inicio: '2026-08-17' });
+  assert.equal(conFecha.path, '/api/semana?semana=2026-08-17');
+});
+
 test('os_api_request nunca manda body en GET o DELETE', () => {
   const req = toToolRequest('os_api_request', { module: 'tareas', method: 'GET', body: { x: 1 } });
   assert.equal(req.body, undefined);

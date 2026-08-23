@@ -149,6 +149,14 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       if (typeof args.semana_inicio === 'string') query.set('semana', args.semana_inicio);
       return { path: `/api/priority-stack${query.size ? `?${query}` : ''}`, method: 'GET' };
     }
+    // No fusionar con prioridades_semana: ver comentario del catalogo en
+    // engine.ts (SEMANTIC_TOOLS). /api/semana usa el mismo nombre de query
+    // ('semana') que /api/priority-stack pero son endpoints distintos.
+    case 'semana_diseno': {
+      const query = new URLSearchParams();
+      if (typeof args.semana_inicio === 'string') query.set('semana', args.semana_inicio);
+      return { path: `/api/semana${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
     case 'crm_listar_leads':
       return { path: '/api/leads', method: 'GET' };
     case 'crm_crear_lead':

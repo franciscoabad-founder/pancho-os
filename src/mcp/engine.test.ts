@@ -81,10 +81,37 @@ test('publica herramientas operativas del OS para inbox, aprobaciones, contenido
   assert.deepEqual(
     [
       'inbox_listar', 'inbox_capturar', 'aprobaciones_listar', 'aprobaciones_solicitar',
-      'contenido_listar', 'contenido_capturar', 'prioridades_semana',
+      'contenido_listar', 'contenido_capturar', 'prioridades_semana', 'semana_diseno',
       'crm_listar_leads', 'crm_crear_lead', 'finanzas_listar_gastos',
     ].every((name) => toolNames.includes(name)),
     true,
+  );
+});
+
+test('semana_diseno se ejecuta mediante el ejecutor real, distinto de prioridades_semana', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const response = await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'semana-diseno-1',
+      method: 'tools/call',
+      params: { name: 'semana_diseno', arguments: { semana_inicio: '2026-08-17' } },
+    },
+    new Headers(),
+    async (name, args) => {
+      calls.push({ name, args });
+      return { semana_inicio: '2026-08-17', semana_fin: '2026-08-23', dias: [], balance: [], avisos: [] };
+    },
+  );
+
+  assert.deepEqual(calls, [{ name: 'semana_diseno', args: { semana_inicio: '2026-08-17' } }]);
+  assert.equal(
+    (response.result as { content: Array<{ text: string }> }).content[0].text,
+    JSON.stringify(
+      { semana_inicio: '2026-08-17', semana_fin: '2026-08-23', dias: [], balance: [], avisos: [], tool: 'semana_diseno' },
+      null,
+      2,
+    ),
   );
 });
 

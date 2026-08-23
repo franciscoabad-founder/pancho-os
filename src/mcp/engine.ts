@@ -302,6 +302,15 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     inputSchema: { type: 'object', properties: { semana_inicio: { type: 'string', description: 'Lunes YYYY-MM-DD. Omite para semana actual.' } } },
   },
   {
+    // No fusionar con prioridades_semana: esa herramienta lee os_priority_stack
+    // (las 3 prioridades + lista de no hacer). Esta lee os_semana/os_bloques
+    // (el diseno de dias y bloques por funcion). Representan cosas distintas,
+    // confirmado en la auditoria original del plan.
+    name: 'semana_diseno',
+    description: 'Devuelve el diseno de la semana: dias con su modo (maker, manager, off), bloques por funcion (promover, vender, construir, entregar) con la cara derivada y las acciones sugeridas, el balance de horas objetivo vs planificadas vs reales por funcion, y avisos cuando el diseno no le da las horas pedidas o vas atras en la ejecucion.',
+    inputSchema: { type: 'object', properties: { semana_inicio: { type: 'string', description: 'Lunes YYYY-MM-DD de la semana a consultar. Omite para la semana actual.' } } },
+  },
+  {
     name: 'crm_listar_leads',
     description: 'Lista los leads del CRM del OS.',
     inputSchema: { type: 'object', properties: {} },
@@ -478,6 +487,7 @@ export async function handleMcpStatelessRequest(
       case 'contenido_listar':
       case 'contenido_capturar':
       case 'prioridades_semana':
+      case 'semana_diseno':
       case 'crm_listar_leads':
       case 'crm_crear_lead':
       case 'tareas_update':
