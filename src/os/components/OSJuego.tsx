@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Spinner, useConfirm } from './ui';
+import OSOnboardingFlow from './onboarding/OSOnboardingFlow';
+import { PASOS_JUEGO, RESPUESTAS_INICIALES_JUEGO } from './onboarding/flujoJuego';
 
 // ── Tipos (contrato de los endpoints api/os/juego/*, construidos en paralelo) ──
 interface Nivel { nivel: number; xpEnNivel: number; xpSiguiente: number; progreso: number }
@@ -91,6 +93,13 @@ export default function OSJuego() {
   const [cancelando, setCancelando] = useState<string | null>(null);
   const [historialAbierto, setHistorialAbierto] = useState(false);
 
+  // Onboarding propio del modulo: se abre solo en la primera visita (mientras
+  // onboarding_estado.modulo='juego' no tenga completado_at) y deja un banner si
+  // Pancho lo salta.
+  const [onbCompletado, setOnbCompletado] = useState<boolean | null>(null);
+  const [onbAbierto, setOnbAbierto] = useState(false);
+  const [reiniciando, setReiniciando] = useState(false);
+
   async function cargar(mostrarLoading = true) {
     if (mostrarLoading) setLoading(true);
     setError('');
@@ -118,6 +127,60 @@ export default function OSJuego() {
     }
   }
   useEffect(() => { cargar(); }, []);
+
+  async function chequearOnboarding(): Promise<boolean> {
+    try {
+      const res = await fetch('/api/onboarding?modulo=juego', { cache: 'no-store' });
+      const data = await res.json();
+      return !!data?.estado?.completado_at;
+    } catch {
+      // Sin conexion no se bloquea el modulo: se asume visto.
+      return true;
+    }
+  }
+
+  useEffect(() => {
+    let cancelado = false;
+    chequearOnboarding().then((val) => {
+      if (cancelado) return;
+      setOnbCompletado(val);
+      if (!val) setOnbAbierto(true);
+    });
+    return () => { cancelado = true; };
+  }, []);
+
+  async function aplicarOnboardingJuego() {
+    const res = await fetch('/api/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aplicar: 'juego' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'No se pudo aplicar tu configuracion');
+  }
+
+  // ── Reset del juego ───────────────────────────────────────────────────────
+  async function reiniciarJuego() {
+    if (reiniciando) return;
+    if (!(await confirm({
+      title: 'Reiniciar juego',
+      text: 'Vuelves a nivel 1 con 0 XP y 0 de oro, la vida se llena y se borra todo el historial de eventos. Las quests activas se cancelan. Tus recompensas se conservan. No se puede deshacer.',
+      confirmLabel: 'Reiniciar juego',
+      danger: true,
+    }))) return;
+    setReiniciando(true);
+    setError('');
+    try {
+      const res = await fetch('/api/juego/reset', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'No se pudo reiniciar');
+      await cargar(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo reiniciar el juego');
+    } finally {
+      setReiniciando(false);
+    }
+  }
 
   // ── Config: toggles SDT ──────────────────────────────────────────────────
   async function toggleConfig(campo: keyof Config) {
@@ -287,6 +350,25 @@ export default function OSJuego() {
           <span>{error}</span>
           <button className="m-btn-ghost" onClick={() => cargar()}>Reintentar</button>
         </div>
+      )}
+
+      {onbCompletado === false && !onbAbierto && (
+        <button
+          type="button"
+          onClick={() => setOnbAbierto(true)}
+          className="m-journey-card"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer' }}
+        >
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 14, fontWeight: 800, color: 'var(--m-fg)', fontFamily: 'var(--m-font-rounded)' }}>
+              Configura tu juego
+            </span>
+            <span style={{ display: 'block', fontSize: 13, color: 'var(--m-muted)', marginTop: 2, fontFamily: 'var(--m-font-rounded)' }}>
+              2 minutos · mecanicas, recompensas y tu primera quest
+            </span>
+          </span>
+          <span style={{ fontSize: 18, color: 'var(--m-muted)' }}>›</span>
+        </button>
       )}
 
       {/* ── Estado ── */}
@@ -569,8 +651,44 @@ export default function OSJuego() {
             </div>
             <Switch on={!!jugador?.config.loot_activo} disabled={guardandoConfig === 'loot_activo'} onToggle={() => toggleConfig('loot_activo')} />
           </div>
+
+          <div className="m-switch-row">
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--m-fg)', margin: 0 }}>Reiniciar juego</p>
+              <p style={{ fontSize: 13, color: 'var(--m-muted)', margin: '2px 0 0', fontFamily: 'var(--m-font-rounded)' }}>
+                Vuelves a nivel 1 con 0 XP y 0 de oro. Tus recompensas se conservan.
+              </p>
+            </div>
+            <button className="m-btn-ghost is-danger" disabled={reiniciando} onClick={reiniciarJuego}>
+              {reiniciando ? 'Reiniciando...' : 'Reiniciar'}
+            </button>
+          </div>
+
+          <div className="m-switch-row">
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--m-fg)', margin: 0 }}>Onboarding del juego</p>
+              <p style={{ fontSize: 13, color: 'var(--m-muted)', margin: '2px 0 0', fontFamily: 'var(--m-font-rounded)' }}>
+                Vuelve a definir tu linea base: mecanicas, recompensas y quest.
+              </p>
+            </div>
+            <button className="m-btn-ghost" onClick={() => setOnbAbierto(true)}>Abrir</button>
+          </div>
         </div>
       </div>
+
+      {onbAbierto && (
+        <OSOnboardingFlow
+          modulo="juego"
+          pasos={PASOS_JUEGO}
+          respuestasIniciales={RESPUESTAS_INICIALES_JUEGO}
+          onCompletar={aplicarOnboardingJuego}
+          onFinish={() => {
+            setOnbAbierto(false);
+            chequearOnboarding().then(setOnbCompletado);
+            cargar(false);
+          }}
+        />
+      )}
       {sheet}
     </div>
   );
