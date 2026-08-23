@@ -217,3 +217,176 @@ export function flowStopRecording(
     meetingId: String(meetingId),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Hermes (agente personal, via A2A)
+// ---------------------------------------------------------------------------
+// Hermes corre en la laptop como proceso aparte y expone un servidor A2A
+// (Agent2Agent) en su IP de Tailscale. El escritorio lo consume como cliente.
+// Los comandos de Rust viven en src-tauri/src/hermes.rs, que documenta arriba de
+// todo los pasos de configuracion que Pancho tiene que hacer a mano.
+//
+// PENDIENTE DE CONFIGURACION: hasta que Pancho cree el token de peer del OS en
+// el .env de Hermes y lo pegue en el archivo de config local, hermesA2ACall()
+// va a devolver siempre { ok: false, error: { codigo: 'hermes_sin_token' } }.
+// Eso es el estado inicial esperado, NO un bug: el mensaje de ese error trae la
+// ruta exacta del archivo que falta crear, asi que la UI puede mostrarlo tal
+// cual y ser accionable sin hardcodear ninguna ruta aca.
+
+export type HermesErrorCode =
+  | 'hermes_sin_token'
+  | 'hermes_config_invalida'
+  | 'hermes_no_alcanzable'
+  | 'hermes_timeout'
+  | 'hermes_no_autorizado'
+  | 'hermes_rpc'
+  | 'hermes_http'
+  | 'hermes_respuesta_invalida'
+  | 'hermes_cliente'
+  | 'sin_escritorio'
+  | 'desconocido';
+
+export type HermesError = {
+  codigo: HermesErrorCode;
+  mensaje: string;
+  status?: number;
+  // Codigo JSON-RPC crudo cuando codigo === 'hermes_rpc'.
+  rpc_code?: number;
+};
+
+export type HermesResult<T> = { ok: true; data: T } | { ok: false; error: HermesError };
+
+// True cuando Hermes todavia no esta configurado del lado del OS. La UI deberia
+// tratarlo como "falta setup" (mostrar el mensaje, que trae la ruta del archivo)
+// y no como "Hermes fallo": no hay nada roto, falta un paso manual.
+export function hermesFaltaConfigurar(error: HermesError): boolean {
+  return error.codigo === 'hermes_sin_token' || error.codigo === 'hermes_config_invalida';
+}
+
+// True cuando la tarea pudo haber quedado corriendo del lado de Hermes pese al
+// error. Mismo criterio que flowPuedeSeguirEnCurso y por el mismo motivo, pero
+// aca importa mas: Hermes tiene skill de terminal, asi que un reintento a ciegas
+// puede ejecutar dos veces algo que ya se ejecuto. Ante esto NO reintentar solo.
+export function hermesPuedeSeguirEnCurso(error: HermesError): boolean {
+  return error.codigo === 'hermes_timeout';
+}
+
+// Mensaje corto y listo para mostrar. Los errores de config y de auth ya vienen
+// redactados desde Rust con los pasos concretos, asi que se pasan tal cual: son
+// el unico caso donde el texto largo es exactamente lo que el usuario necesita.
+export function hermesErrorTexto(error: HermesError): string {
+  if (error.codigo === 'hermes_no_alcanzable') {
+    return 'Hermes no responde. Revisa que este corriendo y que Tailscale este conectado.';
+  }
+  if (error.codigo === 'hermes_timeout') {
+    return 'Hermes tardo demasiado. Puede seguir trabajando: revisa antes de reintentar.';
+  }
+  if (error.codigo === 'sin_escritorio') return 'Disponible solo en la app de escritorio.';
+  return error.mensaje;
+}
+
+async function invocarHermes<T>(
+  comando: string,
+  args?: Record<string, unknown>,
+): Promise<HermesResult<T>> {
+  if (!isDesktop()) {
+    return {
+      ok: false,
+      error: { codigo: 'sin_escritorio', mensaje: 'No corre en la app de escritorio.' },
+    };
+  }
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const data = await invoke<T>(comando, args);
+    return { ok: true, data };
+  } catch (err) {
+    if (err && typeof err === 'object' && 'codigo' in err) {
+      return { ok: false, error: err as HermesError };
+    }
+    return { ok: false, error: { codigo: 'desconocido', mensaje: String(err) } };
+  }
+}
+
+// El agent card es un documento del estandar A2A que sirve Hermes. Se deja
+// abierto a proposito: es de otro repo y trae mas campos de los que usamos.
+export type HermesAgentCard = {
+  name: string;
+  description?: string;
+  version?: string;
+  supportedInterfaces?: Array<{ url?: string; protocolBinding?: string; protocolVersion?: string }>;
+  capabilities?: Record<string, unknown>;
+  skills?: Array<{ id: string; name: string; description?: string; tags?: string[] }>;
+  [k: string]: unknown;
+};
+
+// Estado de la tarea en A2A v1.0. Se deja como string abierto porque el set lo
+// define Hermes y puede crecer.
+export type HermesTaskState =
+  | 'TASK_STATE_SUBMITTED'
+  | 'TASK_STATE_WORKING'
+  | 'TASK_STATE_INPUT_REQUIRED'
+  | 'TASK_STATE_AUTH_REQUIRED'
+  | 'TASK_STATE_COMPLETED'
+  | 'TASK_STATE_FAILED'
+  | 'TASK_STATE_CANCELED'
+  | 'TASK_STATE_REJECTED'
+  | (string & {});
+
+export type HermesRespuesta = {
+  taskId: string;
+  // Guardarlo y pasarlo en la siguiente llamada continua el mismo hilo: Hermes
+  // persiste la conversacion por contextId.
+  contextId: string;
+  estado: HermesTaskState;
+  texto: string;
+  // El result crudo del JSON-RPC, por si hace falta algo que Rust no extrajo.
+  crudo: unknown;
+};
+
+// Tipo tal como lo serializa Rust (snake_case). Se traduce abajo para no
+// mezclar convenciones en el resto del frontend.
+type HermesRespuestaRust = {
+  task_id: string;
+  context_id: string;
+  estado: string;
+  texto: string;
+  crudo: unknown;
+};
+
+// GET /.well-known/agent.json. El card es publico: no necesita token, asi que
+// esto funciona ANTES de que Pancho configure nada. Por eso es la forma correcta
+// de saber si Hermes esta arriba, y de separar "no hay red" de "falta el token".
+export function hermesAgentCard(): Promise<HermesResult<HermesAgentCard>> {
+  return invocarHermes<HermesAgentCard>('hermes_agent_card');
+}
+
+// POST JSON-RPC message/send contra el A2A de Hermes.
+//
+// OJO: bloquea hasta que Hermes termina de pensar, hasta 315s. No es
+// fire-and-forget. La UI tiene que mostrar que esta esperando, y no debe
+// reintentar automaticamente: Hermes tiene skill de terminal y un reintento
+// puede ejecutar dos veces algo que ya corrio.
+//
+// Para elegir capacidad (terminal, spotify) se pide EN EL TEXTO. A2A no tiene
+// campo para seleccionar skill: las skills del agent card son publicidad, no
+// ruteo. Ver el comentario largo en src-tauri/src/hermes.rs.
+export async function hermesA2ACall(
+  mensaje: string,
+  contextId?: string,
+): Promise<HermesResult<HermesRespuesta>> {
+  const r = await invocarHermes<HermesRespuestaRust>('hermes_a2a_call', {
+    mensaje,
+    contextId: contextId ?? null,
+  });
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    data: {
+      taskId: r.data.task_id,
+      contextId: r.data.context_id,
+      estado: r.data.estado,
+      texto: r.data.texto,
+      crudo: r.data.crudo,
+    },
+  };
+}

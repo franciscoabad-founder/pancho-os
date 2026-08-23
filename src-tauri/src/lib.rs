@@ -7,6 +7,10 @@ use tauri_plugin_autostart::MacosLauncher;
 
 // Cliente de Flow (app local de dictado y reuniones, otro repo). Ver flow.rs.
 mod flow;
+// Cliente A2A de Hermes (agente personal de Pancho, otro repo). Ver hermes.rs.
+// Necesita un token de peer que Pancho tiene que configurar a mano: el archivo
+// documenta los pasos exactos arriba de todo.
+mod hermes;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -42,6 +46,8 @@ pub fn run() {
       flow::flow_recording_status,
       flow::flow_start_recording,
       flow::flow_stop_recording,
+      hermes::hermes_agent_card,
+      hermes::hermes_a2a_call,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {
