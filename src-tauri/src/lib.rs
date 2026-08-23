@@ -5,6 +5,9 @@ use tauri::{
 };
 use tauri_plugin_autostart::MacosLauncher;
 
+// Cliente de Flow (app local de dictado y reuniones, otro repo). Ver flow.rs.
+mod flow;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let mut builder = tauri::Builder::default();
@@ -22,6 +25,24 @@ pub fn run() {
   builder = builder
     .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
     .plugin(tauri_plugin_notification::init())
+    // Comandos propios de la app. Los comandos registrados aca quedan
+    // disponibles para el frontend sin necesidad de permisos en
+    // capabilities/default.json: el ACL de Tauri v2 aplica a comandos de
+    // plugins y del core, no a los del propio app.
+    //
+    // Tampoco hace falta permiso de red: flow.rs habla por reqwest desde Rust,
+    // no por el plugin http (que ni siquiera esta instalado). Verificado contra
+    // gen/schemas/desktop-schema.json: los unicos permisos que ese schema
+    // conoce en este proyecto son core, autostart, log y notification. No
+    // existe ningun "http:*" que agregar.
+    .invoke_handler(tauri::generate_handler![
+      flow::flow_health,
+      flow::flow_list_dictations,
+      flow::flow_list_meetings,
+      flow::flow_recording_status,
+      flow::flow_start_recording,
+      flow::flow_stop_recording,
+    ])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
