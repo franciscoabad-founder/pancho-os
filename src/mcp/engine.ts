@@ -115,9 +115,10 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        monto: { type: 'number', description: 'Monto del gasto' },
+        monto: { type: 'number', description: 'Monto del gasto, en la moneda en que se pagó' },
         categoria: { type: 'string', description: 'Categoría (comida, transporte, etc.)' },
         descripcion: { type: 'string', description: 'Detalle del gasto' },
+        moneda: { type: 'string', description: 'Código ISO de la moneda pagada (USD, MXN, EUR, COP...). Por defecto USD, la moneda base del OS. El equivalente en USD se calcula automáticamente.' },
       },
       required: ['monto', 'categoria'],
     },

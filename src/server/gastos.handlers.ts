@@ -9,6 +9,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
+import { convertirAUsd, normalizarMoneda } from '../lib/finanzas/monedas.ts';
+import { obtenerTasas } from './fxRates.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -22,6 +24,38 @@ export interface GastoInput {
   descripcion?: string;
   monto?: unknown;
   cuenta?: string;
+  /** Moneda en la que se pago. Por defecto USD, la base del OS. */
+  moneda?: string;
+  /** Alias explicitos: si vienen, mandan sobre monto/moneda. */
+  monto_original?: unknown;
+  moneda_original?: string;
+}
+
+/**
+ * Resuelve las columnas de moneda de un gasto.
+ *
+ * `monto` y `moneda` guardan lo que Pancho realmente pago (por ejemplo 370 MXN
+ * en un viaje). `monto_usd` es el numero con el que se suma en todo el modulo.
+ * Se conserva `monto` como la cifra original para no romper a los consumidores
+ * viejos (MCP finanzas_log_gasto y el UI de Astro) que solo leen `monto`.
+ */
+async function columnasDeMoneda(
+  monto: unknown,
+  moneda: unknown,
+): Promise<Record<string, unknown>> {
+  const codigo = normalizarMoneda(moneda);
+  const valor = Number(monto) || 0;
+  const tasas = await obtenerTasas();
+  const conv = convertirAUsd(valor, codigo, tasas);
+  return {
+    monto: valor,
+    moneda: conv.moneda,
+    monto_original: valor,
+    moneda_original: conv.moneda,
+    monto_usd: conv.monto_usd,
+    tasa_usd: conv.tasa,
+    conversion_aproximada: conv.aproximada,
+  };
 }
 
 export async function listarGastos(): Promise<unknown[]> {
@@ -40,14 +74,16 @@ export async function crearGasto(body: GastoInput): Promise<unknown> {
     throw new Error('descripcion o monto requerido');
   }
   const sb = clienteActual();
+  const montoEntrada = body.monto_original !== undefined ? body.monto_original : body.monto;
+  const monedaEntrada = body.moneda_original ?? body.moneda;
   const { data, error } = await sb
     .from('gastos')
     .insert([{
       fecha: body.fecha || new Date().toISOString().slice(0, 10),
       categoria: body.categoria?.trim() || null,
       descripcion: body.descripcion?.trim() || null,
-      monto: Number(body.monto) || 0,
       cuenta: body.cuenta?.trim() || null,
+      ...(await columnasDeMoneda(montoEntrada, monedaEntrada)),
     }])
     .select()
     .single();
@@ -57,7 +93,17 @@ export async function crearGasto(body: GastoInput): Promise<unknown> {
 
 export async function actualizarGasto(id: string, body: Record<string, unknown>): Promise<unknown> {
   const sb = clienteActual();
-  const { data, error } = await sb.from('gastos').update(body).eq('id', id).select().single();
+  // Cambiar el monto o la moneda obliga a recalcular monto_usd: si no, el
+  // resumen mensual seguiria sumando la conversion vieja.
+  let parche = body;
+  if (body.monto !== undefined || body.moneda !== undefined) {
+    const sb0 = clienteActual();
+    const { data: previo } = await sb0.from('gastos').select('monto, moneda').eq('id', id).maybeSingle();
+    const monto = body.monto !== undefined ? body.monto : previo?.monto;
+    const moneda = body.moneda !== undefined ? body.moneda : previo?.moneda;
+    parche = { ...body, ...(await columnasDeMoneda(monto, moneda)) };
+  }
+  const { data, error } = await sb.from('gastos').update(parche).eq('id', id).select().single();
   if (error) throw error;
   return data;
 }
