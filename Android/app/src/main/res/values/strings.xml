@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Pancho OS</string>
+    <string name="shortcut_new_task_short">Nueva Tarea</string>
+    <string name="shortcut_new_task_long">Crear Tarea en Pancho OS</string>
+    <string name="shortcut_capture_short">Capturar</string>
+    <string name="shortcut_capture_long">Captura Rápida al Inbox</string>
+    <string name="shortcut_photo_short">Foto / Comida</string>
+    <string name="shortcut_photo_long">Tomar Foto para Inbox</string>
+</resources>
