@@ -449,7 +449,10 @@ export async function handleMcpStatelessRequest(
       result: {
         tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => tool),
         ttlMs: 300000, // 5 min: con 1h cada fix de catálogo tardaba una hora en verse
-        cacheScope: 'global',
+        // 'global' no es un valor valido del spec (Hermes lo rechaza con
+        // Pydantic: solo 'public'/'private'). El catalogo es identico para
+        // cualquier token valido, no depende del usuario -> 'public'.
+        cacheScope: 'public',
       },
     };
   }

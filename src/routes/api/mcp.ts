@@ -20,9 +20,29 @@ import { executeOsTool } from '../../mcp/osTools.ts';
 import { esTokenValido } from '../../lib/osTokens.ts';
 import { readEnv } from '../../lib/env.ts';
 
+// Algunos clientes MCP (Hermes incluido) mandan un preflight OPTIONS antes
+// del POST real, como haria un fetch() de navegador con CORS. Sin un handler
+// propio, TanStack no encuentra metodo y cae al router de paginas, que
+// devuelve el HTML completo del SPA con Content-Type text/html -- el cliente
+// MCP lo rechaza pensando que la URL apunta a una pagina, no a un endpoint.
+// Bug real encontrado por Hermes (perfiles braintech/rafik), no hipotetico.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-OS-Token, Mcp-Method, Mcp-Name',
+};
+
 export const Route = createFileRoute('/api/mcp')({
   server: {
     handlers: {
+      OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
+
+      GET: async () =>
+        new Response(
+          JSON.stringify({ jsonrpc: '2.0', error: { code: -32601, message: 'Este endpoint es MCP stateless: usa POST con un body JSON-RPC.' } }),
+          { status: 405, headers: { 'Content-Type': 'application/json', Allow: 'POST, OPTIONS' } }
+        ),
+
       POST: async ({ request }) => {
         const tokenHeader = request.headers.get('X-OS-Token') || request.headers.get('Authorization')?.replace('Bearer ', '');
         const expectedToken = readEnv('OS_API_TOKEN');
