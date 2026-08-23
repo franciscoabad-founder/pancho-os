@@ -50,7 +50,7 @@ const MCP_OS_MODULES = new Set([
   'gfit/dia-ejercicios', 'gfit/dias', 'gfit/logros', 'gfit/progreso',
   'gfit/rutinas', 'gfit/series', 'gfit/sesion-series', 'habitos',
   'habitos/brief', 'habitos/checks', 'habitos/cierre', 'habitos/journeys',
-  'juego/cierre', 'juego/estado', 'juego/quests', 'juego/recompensas',
+  'journal', 'juego/cierre', 'juego/estado', 'juego/quests', 'juego/recompensas',
   'kpis', 'leads', 'lineas', 'notas', 'objetivos', 'onboarding', 'pendientes',
   'por-cobrar', 'presupuestos', 'priority-stack', 'recordatorios',
   'redes-metricas', 'revision', 'salud/alimentos', 'salud/ayunos',
@@ -144,6 +144,33 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
     }
     case 'contenido_capturar':
       return { path: '/api/contenido', method: 'POST', body: { titulo: args.titulo, formato: args.formato, idea_madre: args.idea_madre, plataformas: args.plataformas, url_referencia: args.url_referencia, transcript: args.transcript } };
+    // Diario: Hermes escribe la bitacora de Pancho desde Telegram. fuente se
+    // fija en 'hermes' aca (no se acepta del agente) para que el origen de cada
+    // entrada sea confiable en la timeline de /diario.
+    case 'journal_log': {
+      const contenido = String(args.contenido ?? '').trim();
+      if (!contenido) throw new Error('contenido requerido: es el texto de la entrada del diario.');
+      return {
+        path: '/api/journal',
+        method: 'POST',
+        body: {
+          contenido,
+          tipo: args.tipo,
+          titulo: args.titulo,
+          proyecto: args.proyecto,
+          tags: args.tags,
+          fecha: args.fecha,
+          fuente: 'hermes',
+        },
+      };
+    }
+    case 'journal_listar': {
+      const query = new URLSearchParams();
+      if (typeof args.fecha === 'string' && args.fecha.trim()) query.set('fecha', args.fecha.trim());
+      if (typeof args.tipo === 'string' && args.tipo.trim()) query.set('tipo', args.tipo.trim());
+      if (args.limit != null && Number.isFinite(Number(args.limit))) query.set('limit', String(Number(args.limit)));
+      return { path: `/api/journal${query.size ? `?${query}` : ''}`, method: 'GET' };
+    }
     case 'prioridades_semana': {
       const query = new URLSearchParams();
       if (typeof args.semana_inicio === 'string') query.set('semana', args.semana_inicio);
