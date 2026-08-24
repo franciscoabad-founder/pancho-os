@@ -147,17 +147,56 @@ agrega specs de grid/elevación/componentes que Claude Design no detalló):
 3. Fechas de ejemplo desactualizadas ("Miércoles 24 de Abril", "Octubre
    2023") — cosmético, no importa para tomar la dirección visual.
 
+## Ronda 2 — correcciones + extensión (24-ago-2026, `design-system/stitch-v2/`)
+
+Corrí los 2 prompts de `docs/stitch-prompts-2026-08-24.md`. Resultado: 14
+pantallas (4 ancla corregidas + 10 nuevas). Las 3 correcciones pedidas
+**sí aterrizaron bien** (Cerebro en español, cuentas reales de Finanzas
+incluyendo Banco Pichincha bloqueado, modelo de deuda de sueño real de 14
+días). Pero la extensión a pantallas nuevas introdujo problemas reales que
+hay que resolver antes de portar esto a componentes:
+
+1. **Dos sistemas de navegación en el mismo export.** Las 4 pantallas
+   ancla usan solo sidebar izquierdo. Las 10 nuevas agregaron un navbar
+   superior (Maker/Manager/Search/Quick Action/campana) que no existe en
+   las ancla. No es un detalle — define si el usuario ve un solo modo de
+   navegar o dos.
+2. **Hábitos y Juego inventaron contenido que no es el real.** Los 7
+   hábitos reales (agua al despertar, sin teléfono, moverme, brain dump,
+   One Domino, cierre PM, preparar el día) se volvieron "Deep Work/Cold
+   Shower/No Sugar" genéricos. Juego muestra "LVL 42 / Paladin" y una
+   tienda con "Cena Michelin $5,000G" — no refleja el reset real (0 XP,
+   nivel 1, HP lleno) ni recompensas reales. Además usa fotografía real en
+   la tienda, lo que **viola la propia regla del sistema** ("solo color
+   plano, sin fotografía, sin textura").
+3. **Bug visual en Semana**: texto superpuesto/cortado en las tarjetas de
+   día (la etiqueta de modo se monta sobre el nombre de la función),
+   fechas de octubre en vez de agosto 2026.
+4. **Login parece incompleto** — la captura sale casi en blanco, solo el
+   wordmark centrado abajo, sin campo de contraseña visible.
+
+Lo que sí quedó bien tal cual: **Diario** (tono y estructura correctos,
+fechas correctas) y **Contenido** (voz de marca acertada). Mi Sistema
+tiene la estructura correcta pero muestra dispositivos genéricos de Apple
+en vez de reflejar el sistema de pairing real (código corto + QR,
+dispositivos con tipo Android/Escritorio/Agente).
+
 ## Siguiente paso concreto
 
-1. Extraer el set de íconos del `code.html` de Stitch como SVGs
-   individuales reusables.
-2. Traer los PNG del logo real cuando los ubiques en OneDrive.
-3. Migrar `src/styles/os.css` y `src/routes/__root.tsx` de las 4 fuentes
+1. **No seguir iterando en Stitch para contenido real** — no conoce los
+   datos reales de Hábitos/Juego/Mi Sistema y cada ronda nueva puede
+   inventar algo distinto. La dirección visual (color, tipografía,
+   componentes base) ya está probada y es sólida; el contenido específico
+   se resuelve mejor portando a código con los datos reales conectados.
+2. Extraer el set de íconos de los `code.html` de Stitch como SVGs
+   individuales reusables (ya se ve consistente entre ambas rondas).
+3. Traer los PNG del logo real cuando los ubiques en OneDrive.
+4. Migrar `src/styles/os.css` y `src/routes/__root.tsx` de las 4 fuentes
    actuales (Montserrat/Inter/JetBrains Mono/Nunito) a Gotham self-hosted +
    la escala tipográfica de este sistema — cambio de superficie completa,
    revisar en `next.os` antes de tocar producción real.
-4. Portar los 12 componentes primitivos de Claude Design (`Card`,
-   `MetricCard`, `ProgressBar`, etc.) a `src/os/components/ui/`, usando el
-   layout real de las 5 pantallas de Stitch como referencia de composición.
-5. Correr el prompt 2 de `docs/stitch-prompts-2026-08-23.md` (extensión al
-   resto de pantallas) una vez aprobadas estas 5 ancla.
+5. Decidir UNA navegación (sidebar solo, como las 4 ancla, es la
+   recomendación — el navbar superior duplica funciones sin agregar nada)
+   y portar los 12 componentes primitivos de Claude Design a
+   `src/os/components/ui/`, usando el layout de Stitch como referencia de
+   composición, no como fuente de contenido.

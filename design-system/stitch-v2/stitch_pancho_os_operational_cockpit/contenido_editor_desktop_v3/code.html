@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FRANCISCO ABAD - Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#151d3f",
+                        "surface-dim": "#071132",
+                        "on-tertiary-container": "#f7d692",
+                        "surface-tint": "#bcc2ff",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-variant": "#2a3355",
+                        "outline": "#8f8fa0",
+                        "on-tertiary": "#3f2e00",
+                        "on-secondary-fixed": "#001454",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "slate-light": "#E8EAF0",
+                        "background": "#071132",
+                        "secondary-container": "#324283",
+                        "inverse-primary": "#3a4dd8",
+                        "outline-variant": "#454654",
+                        "surface-bright": "#2f375a",
+                        "inverse-surface": "#dde1ff",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary": "#1a2b6b",
+                        "bronze": "#8A6F3D",
+                        "on-surface": "#dde1ff",
+                        "error-container": "#93000a",
+                        "linen": "#FAFAF7",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "secondary": "#b8c4ff",
+                        "on-primary-container": "#d4d7ff",
+                        "on-background": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-error": "#690005",
+                        "ink": "#0E1738",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "error": "#ffb4ab",
+                        "primary": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-surface-variant": "#c5c5d7",
+                        "tertiary-container": "#745c24",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#030b2d",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "surface-container-high": "#1f284a",
+                        "surface-container-low": "#10193a",
+                        "primary-container": "#3b4ed9",
+                        "on-primary-fixed": "#000b62",
+                        "ultramarine": "#3B4ED9",
+                        "inverse-on-surface": "#262e50",
+                        "surface-container-highest": "#2a3355",
+                        "on-secondary-container": "#a2b1fa",
+                        "tertiary": "#e3c380",
+                        "champagne": "#B5985A"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "24px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "caption": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "body-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #071132;
+            color: #dde1ff;
+        }
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0E1738;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3355;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #454654;
+        }
+    </style>
+</head>
+<body class="font-body-lg text-body-lg antialiased bg-background text-on-surface h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-royal dark:bg-royal text-ultramarine dark:text-ultramarine font-body-lg text-body-lg fixed left-0 top-0 h-full w-[240px] bg-royal border-r border-outline-variant flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px]">
+<div class="p-lg border-b border-outline-variant">
+<div class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine">FRANCISCO ABAD</div>
+<div class="font-caption text-caption text-on-surface-variant mt-sm uppercase tracking-widest">Executive Cockpit</div>
+</div>
+<div class="p-md">
+<button class="w-full bg-ultramarine text-on-primary py-sm px-md rounded-DEFAULT font-bold hover:opacity-90 transition-all duration-150 flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">add</span>
+                Maker Mode
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto py-md">
+<!-- Active Tab -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="edit_document">edit_document</span>
+<span>Contenido</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+<span>Hoy</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span>Salud</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finanzas</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span>GFIT</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Cerebro</span>
+</a>
+</div>
+<div class="border-t border-outline-variant p-md">
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Ajustes</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Cerrar Sesión</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest text-champagne dark:text-champagne font-headline-md text-headline-md bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center w-full px-lg h-16 ml-[240px] max-w-[calc(100%-240px)] fixed top-0 z-30">
+<div class="font-headline-md text-headline-md font-black text-on-surface">PANCHO OS</div>
+<div class="flex items-center gap-lg">
+<div class="flex gap-md">
+<a class="text-ultramarine font-bold border-b-2 border-ultramarine pb-1 hover:text-on-surface transition-opacity duration-200" href="#">Maker</a>
+<a class="text-on-surface-variant font-medium pb-1 hover:text-on-surface transition-opacity duration-200" href="#">Manager</a>
+</div>
+<div class="flex items-center gap-md ml-lg">
+<button class="text-on-surface-variant hover:text-on-surface transition-opacity duration-200">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-opacity duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="bg-ultramarine text-on-primary px-4 py-1 rounded-DEFAULT font-bold text-sm">Quick Action</button>
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A highly professional executive portrait of a sophisticated man with a subtle smile, looking directly at the camera. The lighting is dramatic and moody, utilizing high contrast with a dark background. The aesthetic reflects a premium, clinical modern operating system design, utilizing a palette of deep royal blue and crisp white highlights to convey authority and precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwDDOKkrWxZ7c2T-CIKe5juhl1FwmJzdBZaiahsl3tvW-rWudLEHhkcPjtlFN5NrPXmMiU7tjoi7teSR02zkBkT2mkut0TfBxDtang1amkx31cK7W-AEdtPLwnr8dnn6Ms_dQtPtmrECIyhe2xEs_ko7nxoqhKtvVlhM_NL0jrZVog3iDUGlZDZxczdRLVaAK7akbBoBWF6KM8IK1jnU3sCGYhk_JgQQuAGwoT7aWpHCnEtMaRGTbrug"/>
+</div>
+</div>
+</header>
+<!-- Editor Workspace -->
+<div class="flex-1 mt-16 flex overflow-hidden">
+<!-- Ideas Pipeline (Left) -->
+<div class="w-1/3 min-w-[320px] bg-ink border-r border-outline-variant flex flex-col h-full">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center">
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase">Pipeline</h2>
+<button class="text-on-surface-variant hover:text-ultramarine transition-colors">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</button>
+</div>
+<div class="flex-1 overflow-x-auto p-md flex gap-md">
+<!-- Column: Backlog -->
+<div class="w-72 flex-shrink-0 flex flex-col gap-sm">
+<div class="font-caption text-caption text-on-surface-variant uppercase tracking-wider mb-sm flex justify-between">
+<span>Backlog</span>
+<span class="text-ultramarine">3</span>
+</div>
+<div class="bg-surface-container p-md rounded-DEFAULT border border-outline-variant hover:border-ultramarine transition-colors cursor-pointer">
+<div class="text-sm font-bold text-on-surface mb-xs">El mito del equilibrio</div>
+<div class="font-caption text-caption text-on-surface-variant">Por qué la integración vida-trabajo es una trampa.</div>
+<div class="mt-sm flex gap-xs">
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-sm text-xs">LinkedIn</span>
+</div>
+</div>
+<div class="bg-surface-container p-md rounded-DEFAULT border border-outline-variant hover:border-ultramarine transition-colors cursor-pointer">
+<div class="text-sm font-bold text-on-surface mb-xs">Framework de decisiones</div>
+<div class="font-caption text-caption text-on-surface-variant">Matriz de 2x2 para delegación extrema.</div>
+<div class="mt-sm flex gap-xs">
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-sm text-xs">X</span>
+</div>
+</div>
+</div>
+<!-- Column: Borrador -->
+<div class="w-72 flex-shrink-0 flex flex-col gap-sm">
+<div class="font-caption text-caption text-on-surface-variant uppercase tracking-wider mb-sm flex justify-between">
+<span>Borrador</span>
+<span class="text-ultramarine">1</span>
+</div>
+<div class="bg-royal p-md rounded-DEFAULT border border-ultramarine cursor-pointer shadow-[0_0_15px_rgba(59,78,217,0.1)]">
+<div class="text-sm font-bold text-on-surface mb-xs">La anatomía del enfoque</div>
+<div class="font-caption text-caption text-linen opacity-80">Bloques de tiempo ininterrumpido como ventaja competitiva.</div>
+<div class="mt-sm flex gap-xs">
+<span class="bg-ultramarine text-on-primary px-2 py-0.5 rounded-sm text-xs font-bold">Blog</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Editor Canvas (Right) -->
+<div class="flex-1 bg-background flex flex-col h-full relative">
+<!-- Editor Toolbar -->
+<div class="h-14 border-b border-outline-variant flex justify-between items-center px-lg bg-surface/80 backdrop-blur-sm z-10">
+<div class="flex items-center gap-md">
+<select class="bg-ink border border-outline-variant text-on-surface text-sm rounded-DEFAULT px-3 py-1 focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none">
+<option>Blog</option>
+<option>LinkedIn</option>
+<option>X / Twitter</option>
+</select>
+<div class="h-4 w-px bg-outline-variant"></div>
+<span class="text-xs text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-champagne inline-block"></span>
+                            Borrador
+                        </span>
+</div>
+<div class="flex gap-sm">
+<button class="text-on-surface-variant hover:text-on-surface px-3 py-1 rounded-DEFAULT text-sm border border-transparent hover:border-outline-variant transition-all">Guardar</button>
+<button class="bg-ultramarine text-on-primary px-4 py-1 rounded-DEFAULT font-bold text-sm hover:opacity-90 transition-opacity">Publicar</button>
+</div>
+</div>
+<!-- Editor Area -->
+<div class="flex-1 overflow-y-auto p-xl">
+<div class="max-w-3xl mx-auto flex flex-col gap-lg pb-xl">
+<input class="w-full bg-transparent border-none text-4xl font-headline-lg font-bold text-on-surface placeholder-on-surface-variant/50 focus:ring-0 p-0 outline-none" placeholder="Título del artículo..." type="text" value="La anatomía del enfoque extremo"/>
+<div class="w-16 h-1 bg-ultramarine rounded-full mb-md"></div>
+<textarea class="w-full h-[600px] bg-transparent border-none text-lg text-on-surface-variant leading-relaxed resize-none focus:ring-0 p-0 outline-none font-body-lg" placeholder="Comienza a escribir..." spellcheck="false">El mito más destructivo en la gestión moderna es la idea de que podemos hacer múltiples tareas complejas simultáneamente. La neurociencia nos dice lo contrario: el cerebro no hace "multitasking", hace "task-switching" rápido, quemando glucosa y atención con cada cambio de contexto.
+
+Para recuperar la ventaja competitiva, debemos diseñar sistemas que protejan nuestro recurso más valioso: la atención indivisa.
+
+Aquí es donde entra el concepto de los "Bloques de Maker". Estos son períodos de 90 a 120 minutos de aislamiento brutal. Sin notificaciones, sin pings, sin "solo un minuto". En este espacio, el trabajo profundo no es una aspiración, es el estándar operativo.
+
+La diferencia entre un buen ejecutivo y uno excepcional a menudo se reduce a cómo protegen y utilizan estos bloques. No se trata de trabajar más horas, sino de aumentar la densidad del trabajo dentro de las horas que trabajas.</textarea>
+</div>
+</div>
+<!-- Word Count Status -->
+<div class="absolute bottom-4 right-6 text-xs text-on-surface-variant font-caption">
+                    164 palabras • Editado hace 2 min
+                </div>
+</div>
+</div>
+</main>
+</body></html>

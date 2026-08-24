@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FRANCISCO ABAD - Pipeline</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#151d3f",
+                    "surface-dim": "#071132",
+                    "on-tertiary-container": "#f7d692",
+                    "surface-tint": "#bcc2ff",
+                    "ultralight": "#6B7AE8",
+                    "surface": "#071132",
+                    "surface-variant": "#2a3355",
+                    "outline": "#8f8fa0",
+                    "on-tertiary": "#3f2e00",
+                    "on-secondary-fixed": "#001454",
+                    "on-primary-fixed-variant": "#1b31c1",
+                    "slate-light": "#E8EAF0",
+                    "background": "#071132",
+                    "secondary-container": "#324283",
+                    "inverse-primary": "#3a4dd8",
+                    "outline-variant": "#454654",
+                    "surface-bright": "#2f375a",
+                    "inverse-surface": "#dde1ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "on-secondary": "#1a2b6b",
+                    "bronze": "#8A6F3D",
+                    "on-surface": "#dde1ff",
+                    "error-container": "#93000a",
+                    "linen": "#FAFAF7",
+                    "on-tertiary-fixed-variant": "#59440d",
+                    "secondary": "#b8c4ff",
+                    "on-primary-container": "#d4d7ff",
+                    "on-background": "#dde1ff",
+                    "primary-fixed": "#dfe0ff",
+                    "on-error": "#690005",
+                    "ink": "#0E1738",
+                    "tertiary-fixed-dim": "#e3c380",
+                    "error": "#ffb4ab",
+                    "primary": "#bcc2ff",
+                    "royal": "#1A2B6B",
+                    "on-surface-variant": "#c5c5d7",
+                    "tertiary-container": "#745c24",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#030b2d",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-secondary-fixed-variant": "#324283",
+                    "on-primary": "#00189a",
+                    "tertiary-fixed": "#ffdf9d",
+                    "secondary-fixed": "#dde1ff",
+                    "primary-fixed-dim": "#bcc2ff",
+                    "surface-container-high": "#1f284a",
+                    "surface-container-low": "#10193a",
+                    "primary-container": "#3b4ed9",
+                    "on-primary-fixed": "#000b62",
+                    "ultramarine": "#3B4ED9",
+                    "inverse-on-surface": "#262e50",
+                    "surface-container-highest": "#2a3355",
+                    "on-secondary-container": "#a2b1fa",
+                    "tertiary": "#e3c380",
+                    "champagne": "#B5985A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "24px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "caption": ["Montserrat"],
+                    "label-eyebrow": ["Montserrat"],
+                    "hero-metric": ["Montserrat"],
+                    "headline-lg": ["Montserrat"],
+                    "body-lg": ["Montserrat"],
+                    "headline-md": ["Montserrat"]
+            },
+            "fontSize": {
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "300"}],
+                    "label-eyebrow": ["13px", {"lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500"}],
+                    "hero-metric": ["60px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .kanban-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .kanban-scroll::-webkit-scrollbar-track {
+            background: #0E1738; 
+            border-radius: 4px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb {
+            background: #2a3355; 
+            border-radius: 4px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background: #454654; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg text-body-lg min-h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px] bg-royal dark:bg-royal border-r border-outline-variant">
+<div class="p-6">
+<div class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine mb-2">
+                FRANCISCO ABAD
+            </div>
+<div class="font-caption text-caption text-on-surface-variant">Executive Cockpit</div>
+</div>
+<div class="flex-1 mt-8 space-y-2">
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">today</span>
+<span>Hoy</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Salud</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span>Finanzas</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span>GFIT</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Cerebro</span>
+</a>
+</div>
+<div class="p-6">
+<button class="w-full bg-ultramarine text-on-primary font-bold py-3 rounded-lg mb-4 hover:bg-inverse-primary transition-colors">
+                Maker Mode
+            </button>
+</div>
+<div class="border-t border-outline-variant">
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Ajustes</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Cerrar Sesión</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-lg h-16 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant z-30">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-black text-on-surface tracking-tight">PANCHO OS</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant font-medium pb-1 hover:text-on-surface transition-opacity duration-200" href="#">Maker</a>
+<a class="text-ultramarine font-bold border-b-2 border-ultramarine pb-1 hover:text-on-surface transition-opacity duration-200" href="#">Manager</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="bg-ultramarine text-on-primary font-bold px-4 py-1.5 rounded-DEFAULT text-sm hover:bg-inverse-primary transition-colors">
+                    Quick Action
+                </button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest border border-outline overflow-hidden ml-2">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of a professional executive in a dark minimal setting. Moody cinematic lighting highlights the subject's face against a deep navy background. The style is hyper-realistic and authoritative, aligning with a premium corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZlputY9uCZ8FfIq9F99EilxoTdR1Ms06Dunil4FQsVKt8jayztcFeJrEoS_kV6fhvrh_Qle7ezLsPZ4CScG5SoNumeUd1f9-6PZ9TMAb8Rrwf20krggRxWVVYOXnAZbrFSpcW56fZzcrPA6i8FzE70fhZ1JOVFSdnvckA99XLEzFHQ74j-IjRQl_GfTgp24RY7hcw2rudyAHVn_HkZmwUNd_jv0HpdkQcgHw-ikEY5PEOthO6ZRWGJg"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-margin overflow-hidden flex flex-col">
+<div class="flex justify-between items-end mb-6 shrink-0">
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface">Pipeline</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Gestión de Oportunidades y Cierres.</p>
+</div>
+<div class="flex gap-3">
+<div class="bg-ink border border-slate-dark rounded-DEFAULT px-4 py-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">filter_list</span>
+<span class="text-sm font-medium text-on-surface-variant">Filtrar</span>
+</div>
+</div>
+</div>
+<!-- Kanban Board -->
+<div class="flex-1 overflow-x-auto kanban-scroll pb-4 -mx-2 px-2 flex gap-4">
+<!-- Columna: Nuevo -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-ultramarine"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Nuevo</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">2</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<!-- Tarjeta -->
+<div class="bg-royal rounded-lg p-4 border border-slate-dark/50 hover:border-ultramarine/50 transition-colors cursor-pointer group shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant">Alta</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-ultramarine text-sm">more_horiz</span>
+</div>
+<h3 class="font-bold text-lg text-on-surface mb-1">Acme Corp</h3>
+<p class="text-sm text-on-surface-variant mb-4 line-clamp-2">Implementación de sistema ERP modular.</p>
+<div class="flex justify-between items-end mt-auto pt-3 border-t border-slate-dark/50">
+<div class="text-champagne font-bold font-headline-md text-xl">
+                                    $45k
+                                </div>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline overflow-hidden">
+<span class="material-symbols-outlined text-xs m-auto flex items-center justify-center h-full w-full text-outline">person</span>
+</div>
+</div>
+</div>
+<!-- Tarjeta -->
+<div class="bg-royal rounded-lg p-4 border border-slate-dark/50 hover:border-ultramarine/50 transition-colors cursor-pointer group shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant">Media</span>
+</div>
+<h3 class="font-bold text-lg text-on-surface mb-1">Globex</h3>
+<p class="text-sm text-on-surface-variant mb-4 line-clamp-2">Consultoría de infraestructura cloud.</p>
+<div class="flex justify-between items-end mt-auto pt-3 border-t border-slate-dark/50">
+<div class="text-champagne font-bold font-headline-md text-xl">
+                                    $12k
+                                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Columna: Prospecto -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Prospecto</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">1</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<!-- Tarjeta -->
+<div class="bg-royal rounded-lg p-4 border border-slate-dark/50 hover:border-ultramarine/50 transition-colors cursor-pointer group shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold px-2 py-1 bg-error-container text-on-error-container rounded">Urgente</span>
+</div>
+<h3 class="font-bold text-lg text-on-surface mb-1">Initech</h3>
+<p class="text-sm text-on-surface-variant mb-4 line-clamp-2">Auditoría de seguridad y pentesting.</p>
+<div class="flex justify-between items-end mt-auto pt-3 border-t border-slate-dark/50">
+<div class="text-champagne font-bold font-headline-md text-xl">
+                                    $85k
+                                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Columna: Contacto -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Contacto</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">0</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<div class="h-full w-full flex items-center justify-center text-on-surface-variant/50 font-medium text-sm">
+                            Sin elementos
+                        </div>
+</div>
+</div>
+<!-- Columna: Propuesta -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-champagne"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Propuesta</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">0</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<div class="h-full w-full flex items-center justify-center text-on-surface-variant/50 font-medium text-sm">
+                            Sin elementos
+                        </div>
+</div>
+</div>
+<!-- Columna: Negociación -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-bronze"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Negociación</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">0</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<div class="h-full w-full flex items-center justify-center text-on-surface-variant/50 font-medium text-sm">
+                            Sin elementos
+                        </div>
+</div>
+</div>
+<!-- Columna: Cerrado -->
+<div class="w-[320px] shrink-0 flex flex-col bg-surface-dim rounded-lg border border-slate-dark/30 h-full overflow-hidden">
+<div class="p-4 border-b border-slate-dark/50 flex justify-between items-center bg-surface-container-lowest sticky top-0">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-surface-tint"></span>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Cerrado</h2>
+</div>
+<span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded-full text-on-surface-variant">0</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3 kanban-scroll">
+<div class="h-full w-full flex items-center justify-center text-on-surface-variant/50 font-medium text-sm">
+                            Sin elementos
+                        </div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

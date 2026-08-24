@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Sistema - Dispositivos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#151d3f",
+                      "surface-dim": "#071132",
+                      "on-tertiary-container": "#f7d692",
+                      "surface-tint": "#bcc2ff",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-variant": "#2a3355",
+                      "outline": "#8f8fa0",
+                      "on-tertiary": "#3f2e00",
+                      "on-secondary-fixed": "#001454",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "slate-light": "#E8EAF0",
+                      "background": "#071132",
+                      "secondary-container": "#324283",
+                      "inverse-primary": "#3a4dd8",
+                      "outline-variant": "#454654",
+                      "surface-bright": "#2f375a",
+                      "inverse-surface": "#dde1ff",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary": "#1a2b6b",
+                      "bronze": "#8A6F3D",
+                      "on-surface": "#dde1ff",
+                      "error-container": "#93000a",
+                      "linen": "#FAFAF7",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "secondary": "#b8c4ff",
+                      "on-primary-container": "#d4d7ff",
+                      "on-background": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-error": "#690005",
+                      "ink": "#0E1738",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "error": "#ffb4ab",
+                      "primary": "#bcc2ff",
+                      "royal": "#1A2B6B",
+                      "on-surface-variant": "#c5c5d7",
+                      "tertiary-container": "#745c24",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-lowest": "#030b2d",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "tertiary-fixed": "#ffdf9d",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "surface-container-high": "#1f284a",
+                      "surface-container-low": "#10193a",
+                      "primary-container": "#3b4ed9",
+                      "on-primary-fixed": "#000b62",
+                      "ultramarine": "#3B4ED9",
+                      "inverse-on-surface": "#262e50",
+                      "surface-container-highest": "#2a3355",
+                      "on-secondary-container": "#a2b1fa",
+                      "tertiary": "#e3c380",
+                      "champagne": "#B5985A"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "caption": [
+                              "Montserrat"
+                      ],
+                      "label-eyebrow": [
+                              "Montserrat"
+                      ],
+                      "hero-metric": [
+                              "Montserrat"
+                      ],
+                      "headline-lg": [
+                              "Montserrat"
+                      ],
+                      "body-lg": [
+                              "Montserrat"
+                      ],
+                      "headline-md": [
+                              "Montserrat"
+                      ]
+              },
+              "fontSize": {
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "300"
+                              }
+                      ],
+                      "label-eyebrow": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.14em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "hero-metric": [
+                              "60px",
+                              {
+                                      "lineHeight": "64px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg text-body-lg min-h-screen flex overflow-x-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px] bg-royal dark:bg-royal border-r border-outline-variant">
+<div class="px-6 py-8 flex flex-col gap-6">
+<div class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine">
+                FRANCISCO ABAD
+            </div>
+<div class="flex items-center gap-3 mt-4">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A striking profile portrait of a confident male executive against a dark, minimalist background. The lighting is dramatic and moody, emphasizing sharp facial features. Dressed in a sleek, tailored dark suit with subtle blue undertones. High resolution, premium editorial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbOIlI8b2C8KnUaow-ixsx_RfDpyMcQju6PjeL8cvikbn-R9UAJjgxEfTYF0T-V4WjdxLWucRUP1n1NUEZ-zdK0sOjsa9SY4u4DGOtOpzg4jPOts_hBz-YHQnhALmcU-gQNm__5o8mAIaCNl3wa3xeX3E-UVnMtBC4Oi-Hc0C9UlJ_CuABGcUlpYbXTiw5Kqw9BKqLLS4I-RI6dtF2IIFlWrBIAsUdvdgdEhXmvJxv9FaGNp1r7ba7Mg"/>
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow text-on-surface uppercase">FRANCISCO ABAD</span>
+<span class="font-caption text-caption text-on-surface-variant">Executive Cockpit</span>
+</div>
+</div>
+<button class="mt-4 w-full bg-ultramarine hover:bg-inverse-primary text-on-primary font-label-eyebrow text-label-eyebrow uppercase py-3 rounded flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                Maker Mode
+            </button>
+</div>
+<nav class="flex-1 flex flex-col gap-1 mt-4">
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+                Hoy
+            </a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+                Salud
+            </a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+                Finanzas
+            </a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+                GFIT
+            </a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+                Cerebro
+            </a>
+</nav>
+<div class="mt-auto flex flex-col gap-1 mb-6">
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest hover:bg-surface-container-high transition-colors duration-200 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined filled" data-icon="settings">settings</span>
+                Ajustes
+            </a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Cerrar Sesión
+            </a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<div class="flex-1 ml-[240px] flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-lg h-16 max-w-full bg-surface-container-lowest dark:bg-surface-container-lowest sticky top-0 z-30">
+<div class="flex items-center gap-8 h-full">
+<div class="font-headline-md text-headline-md font-black text-on-surface tracking-tight">
+                    PANCHO OS
+                </div>
+<nav class="hidden md:flex items-center gap-6 h-full">
+<a class="h-full flex items-center text-on-surface-variant font-medium border-b-2 border-transparent hover:text-on-surface transition-opacity duration-200" href="#">
+                        Maker
+                    </a>
+<a class="h-full flex items-center text-ultramarine font-bold border-b-2 border-ultramarine scale-95 transition-transform" href="#">
+                        Manager
+                    </a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+<button class="bg-surface-variant hover:bg-surface-bright text-on-surface px-4 py-2 rounded font-label-eyebrow text-label-eyebrow uppercase transition-colors">
+                    Quick Action
+                </button>
+<img class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A stark, minimalist abstract geometry serving as a high-end avatar. Dark navy and subtle gold metallic textures creating a premium, clinical aesthetic. Clean lines, studio lighting, highly polished." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgxKmFkHEGhw-9Y7Ww02Si9IvC7gbv8nm5pFRdAfhV39K9WLP5tTJQMK7MoDk8zInTE1PWzKmDxeXzXBvxRpyddY4rg7GqxjFDiFZmr2KbubOSmFMxMYW8dlZc5EGftvkmHb_c7uBKXPdVEp9Wj_qvXMj1C0TMPEVVRmI3uISsZ9r30F1FgcTLQlNLwrDe2-EUdLKMZZsgkLLZ-2gPtsgtySHD76UaOoF3LM034RH-4m2LDYCy9qAMlw"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-margin w-full max-w-[1280px] mx-auto">
+<header class="mb-xl">
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase mb-2">Mi Sistema</h2>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Gestión de Dispositivos</h1>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-margin">
+<!-- Paired Devices Bento List (Spans 8 cols) -->
+<section class="lg:col-span-8 flex flex-col gap-gutter">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase">Dispositivos Emparejados</h3>
+<span class="font-caption text-caption text-on-surface-variant bg-surface-container px-2 py-1 rounded">3 Activos</span>
+</div>
+<!-- Device Card 1 -->
+<div class="bg-surface-container-high rounded-lg p-margin border border-outline-variant flex items-center justify-between hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded bg-royal flex items-center justify-center text-ultramarine border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]">laptop_mac</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-on-surface mb-1">MacBook Pro M3 Max</h4>
+<div class="flex items-center gap-3 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1 text-emerald-400">
+<div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                                        Conectado
+                                    </span>
+<span>•</span>
+<span>Último uso: Ahora</span>
+</div>
+</div>
+</div>
+<button class="px-4 py-2 border border-outline-variant rounded hover:bg-error-container hover:text-on-error hover:border-error-container transition-colors font-label-eyebrow text-label-eyebrow uppercase text-on-surface-variant">
+                            Revocar
+                        </button>
+</div>
+<!-- Device Card 2 -->
+<div class="bg-surface-container-high rounded-lg p-margin border border-outline-variant flex items-center justify-between hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded bg-royal flex items-center justify-center text-ultramarine border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]">smartphone</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-on-surface mb-1">iPhone 15 Pro</h4>
+<div class="flex items-center gap-3 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1 text-emerald-400">
+<div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                                        Conectado
+                                    </span>
+<span>•</span>
+<span>Último uso: Hace 5 min</span>
+</div>
+</div>
+</div>
+<button class="px-4 py-2 border border-outline-variant rounded hover:bg-error-container hover:text-on-error hover:border-error-container transition-colors font-label-eyebrow text-label-eyebrow uppercase text-on-surface-variant">
+                            Revocar
+                        </button>
+</div>
+<!-- Device Card 3 -->
+<div class="bg-surface-container-high rounded-lg p-margin border border-outline-variant flex items-center justify-between hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center text-outline border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]">watch</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-on-surface mb-1">Apple Watch Ultra</h4>
+<div class="flex items-center gap-3 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+                                        Desconectado
+                                    </span>
+<span>•</span>
+<span>Último uso: Hace 2 horas</span>
+</div>
+</div>
+</div>
+<button class="px-4 py-2 border border-outline-variant rounded hover:bg-error-container hover:text-on-error hover:border-error-container transition-colors font-label-eyebrow text-label-eyebrow uppercase text-on-surface-variant">
+                            Revocar
+                        </button>
+</div>
+</section>
+<!-- New Pairing Flow (Spans 4 cols) -->
+<section class="lg:col-span-4">
+<div class="bg-ink border border-outline-variant rounded-lg p-margin h-full flex flex-col relative overflow-hidden">
+<!-- Subtle Background Glow -->
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-ultramarine/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex items-center gap-3 mb-6 relative z-10">
+<span class="material-symbols-outlined text-champagne text-[28px]">qr_code_scanner</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Vincular Nuevo</h3>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8 relative z-10">
+                            Escanea este código de seguridad desde la aplicación PanchoOS en tu nuevo dispositivo para autorizar el acceso maestro.
+                        </p>
+<div class="flex-1 flex flex-col items-center justify-center relative z-10">
+<div class="bg-white p-4 rounded-lg shadow-lg mb-6 transform transition-transform hover:scale-105">
+<img class="w-48 h-48 object-contain" data-alt="A clean, minimalist QR code graphic designed in high contrast black and white. It sits squarely in the center of the frame, perfectly illuminated by neutral studio lighting. The design is stark and corporate, representing secure cryptographic digital data transfer. No background distractions." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQI3wg4J8-DleBguqfp8SDtf77YEKfyZBdroS70fNjT9M1s8LJPKaGmgtxxCtCu6R8bJw-rCUo1h-0qRWv_ZoyMknSthYx4uEbjJC6azR1VTuKvAZ65g5ttfMmRB2oYMOuh3IPINGc7hGlzF8jnh8apEiZf5AIRjms9sGPrjO-MLomyTypMNR3UYQr8ZjOSfeKmVYQFMlAaa4uC1399TNjdGfSdbLW4wtwX8bajCayPYXjHS2jszIVhw"/>
+</div>
+<div class="flex items-center gap-2 text-ultramarine font-label-eyebrow text-label-eyebrow uppercase">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+                                Sesión cifrada E2E
+                            </div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant relative z-10 text-center">
+<button class="text-on-surface-variant font-label-eyebrow text-label-eyebrow uppercase hover:text-on-surface transition-colors">
+                                Ingresar código manualmente
+                            </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>

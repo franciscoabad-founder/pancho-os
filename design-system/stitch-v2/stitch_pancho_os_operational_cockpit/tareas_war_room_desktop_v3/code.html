@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>War Room - Francisco Abad</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#151d3f",
+                      "surface-dim": "#071132",
+                      "on-tertiary-container": "#f7d692",
+                      "surface-tint": "#bcc2ff",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-variant": "#2a3355",
+                      "outline": "#8f8fa0",
+                      "on-tertiary": "#3f2e00",
+                      "on-secondary-fixed": "#001454",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "slate-light": "#E8EAF0",
+                      "background": "#071132",
+                      "secondary-container": "#324283",
+                      "inverse-primary": "#3a4dd8",
+                      "outline-variant": "#454654",
+                      "surface-bright": "#2f375a",
+                      "inverse-surface": "#dde1ff",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary": "#1a2b6b",
+                      "bronze": "#8A6F3D",
+                      "on-surface": "#dde1ff",
+                      "error-container": "#93000a",
+                      "linen": "#FAFAF7",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "secondary": "#b8c4ff",
+                      "on-primary-container": "#d4d7ff",
+                      "on-background": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-error": "#690005",
+                      "ink": "#0E1738",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "error": "#ffb4ab",
+                      "primary": "#bcc2ff",
+                      "royal": "#1A2B6B",
+                      "on-surface-variant": "#c5c5d7",
+                      "tertiary-container": "#745c24",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-lowest": "#030b2d",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "tertiary-fixed": "#ffdf9d",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "surface-container-high": "#1f284a",
+                      "surface-container-low": "#10193a",
+                      "primary-container": "#3b4ed9",
+                      "on-primary-fixed": "#000b62",
+                      "ultramarine": "#3B4ED9",
+                      "inverse-on-surface": "#262e50",
+                      "surface-container-highest": "#2a3355",
+                      "on-secondary-container": "#a2b1fa",
+                      "tertiary": "#e3c380",
+                      "champagne": "#B5985A"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "caption": [
+                              "Montserrat"
+                      ],
+                      "label-eyebrow": [
+                              "Montserrat"
+                      ],
+                      "hero-metric": [
+                              "Montserrat"
+                      ],
+                      "headline-lg": [
+                              "Montserrat"
+                      ],
+                      "body-lg": [
+                              "Montserrat"
+                      ],
+                      "headline-md": [
+                              "Montserrat"
+                      ]
+              },
+              "fontSize": {
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "300"
+                              }
+                      ],
+                      "label-eyebrow": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.14em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "hero-metric": [
+                              "60px",
+                              {
+                                      "lineHeight": "64px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.ink');
+            color: theme('colors.on-surface');
+        }
+        
+        /* Custom Checkbox Styles */
+        input[type="checkbox"] {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 20px;
+            height: 20px;
+            border: 2px solid theme('colors.outline-variant');
+            border-radius: 4px;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        input[type="checkbox"]::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            background-color: CanvasText;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: theme('colors.ultramarine');
+            border-color: theme('colors.ultramarine');
+        }
+        
+        input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+
+        /* Collapsible content */
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.open {
+            max-height: 500px; /* Arbitrary large height for transition */
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (Shared Component Blueprint) -->
+<nav class="flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px] bg-royal dark:bg-royal border-r border-outline-variant hidden md:flex">
+<!-- Header -->
+<div class="p-6 pb-8 border-b border-outline-variant/30">
+<div class="flex items-center gap-4 mb-6">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="A striking professional portrait of a male executive in a sharply tailored dark suit, shot against an inky black background. High contrast studio lighting highlights his features, projecting an aura of intense focus, authority, and modern corporate minimalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANPB_k19FCABgZb1egMI4XWbvxb3nGoihzvBPd6mGAtTzR97hpisng89HkkeHxTKo-gRd23Fc9QOIMk3iYv7fO28xqkRzYqsn_hpVKLRBWCUy1HbUWVU2PXNSd7nQg7nCm9d20jGr0QTEgHUtXy6c8F4dJ-toZs2MkjKrjxQYj9FjTyIVHBwi7NZDqS51clbkcrBJESpDeo5nEUOOdVMF6e0qxfELdWGE1-0dsD0hZzDTQqm_lADgHtg"/>
+<div>
+<h1 class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine text-[20px] leading-tight">FRANCISCO ABAD</h1>
+<span class="font-caption text-caption text-on-surface-variant block mt-1">Executive Cockpit</span>
+</div>
+</div>
+<button class="w-full bg-ultramarine text-on-primary font-label-eyebrow text-label-eyebrow py-3 rounded hover:bg-surface-container-high transition-colors duration-200 uppercase">Maker Mode</button>
+</div>
+<!-- Navigation Links -->
+<ul class="flex-1 py-4 overflow-y-auto">
+<li>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+<span>Hoy</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span>Salud</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finanzas</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest font-body-lg text-body-lg opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span>GFIT</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Cerebro</span>
+</a>
+</li>
+</ul>
+<!-- Footer Links -->
+<div class="mt-auto border-t border-outline-variant/30 p-4">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Ajustes</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant font-medium font-body-lg text-body-lg hover:bg-surface-container-high transition-colors duration-200 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Cerrar Sesión</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-[240px] flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component Blueprint) -->
+<header class="flex justify-between items-center w-full px-lg h-16 max-w-full bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-30 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+<div class="flex items-center gap-6">
+<!-- Mobile Menu Toggle (Visible only on mobile) -->
+<button class="md:hidden text-on-surface">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-black text-on-surface tracking-tighter">PANCHO OS</div>
+<!-- Desktop Nav Links -->
+<nav class="hidden md:flex gap-8 ml-8">
+<a class="font-headline-md text-headline-md text-[16px] text-ultramarine font-bold border-b-2 border-ultramarine pb-1 hover:text-on-surface transition-opacity duration-200 scale-95 transition-transform" href="#">Maker</a>
+<a class="font-headline-md text-headline-md text-[16px] text-on-surface-variant font-medium pb-1 hover:text-on-surface transition-opacity duration-200" href="#">Manager</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-ink border border-outline-variant rounded-full px-4 py-1.5 focus-within:border-ultramarine transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none outline-none text-body-lg font-body-lg text-on-surface placeholder-on-surface-variant/50 w-48 focus:ring-0 p-0" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors md:hidden">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="bg-ultramarine text-on-primary font-label-eyebrow text-label-eyebrow px-4 py-2 rounded uppercase hover:bg-inverse-primary transition-colors ml-2 hidden sm:block">Quick Action</button>
+<img class="w-8 h-8 rounded-full border border-outline-variant ml-2 object-cover" data-alt="A minimalist, high-contrast abstract avatar image featuring stark geometric shapes in deep royal blue and metallic champagne tones, set against an absolute black background. The style is strictly corporate, clinical, and premium, devoid of any playful or illustrative elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpf-3qBMAFt6Qfj-zO0W2K44nOS3wxOxElnisUeSysrmjav0sYnxJPDRVf9V3EKqT6oOSRtmE2C9IKfRov5SFV08mPpG_x3G4qF_iL6iCNqm20-qX3DJCfCJSQkfi5eulTGNW4aIIT1ivhNcWSXrXpL55MLUOK-PFi60gWCUQzX9pwryu4hNZYRbXFEbtkHJJX_NF9yvN1Qmu1xhX-x0AOifWOoHQqakO0R_q_XT65VXdZ_xBjIrKgtw"/>
+</div>
+</header>
+<!-- War Room Content -->
+<div class="p-margin md:p-xl max-w-[1280px] w-full mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+<div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase tracking-[0.14em] mb-2">Operations</h2>
+<h1 class="font-hero-metric text-hero-metric text-on-surface tracking-tighter leading-none">WAR ROOM</h1>
+</div>
+<div class="flex gap-8 bg-royal border border-outline-variant rounded-lg p-4 md:p-6 shadow-lg">
+<div>
+<span class="font-label-eyebrow text-label-eyebrow text-linen opacity-70 block mb-1">DUE AUG 2026</span>
+<div class="font-headline-lg text-headline-lg text-champagne">14<span class="text-body-lg text-on-surface-variant ml-1 font-medium">of 28</span></div>
+</div>
+<div class="w-px bg-outline-variant/50"></div>
+<div>
+<span class="font-label-eyebrow text-label-eyebrow text-linen opacity-70 block mb-1">CRITICAL</span>
+<div class="font-headline-lg text-headline-lg text-ultramarine">3</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout for Projects -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- BrainTech Project -->
+<div class="xl:col-span-8 bg-surface-container rounded-lg border border-outline-variant flex flex-col h-full overflow-hidden">
+<div class="p-6 border-b border-outline-variant/50 bg-royal/30 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-champagne"></div>
+<h3 class="font-headline-md text-headline-md text-on-surface">BrainTech</h3>
+</div>
+<span class="font-caption text-caption text-on-surface-variant bg-surface px-3 py-1 rounded-full border border-outline-variant">3 abiertas de 5</span>
+</div>
+<div class="flex-1 p-0">
+<!-- Task 1 (Critical) -->
+<div class="border-b border-slate-dark p-6 hover:bg-surface-container-high transition-colors">
+<div class="flex items-start gap-4">
+<input class="mt-1" type="checkbox"/>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-eyebrow text-[10px] px-2 py-0.5 rounded bg-ultramarine/20 text-ultramarine border border-ultramarine/30 uppercase">Crítica</span>
+<h4 class="font-body-lg text-body-lg text-on-surface font-bold">Finalizar Arquitectura Core</h4>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant text-sm mb-4">Definir modelo de datos para el motor de recomendación neuronal.</p>
+<!-- Collapsible Subtasks Toggle -->
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-champagne font-caption text-caption uppercase tracking-wider transition-colors toggle-btn" onclick="toggleSubtasks('bt-1')">
+<span class="material-symbols-outlined text-sm transition-transform duration-200" id="icon-bt-1">expand_more</span>
+                                        Subtareas (2)
+                                    </button>
+<!-- Subtasks list -->
+<div class="collapsible-content pl-6 mt-4 border-l border-outline-variant/30 space-y-3" id="bt-1">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant/50" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Esquema de BD PostgreSQL</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 rounded-sm border-outline-variant/50" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Endpoints API RESTful</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Task 2 (High) -->
+<div class="border-b border-slate-dark p-6 hover:bg-surface-container-high transition-colors">
+<div class="flex items-start gap-4">
+<input class="mt-1" type="checkbox"/>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-eyebrow text-[10px] px-2 py-0.5 rounded bg-champagne/20 text-champagne border border-champagne/30 uppercase">Alta</span>
+<h4 class="font-body-lg text-body-lg text-on-surface font-medium">Prototipo de Interfaz EEG</h4>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant text-sm mb-0">Integración de SDK base con hardware de pruebas.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Rafik Project (Smaller column) -->
+<div class="xl:col-span-4 flex flex-col gap-6">
+<div class="bg-surface-container rounded-lg border border-outline-variant flex flex-col h-full overflow-hidden">
+<div class="p-5 border-b border-outline-variant/50 bg-royal/30 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-ultramarine"></div>
+<h3 class="font-headline-md text-headline-md text-[20px] text-on-surface">Rafik</h3>
+</div>
+<span class="font-caption text-caption text-on-surface-variant bg-surface px-2 py-1 rounded-full border border-outline-variant">1/2</span>
+</div>
+<div class="p-0 flex-1">
+<!-- Task 1 (Medium) -->
+<div class="border-b border-slate-dark p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-start gap-3">
+<input class="mt-0.5" type="checkbox"/>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-eyebrow text-[9px] px-1.5 py-0.5 rounded bg-slate-light/20 text-slate-light border border-slate-light/30 uppercase">Media</span>
+</div>
+<h4 class="font-body-lg text-body-lg text-sm text-on-surface font-medium">Revisión de Contratos Legales</h4>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- taskr Project -->
+<div class="bg-surface-container rounded-lg border border-outline-variant flex flex-col h-full overflow-hidden">
+<div class="p-5 border-b border-outline-variant/50 bg-royal/30 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-outline"></div>
+<h3 class="font-headline-md text-headline-md text-[20px] text-on-surface">taskr</h3>
+</div>
+<span class="font-caption text-caption text-on-surface-variant bg-surface px-2 py-1 rounded-full border border-outline-variant">0/4</span>
+</div>
+<div class="p-8 flex items-center justify-center flex-1">
+<p class="font-caption text-caption text-on-surface-variant/50 italic text-center">Todas las tareas completadas para este ciclo.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function toggleSubtasks(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('open');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+    </script>
+</body></html>

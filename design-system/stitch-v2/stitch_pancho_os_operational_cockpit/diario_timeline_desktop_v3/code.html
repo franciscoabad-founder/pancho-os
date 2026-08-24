@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Diario — Historial | FRANCISCO ABAD</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#151d3f",
+                    "surface-dim": "#071132",
+                    "on-tertiary-container": "#f7d692",
+                    "surface-tint": "#bcc2ff",
+                    "ultralight": "#6B7AE8",
+                    "surface": "#071132",
+                    "surface-variant": "#2a3355",
+                    "outline": "#8f8fa0",
+                    "on-tertiary": "#3f2e00",
+                    "on-secondary-fixed": "#001454",
+                    "on-primary-fixed-variant": "#1b31c1",
+                    "slate-light": "#E8EAF0",
+                    "background": "#071132",
+                    "secondary-container": "#324283",
+                    "inverse-primary": "#3a4dd8",
+                    "outline-variant": "#454654",
+                    "surface-bright": "#2f375a",
+                    "inverse-surface": "#dde1ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "on-secondary": "#1a2b6b",
+                    "bronze": "#8A6F3D",
+                    "on-surface": "#dde1ff",
+                    "error-container": "#93000a",
+                    "linen": "#FAFAF7",
+                    "on-tertiary-fixed-variant": "#59440d",
+                    "secondary": "#b8c4ff",
+                    "on-primary-container": "#d4d7ff",
+                    "on-background": "#dde1ff",
+                    "primary-fixed": "#dfe0ff",
+                    "on-error": "#690005",
+                    "ink": "#0E1738",
+                    "tertiary-fixed-dim": "#e3c380",
+                    "error": "#ffb4ab",
+                    "primary": "#bcc2ff",
+                    "royal": "#1A2B6B",
+                    "on-surface-variant": "#c5c5d7",
+                    "tertiary-container": "#745c24",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#030b2d",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-secondary-fixed-variant": "#324283",
+                    "on-primary": "#00189a",
+                    "tertiary-fixed": "#ffdf9d",
+                    "secondary-fixed": "#dde1ff",
+                    "primary-fixed-dim": "#bcc2ff",
+                    "surface-container-high": "#1f284a",
+                    "surface-container-low": "#10193a",
+                    "primary-container": "#3b4ed9",
+                    "on-primary-fixed": "#000b62",
+                    "ultramarine": "#3B4ED9",
+                    "inverse-on-surface": "#262e50",
+                    "surface-container-highest": "#2a3355",
+                    "on-secondary-container": "#a2b1fa",
+                    "tertiary": "#e3c380",
+                    "champagne": "#B5985A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "24px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "caption": ["Montserrat"],
+                    "label-eyebrow": ["Montserrat"],
+                    "hero-metric": ["Montserrat"],
+                    "headline-lg": ["Montserrat"],
+                    "body-lg": ["Montserrat"],
+                    "headline-md": ["Montserrat"]
+            },
+            "fontSize": {
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "300"}],
+                    "label-eyebrow": ["13px", {"lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500"}],
+                    "hero-metric": ["60px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Hide scrollbar for clean aesthetic */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg text-body-lg antialiased selection:bg-ultramarine selection:text-on-primary">
+<!-- Shared Component: SideNavBar -->
+<nav class="flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px] bg-royal border-r border-outline-variant">
+<!-- Header / Brand -->
+<div class="px-6 py-8 border-b border-outline-variant border-opacity-30">
+<div class="flex items-center gap-3 mb-4">
+<img alt="Executive Portrait" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A highly professional, dramatically lit black and white executive portrait of a man, tight crop on the face, minimalist dark studio background, conveying intense focus and authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYyUMI-b7GdBuFjkCgge7K2j8AURS-i_3wEFWwOzZ4kWg2sCL4n3zEEhEkGYBm2xjlZZStbb5bqcDL2m4qM8PrdEb0tpq8qIIToQ-7g4mGOEuE0A7e6rWr2yOY_mOjTNfkx5a28PLFo-VS8uPhU76DNEHGm_bO2LL0qwEYRWWaXjEmgvyJSG7lLatTALbHJGScEvkamzr5JowUhQj9F19k-aYtc97jj_FUgaCVdOdX5FIrz9Uq60DBfg"/>
+<div>
+<div class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine text-sm">FRANCISCO ABAD</div>
+<div class="font-caption text-caption text-on-surface-variant uppercase tracking-widest mt-1">Executive Cockpit</div>
+</div>
+</div>
+<button class="w-full bg-surface-container-high hover:bg-surface-container-highest transition-colors duration-200 text-on-surface font-label-eyebrow text-label-eyebrow py-2 rounded uppercase tracking-widest border border-outline-variant">
+                Maker Mode
+            </button>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 py-4 overflow-y-auto">
+<!-- Active Tab (Hoy - best fit for a daily journal timeline) -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">today</span>
+<span>Hoy</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Salud</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Finanzas</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span>GFIT</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Cerebro</span>
+</a>
+</div>
+<!-- Footer Links -->
+<div class="border-t border-outline-variant border-opacity-30 py-4">
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-caption text-caption" href="#">
+<span class="material-symbols-outlined text-sm">settings</span>
+<span>Ajustes</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-caption text-caption" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span>Cerrar Sesión</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-[240px] min-h-screen px-xl py-xl max-w-5xl mx-auto">
+<!-- Header -->
+<header class="mb-xl flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Historial</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Agosto 2026</p>
+</div>
+<div class="flex gap-4">
+<button class="p-2 border border-outline-variant rounded hover:bg-surface-container text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</header>
+<!-- Quick Capture Box -->
+<section class="mb-xl bg-surface-container border border-outline-variant rounded-lg overflow-hidden focus-within:border-ultramarine transition-colors duration-300">
+<div class="p-4 border-b border-outline-variant border-opacity-50 flex gap-2 overflow-x-auto">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-highest text-on-surface border border-outline-variant font-caption text-caption hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-sm">notes</span> Día
+                </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-highest text-ultramarine border border-ultramarine border-opacity-30 font-caption text-caption hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-sm">settings</span> Proceso
+                </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-highest text-champagne border border-champagne border-opacity-30 font-caption text-caption hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-sm">alt_route</span> Decisión
+                </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-highest text-champagne border border-champagne border-opacity-30 font-caption text-caption hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-sm">emoji_events</span> Win
+                </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-highest text-ultramarine border border-ultramarine border-opacity-30 font-caption text-caption hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-sm">lightbulb</span> Idea
+                </button>
+</div>
+<textarea class="w-full bg-transparent border-none p-4 font-body-lg text-body-lg text-on-surface placeholder-on-surface-variant focus:ring-0 resize-none" placeholder="Registrar entrada..." rows="3"></textarea>
+<div class="p-4 bg-surface-container-lowest flex justify-end">
+<button class="bg-ultramarine text-on-primary px-6 py-2 rounded font-label-eyebrow text-label-eyebrow tracking-widest hover:bg-primary-container transition-colors">
+                    GUARDAR
+                </button>
+</div>
+</section>
+<!-- Vertical Timeline -->
+<section class="relative">
+<!-- Continuous Line -->
+<div class="absolute left-[23px] top-4 bottom-0 w-px bg-outline-variant bg-opacity-30 z-0"></div>
+<!-- Group: 24 Agosto 2026 -->
+<div class="mb-xl relative z-10">
+<div class="flex items-center gap-4 mb-lg ml-md">
+<div class="w-2 h-2 rounded-full bg-champagne"></div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase">24 Agosto 2026</h2>
+</div>
+<!-- Entry: Win (Champagne) -->
+<div class="relative pl-[64px] mb-6 group">
+<div class="absolute left-[8px] top-1 w-8 h-8 rounded bg-surface-container-highest border border-champagne border-opacity-50 flex items-center justify-center ring-4 ring-background z-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-champagne text-[18px]">emoji_events</span>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="font-caption text-caption text-champagne uppercase tracking-widest">Win</span>
+<span class="font-caption text-caption text-on-surface-variant">18:45</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                            Cierre exitoso de la ronda pre-seed estructurada con la nueva tesis. El modelo de proyección funcionó exactamente como fue diseñado, eliminando fricción en la negociación.
+                        </p>
+</div>
+</div>
+<!-- Entry: Proceso (Ultramarine) -->
+<div class="relative pl-[64px] mb-6 group">
+<div class="absolute left-[8px] top-1 w-8 h-8 rounded bg-surface-container-highest border border-ultramarine border-opacity-50 flex items-center justify-center ring-4 ring-background z-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-ultramarine text-[18px]">settings</span>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="font-caption text-caption text-ultramarine uppercase tracking-widest">Proceso</span>
+<span class="font-caption text-caption text-on-surface-variant">14:20</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                            Ajuste en la rutina de Deep Work. Moví el bloque de revisión analítica a las 06:00 AM. La densidad cognitiva es superior antes de revisar comunicaciones asíncronas.
+                        </p>
+</div>
+</div>
+</div>
+<!-- Group: 23 Agosto 2026 -->
+<div class="mb-xl relative z-10">
+<div class="flex items-center gap-4 mb-lg ml-md">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase">23 Agosto 2026</h2>
+</div>
+<!-- Entry: Decisión (Ultramarine) -->
+<div class="relative pl-[64px] mb-6 group">
+<div class="absolute left-[8px] top-1 w-8 h-8 rounded bg-surface-container-highest border border-ultramarine border-opacity-50 flex items-center justify-center ring-4 ring-background z-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-ultramarine text-[18px]">alt_route</span>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant hover:border-outline transition-colors border-l-2 border-l-ultramarine">
+<div class="flex justify-between items-start mb-2">
+<span class="font-caption text-caption text-ultramarine uppercase tracking-widest">Decisión</span>
+<span class="font-caption text-caption text-on-surface-variant">10:15</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Pivot de Arquitectura Datos</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                            Se descarta la migración parcial. El coste técnico a largo plazo supera el riesgo a corto plazo de una reescritura completa del módulo central. Aprobado presupuesto extraordinario.
+                        </p>
+</div>
+</div>
+<!-- Entry: Idea (Champagne) -->
+<div class="relative pl-[64px] mb-6 group">
+<div class="absolute left-[8px] top-1 w-8 h-8 rounded bg-surface-container-highest border border-champagne border-opacity-50 flex items-center justify-center ring-4 ring-background z-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-champagne text-[18px]">lightbulb</span>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="font-caption text-caption text-champagne uppercase tracking-widest">Idea</span>
+<span class="font-caption text-caption text-on-surface-variant">08:00</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                            Implementar "Knowledge Graphs" personales para visualizar la intersección entre hábitos de salud y rendimiento financiero en periodos de alto estrés. Posible integración con API de Oura.
+                        </p>
+</div>
+</div>
+<!-- Entry: Día (Slate/Generic) -->
+<div class="relative pl-[64px] mb-6 group">
+<div class="absolute left-[8px] top-1 w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center ring-4 ring-background z-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">notes</span>
+</div>
+<div class="bg-surface p-6 rounded-lg border border-outline-variant border-opacity-50 hover:border-opacity-100 transition-colors opacity-80 hover:opacity-100">
+<div class="flex justify-between items-start mb-2">
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-widest">Día</span>
+<span class="font-caption text-caption text-on-surface-variant">06:30</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed italic">
+                            Día enfocado exclusivamente en alineación de equipo. Baja producción técnica, alta resolución de conflictos latentes. El balance energético es neutro.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
