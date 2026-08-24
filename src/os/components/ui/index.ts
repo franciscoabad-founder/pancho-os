@@ -18,6 +18,24 @@ export type { SpinnerProps } from './Spinner';
 export { FieldInput, FieldSelect, FieldTextarea } from './Field';
 export type { FieldInputProps, FieldSelectProps, FieldTextareaProps } from './Field';
 
+export { default as MetricCard } from './MetricCard';
+export type { MetricCardProps, MetricCardSize, MetricTrendTone } from './MetricCard';
+
+export { default as ProgressBar } from './ProgressBar';
+export type { ProgressBarProps, ProgressTone, ProgressSize } from './ProgressBar';
+
+export { default as Badge } from './Badge';
+export type { BadgeProps, BadgeTone } from './Badge';
+
+export { default as Tooltip } from './Tooltip';
+export type { TooltipProps, TooltipPlacement } from './Tooltip';
+
+export { default as Tabs } from './Tabs';
+export type { TabsProps, TabItem } from './Tabs';
+
+export { default as Switch } from './Switch';
+export type { SwitchProps } from './Switch';
+
 
 export { default as Sheet } from './Sheet';
 export type { SheetProps } from './Sheet';

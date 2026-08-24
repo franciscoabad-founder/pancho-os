@@ -37,6 +37,39 @@ import { PageHeader, Button } from '../ui';
 ```tsx
 <Tabs tabs={[{ id: 'hoy', label: 'Hoy' }, { id: 'semana', label: 'Semana', count: 4 }]}
   active={tab} onChange={setTab} />
+// flechas izquierda/derecha navegan; fill reparte el ancho en partes iguales
+```
+
+```tsx
+// Reemplaza el patron .os-kpi hand-rolled. El valor sale en champagne.
+<MetricCard label="Disponible en cuentas" value={money(totCuentas)} />
+<MetricCard label="Total deudas" value={money(totDeudas)} trend="+8%" trendTone="error"
+  icon="credit_card" hint="vs mes anterior" />
+<MetricCard label="Neto" value={money(neto)} size="lg" accent />
+```
+
+```tsx
+<ProgressBar value={72} label="Proteina" valueLabel="144 / 200 g" />
+<ProgressBar value={sets} max={maxSets} size="sm" ariaLabel="Series completadas" />
+// tonos: accent | metric | warn | error
+```
+
+```tsx
+<Badge tone="ok" icon="check">Hecho</Badge>
+<Badge tone="warn" dot>En riesgo</Badge>
+// tonos: neutral | accent | metric | ok | warn | error
+```
+
+```tsx
+<Tooltip label="Suma de cuentas menos deudas" placement="top">
+  <span className="material-symbols-outlined">info</span>
+</Tooltip>
+// posicionamiento basico: sin deteccion de colision con el viewport
+```
+
+```tsx
+<Switch checked={activo} onChange={setActivo} label="Penalizar HP al fallar"
+  hint="Resta 5 HP por habito no cumplido" block />
 ```
 
 ```tsx
