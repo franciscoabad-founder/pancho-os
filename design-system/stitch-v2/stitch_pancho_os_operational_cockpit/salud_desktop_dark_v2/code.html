@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Salud - Pancho OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "ultramarine": "#3B4ED9",
+                        "primary-container": "#3b4ed9",
+                        "tertiary": "#e3c380",
+                        "background": "#071132",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "primary": "#bcc2ff",
+                        "surface-bright": "#2f375a",
+                        "on-tertiary-container": "#f7d692",
+                        "on-error-container": "#ffdad6",
+                        "champagne": "#B5985A",
+                        "on-background": "#dde1ff",
+                        "surface-variant": "#2a3355",
+                        "secondary-fixed": "#dde1ff",
+                        "tertiary-container": "#745c24",
+                        "linen": "#FAFAF7",
+                        "outline-variant": "#454654",
+                        "surface": "#071132",
+                        "on-secondary-container": "#a2b1fa",
+                        "surface-tint": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-primary-fixed": "#000b62",
+                        "surface-container-low": "#10193a",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "on-surface-variant": "#c5c5d7",
+                        "slate-light": "#E8EAF0",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-container": "#324283",
+                        "on-tertiary": "#3f2e00",
+                        "ultralight": "#6B7AE8",
+                        "surface-dim": "#071132",
+                        "on-primary-container": "#d4d7ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "primary-fixed": "#dfe0ff",
+                        "surface-container": "#151d3f",
+                        "ink": "#0E1738",
+                        "secondary": "#b8c4ff",
+                        "bronze": "#8A6F3D",
+                        "outline": "#8f8fa0",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container-highest": "#2a3355",
+                        "surface-container-lowest": "#030b2d",
+                        "on-secondary-fixed": "#001454",
+                        "on-surface": "#dde1ff",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#324283",
+                        "surface-container-high": "#1f284a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary": "#1a2b6b",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#262e50",
+                        "inverse-primary": "#3a4dd8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "margin": "24px"
+                    },
+                    fontFamily: {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "body-lg": ["Montserrat"]
+                    },
+                    fontSize: {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0E1738; color: #FAFAF7; } /* bg-ink text-linen */
+        .metric-card { transition: transform 0.2s ease, opacity 0.2s ease; }
+        .metric-card:hover { transform: translateY(-2px); opacity: 0.95; }
+        
+        /* Hide scrollbar for clean sub-nav */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-ink min-h-screen flex font-body-lg text-body-lg">
+<!-- DESKTOP SIDE NAV -->
+<nav class="hidden md:flex flex-col h-full py-md fixed left-0 top-0 w-[240px] bg-royal border-r border-outline-variant z-50">
+<div class="px-margin mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h1>
+<p class="font-caption text-caption text-on-surface-variant uppercase tracking-[0.14em]">Executive Cockpit</p>
+</div>
+<div class="flex flex-col gap-sm px-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Hoy
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+                Salud
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+                Finanzas
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+                GFIT
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+                Cerebro
+            </a>
+</div>
+<div class="px-margin mt-auto">
+<img alt="Founder Profile" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A highly detailed, professional headshot avatar of an executive against a deep blue, clinical studio background, conveying authority and minimalism, utilizing soft white rim lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxKmK7BK9QEQrPr9iBq4NQt05MhE-hSf4rCR_eNC6OXxB89NRSp2NadEEj0UYpRiCdbdrqLDcABn-_sXp7i4ghHspayDhKXxvyPBE9qfrwc8HcaQN8tMMTJk9jZcHeGOJkX_JioEmsZi4qBrrVCQuOYDwnISv_g6zz8z9ON_g4V9QHp-fTCziuEHinrxa9XUoq7besmXtJg1bGwlVSCByRrv45enkD6N9MbvXX-CUwRiwY_IcJ3ZzMxg"/>
+</div>
+</nav>
+<!-- MOBILE BOTTOM NAV -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm md:hidden bg-ink border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow text-[10px] uppercase mt-xs">Hoy</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow text-[10px] uppercase mt-xs">Salud</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow text-[10px] uppercase mt-xs">Finanzas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow text-[10px] uppercase mt-xs">GFIT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow text-[10px] uppercase mt-xs">Cerebro</span>
+</a>
+</nav>
+<!-- MAIN CONTENT CANVAS -->
+<main class="flex-1 md:ml-[240px] pb-24 md:pb-0 min-h-screen flex flex-col">
+<!-- MODULE HEADER & TABS -->
+<header class="pt-xl px-margin md:px-xl shrink-0">
+<div class="flex items-center justify-between mb-lg">
+<h2 class="font-headline-lg text-headline-lg text-linen">Salud</h2>
+<div class="flex items-center gap-sm">
+<button class="w-8 h-8 rounded-full bg-royal flex items-center justify-center text-linen border border-outline-variant hover:bg-ultramarine transition-colors">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-royal flex items-center justify-center text-linen border border-outline-variant hover:bg-ultramarine transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Submodule Tabs (Scrollable) -->
+<div class="flex overflow-x-auto no-scrollbar border-b border-outline-variant/50 pb-xs gap-lg">
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm border-b-2 border-ultramarine text-linen whitespace-nowrap">Resumen</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Nutrición</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Ayuno</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Entreno</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Progreso</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Cuerpo</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Sueño</button>
+<button class="font-label-eyebrow text-label-eyebrow uppercase tracking-[0.14em] pb-sm text-on-surface-variant hover:text-linen whitespace-nowrap transition-colors">Estiramiento</button>
+</div>
+</header>
+<!-- DASHBOARD GRID -->
+<div class="flex-1 overflow-y-auto p-margin md:p-xl">
+<div class="max-w-7xl mx-auto grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-md">
+<!-- METRIC CARDS (Resumen) -->
+<!-- Calorías Hoy -->
+<div class="col-span-4 md:col-span-4 lg:col-span-3 bg-royal rounded-lg p-lg border border-outline-variant/30 metric-card flex flex-col justify-between min-h-[160px]">
+<div class="flex justify-between items-start">
+<span class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Calorías Hoy</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">local_fire_department</span>
+</div>
+<div>
+<div class="font-hero-metric text-hero-metric text-champagne">1,840</div>
+<div class="font-caption text-caption text-on-surface-variant mt-xs">Objetivo: 2,200 kcal</div>
+</div>
+</div>
+<!-- Ayuno Timer -->
+<div class="col-span-4 md:col-span-4 lg:col-span-3 bg-royal rounded-lg p-lg border border-outline-variant/30 metric-card flex flex-col justify-between min-h-[160px]">
+<div class="flex justify-between items-start">
+<span class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Ayuno Timer</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">timelapse</span>
+</div>
+<div>
+<div class="font-hero-metric text-hero-metric text-champagne">14:22</div>
+<div class="font-caption text-caption text-ultramarine mt-xs">En Zona Quemagrasa</div>
+</div>
+</div>
+<!-- Último Entreno -->
+<div class="col-span-4 md:col-span-4 lg:col-span-3 bg-royal rounded-lg p-lg border border-outline-variant/30 metric-card flex flex-col justify-between min-h-[160px]">
+<div class="flex justify-between items-start">
+<span class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Último Entreno</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">sports_gymnastics</span>
+</div>
+<div>
+<div class="font-hero-metric text-hero-metric text-champagne text-[48px] leading-[48px]">Z2 Run</div>
+<div class="font-caption text-caption text-on-surface-variant mt-sm">Ayer, 45 min • 420 kcal</div>
+</div>
+</div>
+<!-- Último Peso -->
+<div class="col-span-4 md:col-span-4 lg:col-span-3 bg-royal rounded-lg p-lg border border-outline-variant/30 metric-card flex flex-col justify-between min-h-[160px]">
+<div class="flex justify-between items-start">
+<span class="font-label-eyebrow text-label-eyebrow text-linen uppercase">Último Peso</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">scale</span>
+</div>
+<div>
+<div class="flex items-baseline gap-sm">
+<div class="font-hero-metric text-hero-metric text-champagne">74.2</div>
+<span class="font-body-lg text-body-lg text-on-surface-variant">kg</span>
+</div>
+<div class="font-caption text-caption text-on-surface-variant mt-xs">Tendencia: -0.4kg / sem</div>
+</div>
+</div>
+<!-- VISTA SUEÑO (Expanded Row) -->
+<div class="col-span-4 md:col-span-8 lg:col-span-12 mt-lg bg-surface-container-low rounded-xl border border-outline-variant/40 overflow-hidden">
+<div class="p-lg border-b border-outline-variant/30 flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-linen">Análisis de Sueño</h3>
+<button class="font-label-eyebrow text-label-eyebrow uppercase text-ultramarine hover:text-linen transition-colors">Ver Detalle</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-0">
+<!-- Deuda Context -->
+<div class="p-xl border-b md:border-b-0 md:border-r border-outline-variant/30 flex flex-col justify-center">
+<span class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase mb-md">Deuda de Sueño (Últimos 14 días)</span>
+<div class="flex items-baseline gap-sm mb-lg">
+<span class="font-hero-metric text-[72px] leading-[72px] font-black text-champagne">12.5</span>
+<span class="font-headline-md text-headline-md text-on-surface-variant">hrs</span>
+</div>
+<div class="grid grid-cols-1 gap-sm">
+<div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Necesidad estimada</span>
+<span class="font-body-lg text-body-lg text-linen font-medium">9h 45m</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Promedio (14d)</span>
+<span class="font-body-lg text-body-lg text-linen font-medium">8h 50m</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Noches al objetivo</span>
+<span class="font-body-lg text-body-lg text-champagne font-medium">5 noches</span>
+</div>
+</div>
+</div>
+<!-- Chart Area -->
+<div class="p-xl md:col-span-2 flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase mb-lg">Últimas 14 Noches (3 - 16 Ago 2026)</span>
+<!-- Simple CSS Bar Chart -->
+<div class="flex-1 flex items-end justify-between gap-xs md:gap-sm h-[120px] pb-sm border-b border-slate-light/20 relative">
+<!-- Target Line -->
+<div class="absolute left-0 right-0 bottom-[75%] border-t border-dashed border-champagne/40 z-0"></div>
+<span class="absolute left-0 bottom-[77%] text-[10px] text-champagne/60 font-mono">Objetivo: 9.75h</span>
+<!-- Bars (14 items) -->
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 65%;" title="8h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 75%;" title="9.2h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 60%;" title="7.4h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 90%;" title="11h"></div>
+<div class="w-full bg-surface-variant cursor-pointer rounded-t-sm z-10 opacity-50" style="height: 50%;" title="6.2h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 80%;" title="9.8h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 95%;" title="11.5h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 70%;" title="8.6h"></div>
+<div class="w-full bg-surface-variant cursor-pointer rounded-t-sm z-10 opacity-50" style="height: 55%;" title="6.8h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 85%;" title="10.4h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 100%;" title="12.2h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 65%;" title="8h"></div>
+<div class="w-full bg-royal hover:bg-ultramarine transition-colors cursor-pointer rounded-t-sm z-10" style="height: 75%;" title="9.2h"></div>
+<div class="w-full bg-ultramarine cursor-pointer rounded-t-sm z-10 shadow-[0_0_10px_rgba(59,78,217,0.5)]" style="height: 55%;" title="Hoy: 6.8h"></div>
+</div>
+<!-- Recovery Plan Priority Stack -->
+<div class="mt-lg">
+<span class="font-label-eyebrow text-label-eyebrow text-linen uppercase block mb-sm">Plan de Recuperación (Hoy)</span>
+<div class="flex flex-col border-t border-outline-variant/30">
+<div class="py-sm border-b border-slate-dark/20 flex justify-between items-center group">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-ultramarine text-[16px]">wb_twilight</span>
+<span class="font-body-lg text-body-lg text-linen">Cortar cafeína a las 14:00</span>
+</div>
+</div>
+<div class="py-sm border-b border-slate-dark/20 flex justify-between items-center group">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-ultramarine text-[16px]">dark_mode</span>
+<span class="font-body-lg text-body-lg text-linen font-bold">Protocolo Wind-down 21:30</span>
+</div>
+<span class="font-caption text-caption text-champagne bg-champagne/10 px-2 py-1 rounded">Prioridad</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

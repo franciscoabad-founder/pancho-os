@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pancho OS - Hoy</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Montserrat -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "ultramarine": "#3B4ED9",
+                        "primary-container": "#3b4ed9",
+                        "tertiary": "#e3c380",
+                        "background": "#071132",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "primary": "#bcc2ff",
+                        "surface-bright": "#2f375a",
+                        "on-tertiary-container": "#f7d692",
+                        "on-error-container": "#ffdad6",
+                        "champagne": "#B5985A",
+                        "on-background": "#dde1ff",
+                        "surface-variant": "#2a3355",
+                        "secondary-fixed": "#dde1ff",
+                        "tertiary-container": "#745c24",
+                        "linen": "#FAFAF7",
+                        "outline-variant": "#454654",
+                        "surface": "#071132",
+                        "on-secondary-container": "#a2b1fa",
+                        "surface-tint": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-primary-fixed": "#000b62",
+                        "surface-container-low": "#10193a",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "on-surface-variant": "#c5c5d7",
+                        "slate-light": "#E8EAF0",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-container": "#324283",
+                        "on-tertiary": "#3f2e00",
+                        "ultralight": "#6B7AE8",
+                        "surface-dim": "#071132",
+                        "on-primary-container": "#d4d7ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "primary-fixed": "#dfe0ff",
+                        "surface-container": "#151d3f",
+                        "ink": "#0E1738",
+                        "secondary": "#b8c4ff",
+                        "bronze": "#8A6F3D",
+                        "outline": "#8f8fa0",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container-highest": "#2a3355",
+                        "surface-container-lowest": "#030b2d",
+                        "on-secondary-fixed": "#001454",
+                        "on-surface": "#dde1ff",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#324283",
+                        "surface-container-high": "#1f284a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary": "#1a2b6b",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#262e50",
+                        "inverse-primary": "#3a4dd8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "margin": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "body-lg": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #071132; color: #dde1ff; } /* surface and on-surface */
+        /* Custom scrollbar for clinical feel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #071132; }
+        ::-webkit-scrollbar-thumb { background: #1f284a; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a3355; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex selection:bg-ultramarine selection:text-linen">
+<!-- Mobile Top Nav (Hidden on Desktop) -->
+<header class="md:hidden flex justify-between items-center w-full px-margin h-16 max-w-7xl mx-auto bg-surface dark:bg-surface border-b border-outline-variant fixed top-0 z-40">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-black text-linen">Pancho OS</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="hover:text-ultramarine transition-colors text-on-surface-variant"><span class="material-symbols-outlined">settings</span></button>
+<button class="hover:text-ultramarine transition-colors text-on-surface-variant"><span class="material-symbols-outlined">notifications</span></button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="Founder Avatar" class="object-cover w-full h-full" data-alt="A striking portrait of a male executive in a highly modern, minimalist, clinical light setting. High contrast, sharp focus, professional. The mood is serious and commanding. Dark mode context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3CmiM3sKx3IttXDx3_Lbrk-6yMxr6ji9qO58E78bGxgeTYcygws_6RfC4iB1LhMwBWXV7jFpOmda4WsvxIIrVt7b5ZW8DI7werV3C6BUut23ZaQWnTk26RcxaZ06YTOyjBHLHf86uTp-Z3y4cb2NBxU1AJojdr33ksX1wdlFTylmL4NsUSxOdXVWST_MACjrcrkc1prBEPMU7frthSx7BoFpuOEilM_F6-OSfm-_ilab3DIBTIurJow"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-full py-md fixed left-0 top-0 h-full w-[240px] bg-royal border-r border-outline-variant z-50">
+<div class="px-lg pb-xl border-b border-outline-variant mb-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-outline-variant flex-shrink-0">
+<img alt="Founder Profile" class="object-cover w-full h-full" data-alt="A striking portrait of a male executive in a highly modern, minimalist, clinical light setting. High contrast, sharp focus, professional. The mood is serious and commanding. Dark mode context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFvdEIHker4-3c4jNY1ZADOE6NJQ0vWaTmnMUTu0-4qq_kwMMKqfWYRa9FeNhP5Xso6TNwQt2nw-fyOCgTdiehBYwSAN63poJN5YzDgNktlRVrFMaT-0b_FB_MAA1ZmCue7tgsYdskJlTbqLgOcrcEYy_xax_q5Yn78hvoFo5N4AQZN6AxX_aRPaxYHy-eeZA-EMTVv-sm3rdws3GuPk1solRta3xHWIweVfOrQvCkx9vjY1HUTZHQfA"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-linen leading-none">Pancho OS</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Panel Ejecutivo</p>
+</div>
+</div>
+<div class="flex flex-col gap-1 px-sm">
+<!-- Active: Hoy -->
+<a class="border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold flex items-center gap-md px-md py-sm rounded-r-lg hover:bg-surface-variant/50 transition-colors scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-lg text-body-lg">Hoy</span>
+</a>
+<a class="text-on-surface-variant font-normal flex items-center gap-md px-md py-sm border-l-4 border-transparent hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-body-lg text-body-lg">Salud</span>
+</a>
+<a class="text-on-surface-variant font-normal flex items-center gap-md px-md py-sm border-l-4 border-transparent hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-lg text-body-lg">Finanzas</span>
+</a>
+<a class="text-on-surface-variant font-normal flex items-center gap-md px-md py-sm border-l-4 border-transparent hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-body-lg text-body-lg">GFIT</span>
+</a>
+<a class="text-on-surface-variant font-normal flex items-center gap-md px-md py-sm border-l-4 border-transparent hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-body-lg text-body-lg">Cerebro</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[240px] pt-16 md:pt-0 pb-24 md:pb-0 min-h-screen">
+<div class="max-w-7xl mx-auto px-margin py-lg lg:py-xl grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Header Section -->
+<header class="lg:col-span-12 flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-outline-variant pb-lg mb-sm">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-linen">Miércoles, <span class="text-champagne">26</span> de Agosto de <span class="text-champagne">2026</span></h2>
+<p class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase mt-2">Panel Ejecutivo</p>
+</div>
+<div class="flex items-center gap-sm bg-ink border border-outline-variant rounded-full px-4 py-2">
+<span class="w-2 h-2 rounded-full bg-champagne animate-pulse"></span>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne uppercase">Modo Creador</span>
+</div>
+</header>
+<!-- LEFT COLUMN: Action & Execution (8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- One Domino -->
+<section class="bg-royal border border-slate-dark/30 rounded-lg p-lg relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-ultramarine"></div>
+<label class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase mb-sm block">One Domino (Prioridad #<span class="text-champagne">1</span>)</label>
+<input class="w-full bg-transparent border-none font-hero-metric text-hero-metric text-linen p-0 focus:ring-0 focus:outline-none placeholder-surface-variant" placeholder="Definir el objetivo principal..." type="text" value="Cerrar Arquitectura UI de Pancho OS"/>
+</section>
+<!-- 2-Col Grid: Stack & Habits -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Priority Stack -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen uppercase border-b border-outline-variant pb-xs">Priority Stack</h3>
+<div class="flex flex-col">
+<label class="flex items-start gap-sm py-md border-b border-slate-dark/20 cursor-pointer group">
+<input class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface mt-0.5" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-linen font-bold group-hover:text-ultramarine transition-colors">Aprobar presupuesto Q<span class="text-champagne">3</span></span>
+</label>
+<label class="flex items-start gap-sm py-md border-b border-slate-dark/20 cursor-pointer group">
+<input class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface mt-0.5" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Revisar textos de la página de inicio</span>
+</label>
+<label class="flex items-start gap-sm py-md border-b border-slate-dark/20 cursor-pointer group">
+<input class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface mt-0.5" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Reunión con equipo de Desarrollo (<span class="text-champagne">15</span>min)</span>
+</label>
+<label class="flex items-start gap-sm py-md border-b border-slate-dark/20 cursor-pointer group">
+<input class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface mt-0.5" type="checkbox"/>
+<span class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Leer reporte de métricas semanales</span>
+</label>
+</div>
+</section>
+<!-- Habit Checklist -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen uppercase border-b border-outline-variant pb-xs">Protocolos Diarios</h3>
+<div class="flex flex-col gap-xs">
+<div class="flex items-center justify-between p-sm hover:bg-surface-variant/30 rounded-md transition-colors">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-outline-variant">water_drop</span>
+<div>
+<p class="font-body-lg text-body-lg text-linen leading-tight">Hidratación (<span class="text-champagne">3</span>L)</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-sm hover:bg-surface-variant/30 rounded-md transition-colors">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-outline-variant">fitness_center</span>
+<div>
+<p class="font-body-lg text-body-lg text-linen leading-tight">Fuerza / GFIT</p>
+</div>
+</div>
+<input class="w-5 h-5 rounded-sm bg-ink border-outline-variant text-ultramarine focus:ring-ultramarine focus:ring-offset-surface" type="checkbox"/>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- RIGHT COLUMN: High-Level Context (4 cols) -->
+<aside class="lg:col-span-4 flex flex-col gap-lg">
+<!-- Discomfort First -->
+<div class="bg-royal border border-outline-variant p-md rounded-lg flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-champagne mb-sm" style="font-size: 32px;">priority_high</span>
+<h4 class="font-headline-md text-headline-md text-linen uppercase">Discomfort First</h4>
+<p class="font-caption text-caption text-on-surface-variant mt-2">Cómete el sapo. Haz lo difícil ahora.</p>
+</div>
+</aside>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink dark:bg-ink border-t border-outline-variant">
+<!-- Active: Hoy -->
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Hoy</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Salud</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Finanzas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">GFIT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Cerebro</span>
+</a>
+</nav>
+</body></html>

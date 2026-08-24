@@ -168,6 +168,13 @@ const cssLayout = `
     font-family: var(--os-font-display); font-size: 11px; font-weight: 700;
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--os-accent-light);
   }
+  /* Wordmark real (public/fa_logo_*.svg, Ultramarine v5). Dos variantes por
+     tema en vez de filtro CSS: los SVG traen colores propios (ultramarine
+     para claro, blanco para oscuro), no son monocromo invertible. */
+  .cmd-logo { height: 15px; width: auto; display: block; }
+  .cmd-logo-dark { display: none; }
+  [data-theme="dark"] .cmd-logo-light { display: none; }
+  [data-theme="dark"] .cmd-logo-dark { display: block; }
   .cmd-sep { width: 1px; height: 12px; background: var(--os-line); }
   .cmd-name {
     font-family: var(--os-font-display); font-size: 11px; font-weight: 600;
@@ -541,7 +548,8 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
             <span className="cmd-mode-label">OS</span>
           </span>
           <span className="cmd-sep" />
-          <span className="cmd-name">Pancho</span>
+          <img className="cmd-logo cmd-logo-light" src="/fa_logo_dark.svg" alt="Francisco Abad" />
+          <img className="cmd-logo cmd-logo-dark" src="/fa_logo_whitemono.svg" alt="Francisco Abad" />
         </div>
 
         <div className="cmd-center">

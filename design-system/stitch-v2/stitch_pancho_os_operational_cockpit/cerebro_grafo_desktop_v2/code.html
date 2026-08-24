@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pancho OS - Cerebro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "ultramarine": "#3B4ED9",
+                        "primary-container": "#3b4ed9",
+                        "tertiary": "#e3c380",
+                        "background": "#071132",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "primary": "#bcc2ff",
+                        "surface-bright": "#2f375a",
+                        "on-tertiary-container": "#f7d692",
+                        "on-error-container": "#ffdad6",
+                        "champagne": "#B5985A",
+                        "on-background": "#dde1ff",
+                        "surface-variant": "#2a3355",
+                        "secondary-fixed": "#dde1ff",
+                        "tertiary-container": "#745c24",
+                        "linen": "#FAFAF7",
+                        "outline-variant": "#454654",
+                        "surface": "#071132",
+                        "on-secondary-container": "#a2b1fa",
+                        "surface-tint": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-primary-fixed": "#000b62",
+                        "surface-container-low": "#10193a",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "on-surface-variant": "#c5c5d7",
+                        "slate-light": "#E8EAF0",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-container": "#324283",
+                        "on-tertiary": "#3f2e00",
+                        "ultralight": "#6B7AE8",
+                        "surface-dim": "#071132",
+                        "on-primary-container": "#d4d7ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "primary-fixed": "#dfe0ff",
+                        "surface-container": "#151d3f",
+                        "ink": "#0E1738",
+                        "secondary": "#b8c4ff",
+                        "bronze": "#8A6F3D",
+                        "outline": "#8f8fa0",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container-highest": "#2a3355",
+                        "surface-container-lowest": "#030b2d",
+                        "on-secondary-fixed": "#001454",
+                        "on-surface": "#dde1ff",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#324283",
+                        "surface-container-high": "#1f284a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary": "#1a2b6b",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#262e50",
+                        "inverse-primary": "#3a4dd8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "margin": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "body-lg": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0E1738; /* Ink */
+            color: #FAFAF7; /* Linen */
+            margin: 0;
+            overflow: hidden; /* For full screen graph */
+        }
+        
+        /* Node graph pseudo-styling for pure CSS representation */
+        .node-network {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: 
+                radial-gradient(circle at 30% 40%, rgba(59, 78, 217, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 70% 60%, rgba(227, 195, 128, 0.05) 0%, transparent 40%);
+        }
+        
+        .node {
+            position: absolute;
+            border-radius: 50%;
+            background-color: #6B7AE8; /* Ultralight */
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(107, 122, 232, 0.2);
+            cursor: pointer;
+        }
+        
+        .node.champagne { background-color: #B5985A; }
+        .node.royal { background-color: #1A2B6B; }
+        
+        .node:hover {
+            background-color: #3B4ED9; /* Ultramarine */
+            transform: scale(1.5);
+            box-shadow: 0 0 20px rgba(59, 78, 217, 0.6);
+            z-index: 10;
+        }
+
+        .node-label {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            color: #c5c5d7;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .node:hover .node-label {
+            opacity: 1;
+        }
+        
+        .link {
+            position: absolute;
+            background-color: rgba(232, 234, 240, 0.2); /* Slate-Light 20% */
+            height: 1px;
+            transform-origin: 0 50%;
+            z-index: -1;
+        }
+
+        /* Custom Scrollbar for Sidebar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3355;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex h-screen bg-ink">
+<!-- JSON SIDENAV: SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-md fixed left-0 top-0 w-[240px] bg-royal border-r border-outline-variant z-50">
+<!-- Brand/Header -->
+<div class="px-lg mb-xl flex flex-col gap-sm">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A highly detailed, professional headshot portrait of an executive founder against a dark, minimalist clinical background. The lighting is dramatic, high-contrast, casting subtle shadows to emphasize authority. The color palette features deep royal blues, crisp whites, and subtle champagne gold accents, embodying a premium operating system aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQ0kbc14KAZ8i_g2peT4EjW5f07kkGFmb1TxrFZwfczpkRwwFzkTqSBgAJs1-UXbwC8wENiLR_xXfFXK_Ymnx6D3LA6oLd-5DVo45xEk6TewA-rM92jC1c2MpLsvhv3V0sxFPePNfp_ObzdSgSoM5qhFpQ3OK40YaFV7cqSaltWc5pfd5qfsyOSDAvyQ92LLXSuptpEDgNJkrrJGcG7VALyGwRkpEXIHXk7B2VUDvrejJwkXRN3sRA6g"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h1>
+<p class="font-caption text-caption text-on-surface-variant">Executive Cockpit</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 px-sm flex flex-col gap-unit">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-lg text-body-lg">Hoy</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart" data-weight="fill" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+<span class="font-body-lg text-body-lg">Salud</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments" data-weight="fill" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-body-lg text-body-lg">Finanzas</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center" data-weight="fill" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+<span class="font-body-lg text-body-lg">GFIT</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-ultramarine" data-icon="psychology" data-weight="fill" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-body-lg text-body-lg">Cerebro</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-0 md:ml-[240px] flex-1 relative h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- Graph Canvas Area -->
+<div class="flex-1 relative h-full w-full">
+<!-- Mobile Top App Bar (Only visible on mobile) -->
+<div class="md:hidden flex justify-between items-center w-full px-margin h-16 bg-surface border-b border-outline-variant z-20 absolute top-0 left-0">
+<h1 class="font-headline-md text-headline-md font-black text-linen">Pancho OS</h1>
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-champagne" data-icon="search">search</span>
+</div>
+</div>
+<!-- The Graph Visualization (Simulated with CSS/HTML elements) -->
+<div class="node-network w-full h-full" id="graph-container">
+<!-- Constellation Nodes (Positions are hardcoded for demo purposes) -->
+<!-- Center Cluster -->
+<div class="node champagne" style="width: 12px; height: 12px; left: 50%; top: 50%;">
+<div class="node-label font-label-eyebrow uppercase tracking-widest text-champagne">Protocolo Central</div>
+</div>
+<!-- Cluster 1 -->
+<div class="node" style="width: 8px; height: 8px; left: 45%; top: 40%;">
+<div class="node-label">Mental Models</div>
+</div>
+<div class="node" style="width: 6px; height: 6px; left: 40%; top: 35%;"></div>
+<div class="node" style="width: 6px; height: 6px; left: 48%; top: 32%;"></div>
+<!-- Cluster 2 -->
+<div class="node royal" style="width: 10px; height: 10px; left: 60%; top: 55%;">
+<div class="node-label">Strategy 2024</div>
+</div>
+<div class="node" style="width: 6px; height: 6px; left: 65%; top: 65%;"></div>
+<div class="node" style="width: 6px; height: 6px; left: 70%; top: 50%;"></div>
+<!-- Links (Simplified visual representation) -->
+<div class="link" style="width: 100px; left: 45%; top: 40%; transform: rotate(63deg);"></div>
+<div class="link" style="width: 120px; left: 50%; top: 50%; transform: rotate(-26deg);"></div>
+<div class="link" style="width: 80px; left: 40%; top: 35%; transform: rotate(45deg);"></div>
+<!-- Additional scattered nodes to create density -->
+<div class="node" style="width: 4px; height: 4px; left: 20%; top: 70%;"></div>
+<div class="node" style="width: 4px; height: 4px; left: 25%; top: 68%;"></div>
+<div class="node" style="width: 4px; height: 4px; left: 30%; top: 80%;"></div>
+<div class="node" style="width: 5px; height: 5px; left: 80%; top: 20%;"></div>
+<div class="node" style="width: 4px; height: 4px; left: 85%; top: 25%;"></div>
+<!-- Graph Control Overlay -->
+<div class="absolute bottom-md left-md md:bottom-lg md:left-lg z-20 flex gap-sm">
+<button class="w-10 h-10 rounded-lg bg-surface/80 border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:border-ultramarine transition-all backdrop-blur-sm">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-surface/80 border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:border-ultramarine transition-all backdrop-blur-sm">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-surface/80 border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:border-ultramarine transition-all backdrop-blur-sm ml-sm">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Context Sidebar (Bento/Minimalist UI) -->
+<div class="w-full md:w-[320px] lg:w-[380px] h-[409px] md:h-full bg-surface-container-lowest/80 backdrop-blur-md border-t md:border-t-0 md:border-l border-outline-variant flex flex-col z-30 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+<!-- Search -->
+<div class="p-lg border-b border-surface-variant">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-ink border border-slate-dark text-linen text-sm rounded-lg pl-xl pr-sm py-2 focus:outline-none focus:border-ultramarine focus:ring-1 focus:ring-ultramarine transition-colors placeholder:text-outline font-body-lg text-body-lg" placeholder="Buscar en base de conocimientos..." type="text"/>
+</div>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-xl">
+<!-- Tags Section -->
+<section>
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase tracking-[0.14em] mb-md">TAXONOMÍA</h2>
+<div class="flex flex-wrap gap-unit">
+<span class="px-sm py-1 rounded-md bg-surface-variant text-linen font-caption text-caption border border-outline-variant hover:border-ultramarine cursor-pointer transition-colors">#strategy</span>
+<span class="px-sm py-1 rounded-md bg-ultramarine/20 text-ultramarine font-caption text-caption border border-ultramarine cursor-pointer transition-colors">#mental-models</span>
+<span class="px-sm py-1 rounded-md bg-surface-variant text-linen font-caption text-caption border border-outline-variant hover:border-ultramarine cursor-pointer transition-colors">#Q3-review</span>
+<span class="px-sm py-1 rounded-md bg-surface-variant text-linen font-caption text-caption border border-outline-variant hover:border-ultramarine cursor-pointer transition-colors">#health-protocol</span>
+<span class="px-sm py-1 rounded-md bg-surface-variant text-linen font-caption text-caption border border-outline-variant hover:border-ultramarine cursor-pointer transition-colors">#finances</span>
+</div>
+</section>
+<!-- Recent Nodes (Priority Stack style) -->
+<section>
+<h2 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase tracking-[0.14em] mb-md">SINAPSIS RECIENTES</h2>
+<div class="flex flex-col">
+<!-- Note Card 1 -->
+<div class="py-md border-b border-surface-variant group cursor-pointer">
+<div class="flex items-start justify-between mb-unit">
+<h3 class="font-body-lg text-body-lg font-bold text-linen group-hover:text-ultramarine transition-colors">Aplicación de la Técnica Feynman</h3>
+<span class="font-caption text-caption text-outline">agosto de 2026</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant line-clamp-2">Desglose de conceptos complejos de sistemas operativos a principios fundamentales. Explicación para un niño de 5 años.</p>
+</div>
+<!-- Note Card 2 -->
+<div class="py-md border-b border-surface-variant group cursor-pointer">
+<div class="flex items-start justify-between mb-unit">
+<h3 class="font-body-lg text-body-lg font-bold text-linen group-hover:text-ultramarine transition-colors">Proyecciones de Ingresos Q3</h3>
+<span class="font-caption text-caption text-outline">agosto de 2026</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant line-clamp-2">Ajuste de trayectoria basado en métricas actuales de CAC y LTV. Incremento esperado del 15% en mercados principales.</p>
+</div>
+<!-- Note Card 3 -->
+<div class="py-md border-b border-surface-variant group cursor-pointer">
+<div class="flex items-start justify-between mb-unit">
+<h3 class="font-body-lg text-body-lg font-bold text-linen group-hover:text-ultramarine transition-colors">Reset de Línea Base de Dopamina</h3>
+<span class="font-caption text-caption text-outline">agosto de 2026</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant line-clamp-2">Estructuración de ayuno de 48h de estímulos altos para recalibrar el enfoque en bloques de deep work.</p>
+</div>
+</div>
+</section>
+<!-- Selected Node Detail (Hidden by default, shown for UI completeness) -->
+<section class="mt-auto pt-lg border-t border-surface-variant">
+<div class="bg-royal rounded-lg p-md border border-slate-dark relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-champagne/10 rounded-bl-full"></div>
+<div class="flex items-center gap-sm mb-md">
+<div class="w-3 h-3 rounded-full bg-champagne"></div>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne uppercase">NODO ACTIVO</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-linen mb-sm">Protocolo Central</h4>
+<p class="font-caption text-caption text-on-surface-variant mb-md">Tesis central de la metodología Pancho OS vinculando salud, riqueza y cognición.</p>
+<button class="w-full py-2 rounded-md bg-ultramarine text-linen font-body-lg text-body-lg font-bold hover:bg-primary-container transition-colors">Expandir Nota</button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- JSON BOTTOMNAV: BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Hoy</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Salud</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Finanzas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">GFIT</span>
+</a>
+<!-- Active Tab Mobile -->
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology" data-weight="fill" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Cerebro</span>
+</a>
+</nav>
+<script>
+        // Simple script to add slight interaction to the mock nodes
+        document.addEventListener('DOMContentLoaded', () => {
+            const nodes = document.querySelectorAll('.node');
+            
+            nodes.forEach(node => {
+                // Add random subtle movement for an 'alive' feel
+                const duration = 3000 + Math.random() * 4000;
+                const delay = Math.random() * 2000;
+                
+                setInterval(() => {
+                    if(!node.matches(':hover')) {
+                        const x = (Math.random() - 0.5) * 4;
+                        const y = (Math.random() - 0.5) * 4;
+                        node.style.transform = `translate(${x}px, ${y}px)`;
+                    }
+                }, duration);
+            });
+        });
+    </script>
+</body></html>

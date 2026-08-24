@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PANCHO OS - Login</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Montserrat (for the requested Gotham-like aesthetic in the design system) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from Design System -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#151d3f",
+                        "surface-dim": "#071132",
+                        "on-tertiary-container": "#f7d692",
+                        "surface-tint": "#bcc2ff",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-variant": "#2a3355",
+                        "outline": "#8f8fa0",
+                        "on-tertiary": "#3f2e00",
+                        "on-secondary-fixed": "#001454",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "slate-light": "#E8EAF0",
+                        "background": "#071132",
+                        "secondary-container": "#324283",
+                        "inverse-primary": "#3a4dd8",
+                        "outline-variant": "#454654",
+                        "surface-bright": "#2f375a",
+                        "inverse-surface": "#dde1ff",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary": "#1a2b6b",
+                        "bronze": "#8A6F3D",
+                        "on-surface": "#dde1ff",
+                        "error-container": "#93000a",
+                        "linen": "#FAFAF7",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "secondary": "#b8c4ff",
+                        "on-primary-container": "#d4d7ff",
+                        "on-background": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-error": "#690005",
+                        "ink": "#0E1738",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "error": "#ffb4ab",
+                        "primary": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-surface-variant": "#c5c5d7",
+                        "tertiary-container": "#745c24",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#030b2d",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "surface-container-high": "#1f284a",
+                        "surface-container-low": "#10193a",
+                        "primary-container": "#3b4ed9",
+                        "on-primary-fixed": "#000b62",
+                        "ultramarine": "#3B4ED9",
+                        "inverse-on-surface": "#262e50",
+                        "surface-container-highest": "#2a3355",
+                        "on-secondary-container": "#a2b1fa",
+                        "tertiary": "#e3c380",
+                        "champagne": "#B5985A"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "24px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "caption": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "body-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom baseline utilities */
+        .font-extralight { font-weight: 200; }
+        .font-black { font-weight: 900; }
+        .tracking-widest { letter-spacing: 0.25em; }
+        
+        /* Subtle pulse for the login state */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .animate-subtle-pulse {
+            animation: subtle-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Hide number input spinners */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-ink text-on-surface min-h-screen flex items-center justify-center font-body-lg text-body-lg selection:bg-ultramarine selection:text-white">
+<!-- Suppressed TopNavBar and SideNavBar due to "Linear/Transactional: Login" logic -->
+<main class="w-full max-w-md px-margin md:px-0 mx-auto">
+<div class="flex flex-col items-center justify-center space-y-xl w-full">
+<!-- Brand Wordmark -->
+<div class="text-center mb-md">
+<h1 class="text-ultramarine font-hero-metric flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 tracking-tighter">
+<span class="font-extralight uppercase">Francisco</span>
+<span class="font-black uppercase">Abad</span>
+</h1>
+<p class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mt-sm tracking-widest uppercase opacity-70">
+                    Executive Cockpit
+                </p>
+</div>
+<!-- Login Form Container -->
+<form action="#" class="w-full bg-surface-container-low p-lg rounded-xl border border-outline-variant/30 shadow-2xl backdrop-blur-sm relative overflow-hidden group" method="POST">
+<!-- Subtle background accent -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-ultramarine/10 rounded-full blur-3xl pointer-events-none group-hover:bg-ultramarine/20 transition-all duration-700"></div>
+<div class="relative z-10 space-y-lg">
+<!-- Password Field -->
+<div class="space-y-sm">
+<label class="block font-label-eyebrow text-label-eyebrow text-on-surface-variant" for="passcode">
+                            Access Code
+                        </label>
+<div class="relative">
+<!-- Using standard text input mapped for numeric/pin entry for aesthetic control -->
+<input class="w-full bg-ink border border-outline-variant text-center font-hero-metric text-[32px] tracking-[0.5em] text-champagne rounded-lg py-md focus:border-ultramarine focus:ring-1 focus:ring-ultramarine focus:outline-none transition-colors placeholder:text-surface-variant" id="passcode" inputmode="numeric" maxlength="4" name="passcode" pattern="[0-9]*" placeholder="••••" required="" type="password"/>
+<div class="absolute inset-y-0 right-0 pr-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline-variant" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">
+                                    lock
+                                </span>
+</div>
+</div>
+</div>
+<!-- Submit Action -->
+<button class="w-full bg-ultramarine hover:bg-inverse-primary text-white font-headline-md text-headline-md py-md rounded-lg flex items-center justify-center gap-sm transition-all duration-300 transform active:scale-[0.98]" type="submit">
+                        Entrar al OS
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">
+                            arrow_forward
+                        </span>
+</button>
+</div>
+</form>
+<!-- Footer / System Status -->
+<div class="flex items-center justify-center gap-sm mt-lg text-on-surface-variant font-caption text-caption opacity-50 hover:opacity-100 transition-opacity">
+<span class="w-2 h-2 rounded-full bg-champagne animate-subtle-pulse"></span>
+<span>System Online • V2.4.1</span>
+</div>
+</div>
+</main>
+<script>
+        // Auto-focus the password field on load for immediate interaction
+        document.addEventListener('DOMContentLoaded', () => {
+            const passcodeInput = document.getElementById('passcode');
+            if (passcodeInput) {
+                passcodeInput.focus();
+            }
+        });
+    </script>
+</body></html>

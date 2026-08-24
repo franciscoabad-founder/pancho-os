@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FRANCISCO ABAD - Status &amp; Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#151d3f",
+                      "surface-dim": "#071132",
+                      "on-tertiary-container": "#f7d692",
+                      "surface-tint": "#bcc2ff",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-variant": "#2a3355",
+                      "outline": "#8f8fa0",
+                      "on-tertiary": "#3f2e00",
+                      "on-secondary-fixed": "#001454",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "slate-light": "#E8EAF0",
+                      "background": "#071132",
+                      "secondary-container": "#324283",
+                      "inverse-primary": "#3a4dd8",
+                      "outline-variant": "#454654",
+                      "surface-bright": "#2f375a",
+                      "inverse-surface": "#dde1ff",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary": "#1a2b6b",
+                      "bronze": "#8A6F3D",
+                      "on-surface": "#dde1ff",
+                      "error-container": "#93000a",
+                      "linen": "#FAFAF7",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "secondary": "#b8c4ff",
+                      "on-primary-container": "#d4d7ff",
+                      "on-background": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-error": "#690005",
+                      "ink": "#0E1738",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "error": "#ffb4ab",
+                      "primary": "#bcc2ff",
+                      "royal": "#1A2B6B",
+                      "on-surface-variant": "#c5c5d7",
+                      "tertiary-container": "#745c24",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-lowest": "#030b2d",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "tertiary-fixed": "#ffdf9d",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "surface-container-high": "#1f284a",
+                      "surface-container-low": "#10193a",
+                      "primary-container": "#3b4ed9",
+                      "on-primary-fixed": "#000b62",
+                      "ultramarine": "#3B4ED9",
+                      "inverse-on-surface": "#262e50",
+                      "surface-container-highest": "#2a3355",
+                      "on-secondary-container": "#a2b1fa",
+                      "tertiary": "#e3c380",
+                      "champagne": "#B5985A"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "caption": [
+                              "Montserrat"
+                      ],
+                      "label-eyebrow": [
+                              "Montserrat"
+                      ],
+                      "hero-metric": [
+                              "Montserrat"
+                      ],
+                      "headline-lg": [
+                              "Montserrat"
+                      ],
+                      "body-lg": [
+                              "Montserrat"
+                      ],
+                      "headline-md": [
+                              "Montserrat"
+                      ]
+              },
+              "fontSize": {
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "300"
+                              }
+                      ],
+                      "label-eyebrow": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.14em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "hero-metric": [
+                              "60px",
+                              {
+                                      "lineHeight": "64px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-lg">
+<!-- SideNavBar (from JSON) -->
+<nav class="flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px] bg-royal dark:bg-royal border-r border-outline-variant font-body-lg text-body-lg">
+<div class="p-6">
+<h1 class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine">FRANCISCO ABAD</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-2 uppercase tracking-widest">Executive Cockpit</p>
+</div>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li><a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">today</span> Hoy</a></li>
+<li><a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">monitor_heart</span> Salud</a></li>
+<li><a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span> Finanzas</a></li>
+<!-- GFIT Intent: Game/Fitness/Status -> Active -->
+<li><a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest hover:bg-surface-container-high transition-colors duration-200 opacity-90 transition-all duration-150" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">fitness_center</span> GFIT</a></li>
+<li><a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">psychology</span> Cerebro</a></li>
+</ul>
+</div>
+<div class="p-6">
+<button class="w-full py-3 bg-ultramarine text-white rounded-DEFAULT font-bold mb-4">Maker Mode</button>
+<ul class="space-y-2">
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-200" href="#"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">settings</span> Ajustes</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-200" href="#"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">logout</span> Cerrar Sesión</a></li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-[240px] p-margin max-w-[1280px] w-full min-h-screen">
+<!-- Status Hero -->
+<div class="bg-royal p-8 rounded-lg mb-margin">
+<div class="flex items-end justify-between mb-6">
+<div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase mb-2">Current Status</h2>
+<div class="flex items-baseline gap-2">
+<span class="font-hero-metric text-hero-metric text-champagne">LVL 42</span>
+<span class="font-headline-md text-headline-md text-on-surface-variant">/ Paladin</span>
+</div>
+</div>
+<div class="text-right">
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase mb-2">Available Gold</h2>
+<div class="flex items-center justify-end gap-2">
+<span class="material-symbols-outlined text-champagne text-[32px]" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="font-hero-metric text-hero-metric text-champagne">8,450</span>
+</div>
+</div>
+</div>
+<!-- HP Bar -->
+<div>
+<div class="flex justify-between font-label-eyebrow text-label-eyebrow text-linen mb-2 uppercase">
+<span>HP / Energy</span>
+<span>750 / 1000</span>
+</div>
+<div class="h-4 bg-ink rounded-full overflow-hidden border border-outline-variant">
+<div class="h-full bg-champagne w-[75%] rounded-full shadow-[0_0_10px_rgba(181,152,90,0.5)]"></div>
+</div>
+</div>
+<!-- EXP Bar -->
+<div class="mt-4">
+<div class="flex justify-between font-label-eyebrow text-label-eyebrow text-linen mb-2 uppercase">
+<span>EXP to Next Level</span>
+<span>4,200 / 5,000</span>
+</div>
+<div class="h-2 bg-ink rounded-full overflow-hidden border border-outline-variant">
+<div class="h-full bg-ultramarine w-[84%] rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-margin">
+<!-- Quests (Left Column - 5 cols) -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-margin">
+<div class="bg-surface-container rounded-lg p-6 border border-outline-variant flex-1">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6 border-b border-outline-variant pb-4">Quests Semanales</h3>
+<ul class="space-y-0">
+<!-- Priority Stack Item -->
+<li class="py-4 border-b border-outline-variant last:border-b-0 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center bg-ultramarine border-ultramarine">
+<span class="material-symbols-outlined text-[16px] text-white font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface-variant line-through">Entrenamiento 4x Semana</span>
+</div>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne">+500G</span>
+</li>
+<li class="py-4 border-b border-outline-variant last:border-b-0 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center"></div>
+<span class="font-body-lg text-body-lg text-on-surface font-bold">Completar Project X Phase 1</span>
+</div>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne">+1200G</span>
+</li>
+<li class="py-4 border-b border-outline-variant last:border-b-0 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center"></div>
+<span class="font-body-lg text-body-lg text-on-surface">Meditar 7 días seguidos (4/7)</span>
+</div>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne">+300G</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Rewards Store (Right Column - 7 cols) -->
+<div class="col-span-12 lg:col-span-7">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">Tienda de Recompensas</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Reward Card 1 -->
+<div class="bg-surface-container rounded-lg border border-outline-variant overflow-hidden group hover:border-champagne transition-colors">
+<div class="bg-cover bg-center w-full h-32 border-b border-outline-variant" data-alt="A luxurious, dimly lit fine dining restaurant table setting viewed from above. Crystal glasses, polished silverware, and a single candle creating a sophisticated, high-end atmosphere. Deep shadows and rich warm lighting. Professional editorial food photography style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlaKW8MUxkgkiJYlcW8EX-HgNjVU069dh_Y4w-sRMRJeZsVcAbHUzHkEFaarjk7M-TBUyAGlOohQMu_i2pG978SSKxw1YGVcwYrq6HDGJIGYHEh17unMVxDtgG2xmpsJeIZcFCm6viAnAKh7NjA2eH8zb8EqlyH2pSziUQiFr5oNyij-CEqGhAUXkxR1jRYq_kSZgMJ6NRE2UTdnOmBeOvVkVRXUEWOn04rbks32CS1wQme1aY6uaTVQ')"></div>
+<div class="p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1">Cena Especial</h4>
+<p class="font-caption text-caption text-on-surface-variant mb-4">Omakase o Restaurante Michelin.</p>
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow text-champagne flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">monetization_on</span> 5,000G
+                                </span>
+<button class="bg-surface-variant hover:bg-ultramarine text-on-surface px-4 py-2 rounded-DEFAULT font-label-eyebrow text-label-eyebrow uppercase transition-colors">Comprar</button>
+</div>
+</div>
+</div>
+<!-- Reward Card 2 -->
+<div class="bg-surface-container rounded-lg border border-outline-variant overflow-hidden group hover:border-champagne transition-colors">
+<div class="bg-cover bg-center w-full h-32 border-b border-outline-variant" data-alt="A sleek, modern home theater setup with a large screen glowing in a dark room. Comfortable premium leather seating. Minimalist aesthetic with subtle blue ambient bias lighting behind the screen. Cinematic, high-contrast style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC_iIB_475c3LrsvYa-4SgaLhTYWbTT-GS_QqxlxISFwwHTK4Ap8CJGtl0Y1YYIotVPndDYxbuGCoZldyf5ugtaqVkPCWZBxH2B0H6iI3nhGM0runMabHGPa5U4ZGitu09oJkh4OanwWjaIl6JuJ0G53FIcAf8RWCAQTAQVoLDLqFBYMndw0b9jm20wACiyApG_XXvT4Gj86uNY7WDpauip5SIB5ynusrWMDvTRU2Mj8nEE8k5wsEMp3w')"></div>
+<div class="p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1">Noche de Película</h4>
+<p class="font-caption text-caption text-on-surface-variant mb-4">Cine premium con snacks sin límite.</p>
+<div class="flex items-center justify-between">
+<span class="font-label-eyebrow text-label-eyebrow text-champagne flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">monetization_on</span> 1,500G
+                                </span>
+<button class="bg-surface-variant hover:bg-ultramarine text-on-surface px-4 py-2 rounded-DEFAULT font-label-eyebrow text-label-eyebrow uppercase transition-colors">Comprar</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

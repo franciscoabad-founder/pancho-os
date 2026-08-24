@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hábitos — Seguimiento</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#151d3f",
+                    "surface-dim": "#071132",
+                    "on-tertiary-container": "#f7d692",
+                    "surface-tint": "#bcc2ff",
+                    "ultralight": "#6B7AE8",
+                    "surface": "#071132",
+                    "surface-variant": "#2a3355",
+                    "outline": "#8f8fa0",
+                    "on-tertiary": "#3f2e00",
+                    "on-secondary-fixed": "#001454",
+                    "on-primary-fixed-variant": "#1b31c1",
+                    "slate-light": "#E8EAF0",
+                    "background": "#071132",
+                    "secondary-container": "#324283",
+                    "inverse-primary": "#3a4dd8",
+                    "outline-variant": "#454654",
+                    "surface-bright": "#2f375a",
+                    "inverse-surface": "#dde1ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "on-secondary": "#1a2b6b",
+                    "bronze": "#8A6F3D",
+                    "on-surface": "#dde1ff",
+                    "error-container": "#93000a",
+                    "linen": "#FAFAF7",
+                    "on-tertiary-fixed-variant": "#59440d",
+                    "secondary": "#b8c4ff",
+                    "on-primary-container": "#d4d7ff",
+                    "on-background": "#dde1ff",
+                    "primary-fixed": "#dfe0ff",
+                    "on-error": "#690005",
+                    "ink": "#0E1738",
+                    "tertiary-fixed-dim": "#e3c380",
+                    "error": "#ffb4ab",
+                    "primary": "#bcc2ff",
+                    "royal": "#1A2B6B",
+                    "on-surface-variant": "#c5c5d7",
+                    "tertiary-container": "#745c24",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#030b2d",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-secondary-fixed-variant": "#324283",
+                    "on-primary": "#00189a",
+                    "tertiary-fixed": "#ffdf9d",
+                    "secondary-fixed": "#dde1ff",
+                    "primary-fixed-dim": "#bcc2ff",
+                    "surface-container-high": "#1f284a",
+                    "surface-container-low": "#10193a",
+                    "primary-container": "#3b4ed9",
+                    "on-primary-fixed": "#000b62",
+                    "ultramarine": "#3B4ED9",
+                    "inverse-on-surface": "#262e50",
+                    "surface-container-highest": "#2a3355",
+                    "on-secondary-container": "#a2b1fa",
+                    "tertiary": "#e3c380",
+                    "champagne": "#B5985A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "24px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "caption": [
+                            "Montserrat", "sans-serif"
+                    ],
+                    "label-eyebrow": [
+                            "Montserrat", "sans-serif"
+                    ],
+                    "hero-metric": [
+                            "Montserrat", "sans-serif"
+                    ],
+                    "headline-lg": [
+                            "Montserrat", "sans-serif"
+                    ],
+                    "body-lg": [
+                            "Montserrat", "sans-serif"
+                    ],
+                    "headline-md": [
+                            "Montserrat", "sans-serif"
+                    ]
+            },
+            "fontSize": {
+                    "caption": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "300"
+                            }
+                    ],
+                    "label-eyebrow": [
+                            "13px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.14em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "hero-metric": [
+                            "60px",
+                            {
+                                    "lineHeight": "64px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "900"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom Checkbox Animation Styles */
+        .habit-checkbox input:checked + div {
+            background-color: theme('colors.ultramarine');
+            border-color: theme('colors.ultramarine');
+        }
+        .habit-checkbox input:checked + div span {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-x-hidden selection:bg-ultramarine/30">
+<!-- Shared Component: SideNavBar -->
+<nav class="bg-royal dark:bg-royal border-r border-outline-variant flat no shadows flex flex-col h-screen fixed left-0 top-0 z-40 w-[240px]">
+<!-- Header -->
+<div class="px-6 py-8 border-b border-outline-variant/30">
+<div class="font-headline-lg text-headline-lg tracking-tighter flex gap-1 items-baseline text-ultramarine dark:text-ultramarine mb-6">
+                FRANCISCO ABAD
+            </div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border border-outline-variant">
+<img alt="Executive Portrait" class="w-full h-full object-cover" data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsC-u2pL1VczsaqQPtOIE9hn5pID15GEYrsh78ikhb-mDK5RlrWRiKZPpHODyF4jJiM6xJM9lDd74jzo6_OKxeQdeunXukIc5VOaV_3v_nOzDf5aMJTXEmCchK4yGRG5Tng_3Ek5HGI2KD5SECHWywZf5XnQffO0As_CSLdF8UcJTo98hOC4Yh7_o7RgGj5phfLL1yhUkZxGB7ADsd-mIprPMX1TBNST6UgFPi9kYozUk-4soqfPVoeg"/>
+</div>
+<div>
+<div class="font-label-eyebrow text-label-eyebrow text-on-surface">Executive Cockpit</div>
+</div>
+</div>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 py-4 flex flex-col gap-1">
+<!-- Active Tab: Hoy (Assuming Habit Tracking falls under Daily Protocol) -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-bold border-l-4 border-ultramarine bg-surface-container-highest transition-all duration-150 opacity-90 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">today</span>
+<span>Hoy</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Salud</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Finanzas</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span>GFIT</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Cerebro</span>
+</a>
+</div>
+<!-- CTA -->
+<div class="px-6 py-4">
+<button class="w-full bg-ultramarine hover:bg-inverse-primary text-on-primary font-label-eyebrow text-label-eyebrow py-3 rounded-lg uppercase tracking-[0.14em] transition-colors">
+                Maker Mode
+            </button>
+</div>
+<!-- Footer Tabs -->
+<div class="pb-6 pt-2 border-t border-outline-variant/30 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Ajustes</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Cerrar Sesión</span>
+</a>
+</div>
+</nav>
+<!-- Shared Component: TopNavBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant flat no shadows flex justify-between items-center w-full px-lg h-16 ml-[240px] max-w-[calc(100%-240px)] fixed top-0 z-30">
+<!-- Brand / Identity -->
+<div class="font-headline-md text-headline-md font-black text-on-surface">
+            PANCHO OS
+        </div>
+<!-- Navigation Links (Center) -->
+<div class="flex items-center gap-8">
+<a class="text-on-surface-variant font-medium pb-1 hover:text-on-surface transition-opacity duration-200 font-headline-md text-headline-md text-[18px]" href="#">
+                Maker
+            </a>
+<a class="text-on-surface-variant font-medium pb-1 hover:text-on-surface transition-opacity duration-200 font-headline-md text-headline-md text-[18px]" href="#">
+                Manager
+            </a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="bg-surface-container-high text-champagne font-label-eyebrow text-label-eyebrow px-4 py-2 rounded-lg uppercase tracking-[0.14em] hover:bg-surface-variant transition-colors border border-outline-variant/50">
+                Quick Action
+            </button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden ml-2 border border-outline-variant/50 cursor-pointer">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A sophisticated close-up of a dark textured surface, reminiscent of high-end automotive interior or bespoke tailoring fabric. The lighting is dramatic and clinical, highlighting the intricate weave and casting subtle micro-shadows. The color palette is restricted to deep navys (Ink) and muted charcoals, establishing a premium, executive aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHW5OA3ifUWXB_0jwqEVQU1g-mVgdiDa4z_Mu9ekUpzw3wBExnl4Y7LxbXFpxORmFCm3T6jttRd1LLUze0V0PcFHKfgxrqLp3GCwO3Hl-FXUDKo76JYmtAi-oSna4plOkLCJlnOHbLY3kyQT5L_2-HxnlZkGmEgQgDkvmGtexUt-kp40w261RVe7mQxnq6u2cXI1rqPkWSKYJuRVMn7gGjQyNXZT98vWqMmEJuCIwQ1Np-HcrLK4e3xw"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[240px] pt-[88px] px-margin pb-xl min-h-screen">
+<!-- Page Header -->
+<div class="mb-8 border-b border-outline-variant/30 pb-6 flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-1">Protocolo Diario</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Seguimiento de Hábitos e Integridad Conductual</p>
+</div>
+<div class="text-right">
+<div class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-[0.14em] mb-1">Fecha de Sistema</div>
+<div class="font-headline-md text-headline-md text-champagne">24 OCT 2023</div>
+</div>
+</div>
+<!-- 12-Column Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-margin">
+<!-- Left Column: Habit Checklist (PriorityStack Style) -->
+<div class="xl:col-span-8 bg-surface-container-low border border-outline-variant/30 rounded-xl overflow-hidden flex flex-col">
+<div class="bg-surface-container px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center">
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-[0.14em]">Checklist de Operaciones</h2>
+<span class="font-caption text-caption text-on-surface-variant bg-surface px-2 py-1 rounded-md border border-outline-variant/30">3/7 Completados</span>
+</div>
+<div class="flex-1 flex flex-col">
+<!-- Habit Item 1 (Checked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input checked="" class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Deep Work (2h)</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Bloque matutino aislado, teléfono en otra habitación.</div>
+</div>
+</label>
+<!-- Habit Item 2 (Unchecked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">No Sugar</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Reemplazar antojo de la tarde con agua gasificada o té.</div>
+</div>
+</label>
+<!-- Habit Item 3 (Checked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input checked="" class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Cold Shower (3m)</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Inmediatamente al despertar, sin negociación interna.</div>
+</div>
+</label>
+<!-- Habit Item 4 (Unchecked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Lectura (20 Páginas)</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Al apagar pantallas, 45 minutos antes de dormir.</div>
+</div>
+</label>
+<!-- Habit Item 5 (Unchecked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Journaling / Reflexión</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Al cerrar la laptop al final de la jornada laboral.</div>
+</div>
+</label>
+<!-- Habit Item 6 (Checked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 border-b border-outline-variant/30 last:border-0 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input checked="" class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Meditación (10m)</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Post-ducha, antes de encender el primer monitor.</div>
+</div>
+</label>
+<!-- Habit Item 7 (Unchecked) -->
+<label class="habit-checkbox flex items-start gap-4 p-6 hover:bg-surface-container/50 transition-colors cursor-pointer group">
+<input class="hidden" type="checkbox"/>
+<div class="w-5 h-5 mt-0.5 rounded-[4px] border-2 border-outline-variant flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[16px] text-white opacity-0 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface group-hover:text-ultramarine transition-colors">Cierre de Planificación</div>
+<div class="font-caption text-caption text-on-surface-variant mt-1">Revisión de agenda del día siguiente a las 18:00 hrs.</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Right Column: Stats (Metric Cards) -->
+<div class="xl:col-span-4 flex flex-col gap-margin">
+<!-- Metric Card: Racha (Streak) -->
+<div class="bg-royal rounded-xl p-8 border border-outline-variant/20 relative overflow-hidden">
+<!-- Subtle background decoration -->
+<div class="absolute -bottom-4 -right-4 opacity-5">
+<span class="material-symbols-outlined text-[120px]">local_fire_department</span>
+</div>
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-[0.14em] mb-4">Racha Activa</h3>
+<div class="flex items-baseline gap-2">
+<span class="font-hero-metric text-hero-metric text-champagne">14</span>
+<span class="font-headline-md text-headline-md text-champagne/80">Días</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-4 max-w-[80%]">
+                        Consistencia impecable. Mantén el ritmo para multiplicar el XP base.
+                    </p>
+</div>
+<!-- Metric Card: Level & XP -->
+<div class="bg-surface-container-high rounded-xl p-8 border border-outline-variant/20">
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-[0.14em]">Progreso de Sistema</h3>
+<span class="material-symbols-outlined text-champagne">military_tech</span>
+</div>
+<div class="mb-8">
+<div class="font-caption text-caption text-on-surface-variant mb-1">Nivel Actual</div>
+<div class="flex items-baseline gap-3">
+<span class="font-hero-metric text-hero-metric text-champagne">42</span>
+<span class="font-headline-md text-headline-md text-on-surface">Arquitecto</span>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-caption text-caption text-on-surface-variant mb-3">
+<span>Experiencia Acumulada</span>
+<span class="text-champagne font-medium">8,450 / 10,000 XP</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-1.5 bg-surface-dim rounded-full overflow-hidden">
+<div class="h-full bg-champagne w-[84.5%] rounded-full shadow-[0_0_10px_rgba(181,152,90,0.4)]"></div>
+</div>
+<div class="font-caption text-caption text-on-surface-variant mt-3 text-right">
+                            +150 XP al completar checklist hoy.
+                        </div>
+</div>
+</div>
+<!-- Auxiliary Data Snippet (Knowledge Graph nod) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/30 border-dashed mt-auto">
+<h3 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase tracking-[0.14em] mb-4">Impacto Causal</h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-ultramarine"></div>
+<span class="font-caption text-caption text-on-surface">Deep Work <span class="text-on-surface-variant mx-1">→</span> Finanzas (+12%)</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-champagne"></div>
+<span class="font-caption text-caption text-on-surface">No Sugar <span class="text-on-surface-variant mx-1">→</span> Cerebro (+8%)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
