@@ -2,6 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 
+import fontsCss from '../styles/fonts.css?url';
 import appCss from '../styles/os.css?url';
 
 // Documento unico de la app. Aca vive lo que en Astro estaba en el <head> de
@@ -45,15 +46,22 @@ export const Route = createRootRoute({
       { name: 'apple-mobile-web-app-title', content: 'OS Pancho' },
     ],
     links: [
+      // Gotham self-hosted primero: las @font-face tienen que estar declaradas
+      // antes de que os.css pinte con var(--os-font-display). Va aca, en el
+      // root, para que tambien la reciba /login (que no carga os.css).
+      { rel: 'stylesheet', href: fontsCss },
       { rel: 'stylesheet', href: appCss },
       { rel: 'manifest', href: '/manifest.webmanifest' },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
+      // De Google solo queda JetBrains Mono (cifras tabulares) y Material
+      // Symbols. Montserrat, Inter y Nunito salieron: display y cuerpo son
+      // Gotham self-hosted.
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap',
       },
       {
         rel: 'stylesheet',

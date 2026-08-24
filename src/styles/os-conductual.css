@@ -5,7 +5,7 @@
    Scope: [data-modulo="habitos"]. Solo se importa desde las paginas del
    modulo (habitos.astro, habitos/journeys.astro, juego.astro). El resto del
    OS (shell, nav, home) NO carga este archivo y sigue en Ultramarine v5.
-   La ESTRUCTURA clay (radios, forma de sombra, fuente Nunito, sentence case)
+   La ESTRUCTURA clay (radios, forma de sombra, tipografia, sentence case)
    es identica en ambos temas; solo cambian los VALORES de los tokens.
    Canon: apps/web/docs/os-diseno-conductual.md
 
@@ -39,11 +39,12 @@
   --m-shadow: 0 6px 14px rgba(45, 55, 72, 0.13), inset 0 -3px 6px rgba(45, 55, 72, 0.07), inset 0 2px 3px rgba(255, 255, 255, 0.9);
   --m-shadow-sm: 0 3px 8px rgba(45, 55, 72, 0.12);
 
-  /* Macro: Nunito 800 cubre titulares y macro-tipografia. Fallback a las
-     fuentes ya cargadas por el OS mientras Nunito termina de resolver.
+  /* Macro: la carga Gotham Black (900) via los tokens del OS. Antes era Nunito
+     800, que salio del sistema por canon de marca (Ultramarine v5: una sola
+     familia, y "nunca jugueton" descarta una redondeada amigable).
      Compartido por ambos temas: el bloque [data-theme="dark"] no lo redefine. */
-  --m-font-macro: 'Nunito', var(--os-font-display, sans-serif);
-  --m-font-rounded: 'Nunito', var(--os-font-body, 'Inter', sans-serif);
+  --m-font-macro: var(--os-font-display, 'Gotham', 'Montserrat', Arial, sans-serif);
+  --m-font-rounded: var(--os-font-body, 'Gotham', 'Montserrat', Arial, sans-serif);
   /* Alias: cualquier referencia residual a --m-font-mono cae en la fuente
      amigable, no en monoespaciada. */
   --m-font-mono:  var(--m-font-rounded);
