@@ -1,0 +1,29 @@
+<!-- @dsCard group="Pancho OS" viewport="1240x760" name="Pancho OS" subtitle="Cockpit operativo — click-through tasks, habits, finance" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>body{margin:0}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="Tasks.jsx"></script>
+<script type="text/babel" src="Habits.jsx"></script>
+<script type="text/babel" src="Finance.jsx"></script>
+<script type="text/babel">
+function App(){
+const [screen,setScreen]=React.useState("dashboard");
+const screens={dashboard:window.Dashboard,tasks:window.Tasks,habits:window.Habits,finance:window.Finance};
+const Screen=screens[screen];
+return React.createElement("div",{style:{display:"flex",minHeight:"760px",background:"var(--ink)"}},
+React.createElement(window.Sidebar,{active:screen,onChange:setScreen}),
+React.createElement("div",{style:{flex:1,padding:"36px 40px",overflow:"auto"}},Screen&&React.createElement(Screen)));
+}
+function mount(){if(window.Sidebar&&window.Dashboard&&window.Tasks&&window.Habits&&window.Finance){ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));}else{setTimeout(mount,20);}}
+mount();
+</script>
+</body></html>

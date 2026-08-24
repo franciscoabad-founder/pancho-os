@@ -1,0 +1,24 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Forms" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="../../_ds_bundle.js"></script>
+<div id="root" style="background:#0E1738;padding:24px"></div>
+<script type="text/babel">
+const {Button,Input,Select,Checkbox,Switch}=window.PanchoOSDesignSystem_f5b116;
+function Demo(){
+const [c,setC]=React.useState(true);const [s,setS]=React.useState(false);
+return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+React.createElement("div",{style:{display:"flex",gap:"12px"}},
+React.createElement(Button,{variant:"primary"},"Guardar"),
+React.createElement(Button,{variant:"secondary"},"Cancelar"),
+React.createElement(Button,{variant:"ghost"},"Ver más"),
+React.createElement(Button,{variant:"metric"},"Confirmar 78%"),
+React.createElement(Button,{variant:"primary",disabled:true},"Deshabilitado")),
+React.createElement("div",{style:{display:"flex",gap:"16px"}},
+React.createElement(Input,{label:"Meta diaria",placeholder:"0"}),
+React.createElement(Select,{label:"Categoría",options:["Tareas","Salud","Finanzas"]})),
+React.createElement("div",{style:{display:"flex",gap:"24px",alignItems:"center"}},
+React.createElement(Checkbox,{label:"Enviar reporte",checked:c,onChange:setC}),
+React.createElement(Switch,{checked:s,onChange:setS})));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Demo));
+</script>

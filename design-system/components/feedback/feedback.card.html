@@ -1,0 +1,18 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Feedback" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="../../_ds_bundle.js"></script>
+<div id="root" style="background:#1A2B6B;padding:24px"></div>
+<script type="text/babel">
+const {Badge,Tooltip,Dialog}=window.PanchoOSDesignSystem_f5b116;
+function Demo(){
+const [open,setOpen]=React.useState(true);
+return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+React.createElement("div",{style:{display:"flex",gap:"10px"}},
+React.createElement(Badge,{tone:"accent"},"En curso"),
+React.createElement(Badge,{tone:"metric"},"78%"),
+React.createElement(Badge,{tone:"neutral"},"Archivado")),
+React.createElement(Tooltip,{label:"Sincronizado por Hermes"},React.createElement(Badge,{tone:"accent"},"MCP")),
+React.createElement(Dialog,{open,title:"Nueva tarea",onClose:()=>setOpen(false)},"Define título, fecha y sistema asociado."));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Demo));
+</script>
