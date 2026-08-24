@@ -308,7 +308,7 @@ function OSSaludSuenoInner() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <p style={rotulo}>Deuda de sueno · 14 dias</p>
-            <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 34, fontWeight: 700, color: colorDeuda, margin: '4px 0 0', lineHeight: 1 }}>
+            <p className="os-hero-metric os-hero-metric--sm" style={{ fontFamily: 'var(--os-font-mono)', color: colorDeuda, margin: '4px 0 0' }}>
               {formatearHoras(deuda.horas)}
             </p>
             <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-muted)', margin: '4px 0 0' }}>

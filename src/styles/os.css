@@ -82,11 +82,61 @@
   --os-text-base: 14.5px;
   --os-text-lg:   16px;
 
+  /* ── Escala de jerarquia (Stitch/Claude Design, 24-ago-2026) ──
+     La escala de arriba es el piso de legibilidad, no un techo. Esta es la
+     mitad que faltaba: headings de seccion y numeros hero (patrimonio neto,
+     racha, deuda de sueno). Sin esto ningun componente puede crear jerarquia
+     real aunque quiera — todo el texto vivia entre 12 y 16px. */
+  --os-text-xl:      20px;
+  --os-text-2xl:     24px;
+  --os-text-3xl:     32px;
+  --os-text-hero-sm: 44px;
+  --os-text-hero:    60px;
+
+  --os-weight-body:    400;
+  --os-weight-label:   500;
+  --os-weight-heading: 700;
+  --os-weight-hero:    900;
+
+  /* ── Escala de espaciado ──
+     No existia una escala: cada componente inventaba sus margenes. 4/8 base. */
+  --os-space-1: 4px;
+  --os-space-2: 8px;
+  --os-space-3: 12px;
+  --os-space-4: 16px;
+  --os-space-5: 24px;
+  --os-space-6: 32px;
+  --os-space-7: 48px;
+  --os-space-8: 64px;
+
   /* ── Areas tactiles ──
      36px minimo en desktop (densidad); 44px en pantallas tactiles via
      media (pointer: coarse) al final de este archivo. */
   --os-tap-min: 36px;
   --os-tap-coarse: 44px;
+}
+
+/* ── Utilidad de numero hero ──
+   Para la cifra #1 de una pantalla (patrimonio neto, racha, deuda de sueno).
+   Champagne/bronze por canon de marca: los numeros son prueba, no decoracion,
+   nunca se usa este color para CTAs ni elementos interactivos. */
+.os-hero-metric {
+  font-family: var(--os-font-display);
+  font-weight: var(--os-weight-hero);
+  font-size: var(--os-text-hero);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--os-champagne);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.os-hero-metric--sm { font-size: var(--os-text-hero-sm); }
+.os-section-heading {
+  font-family: var(--os-font-display);
+  font-weight: var(--os-weight-heading);
+  font-size: var(--os-text-2xl);
+  color: var(--os-text);
+  margin: 0;
 }
 
 /* ── Tema oscuro ── */

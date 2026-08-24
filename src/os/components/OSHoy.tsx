@@ -242,8 +242,9 @@ export default function OSHoy() {
               </button>
               <div>
                 <p
+                  className="os-section-heading"
                   style={{
-                    fontSize: '1.125rem', fontWeight: 600, color: 'var(--os-text)', margin: '0 0 0.375rem', lineHeight: 1.3,
+                    fontSize: 'var(--os-text-2xl)', margin: '0 0 0.375rem', lineHeight: 1.25,
                     textDecoration: dia.domino_hecho ? 'line-through' : 'none',
                     opacity: dia.domino_hecho ? 0.65 : 1,
                   }}

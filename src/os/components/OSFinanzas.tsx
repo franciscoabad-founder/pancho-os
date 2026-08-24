@@ -380,7 +380,7 @@ export default function OSFinanzas() {
             </p>
           </div>
         </div>
-        <span className="os-mono" style={{ fontSize: '2.25rem', fontWeight: 700, color: 'var(--os-champagne)', lineHeight: 1, whiteSpace: 'nowrap' }}>
+        <span className="os-mono os-hero-metric" style={{ whiteSpace: 'nowrap' }}>
           {neto}
         </span>
       </div>
