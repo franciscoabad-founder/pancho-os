@@ -56,11 +56,23 @@
   --os-shadow-modal:  0 18px 40px rgba(45, 55, 72, 0.16), inset 0 -3px 6px rgba(45, 55, 72, 0.05), inset 0 2px 3px rgba(255, 255, 255, 0.9);
   --os-shadow-accent: 0 8px 22px rgba(59, 78, 217, 0.28), inset 0 -3px 6px rgba(45, 55, 72, 0.05), inset 0 2px 3px rgba(255, 255, 255, 0.9);
 
-  /* ── Fuentes ── */
-  --os-font-display: 'Montserrat', sans-serif;
-  --os-font-body:    'Inter', sans-serif;
+  /* ── Fuentes ──
+     Canon de marca (Ultramarine v5): UNA sola familia para display y cuerpo.
+     Gotham self-hosted (@font-face en src/styles/fonts.css, archivos en
+     public/fonts/gotham/), Montserrat como respaldo local y Arial al final. */
+  --os-font-display: 'Gotham', 'Montserrat', Arial, sans-serif;
+  --os-font-body:    'Gotham', 'Montserrat', Arial, sans-serif;
+  /* Mono se queda en JetBrains Mono a proposito: Gotham no tiene variante
+     monoespaciada ni tabular, y este token existe para alinear cifras (montos,
+     timers, contadores en OSFinanzas, OSGfitReproductor, OSDiario, OSCrm).
+     Display sans + mono para datos es un maridaje legitimo, no una fuga. */
   --os-font-mono:    'JetBrains Mono', 'SF Mono', monospace;
-  --os-font-rounded: 'Nunito', 'Inter', sans-serif;
+  /* Rounded se consolida en Gotham a proposito, no por descuido: Nunito es una
+     tipografia redondeada "amigable", justo lo que la voz de marca prohibe
+     ("nunca jugueton"). La personalidad macro ahora la carga el peso Black
+     (900) de Gotham. El token se conserva por compatibilidad: lo consumen
+     paginas del OS y os-conductual.css. */
+  --os-font-rounded: 'Gotham', 'Montserrat', Arial, sans-serif;
 
   /* ── Escala tipografica minima (legibilidad) ──
      Regla dura: ningun texto del OS baja de 11px; el cuerpo nunca baja de 13px.

@@ -557,7 +557,8 @@ export default function OSGraphBrain() {
       .attr('fill', (d) => (d.isCenter ? CHAMPAGNE : d.isCanon ? '#9AA6C8' : '#6B7280'))
       .attr('font-size', (d) => (d.isCenter ? '11px' : d.isCanon ? '10px' : '9px'))
       .attr('font-weight', (d) => (d.isCenter || d.isCanon ? '700' : '400'))
-      .attr('font-family', 'Montserrat, sans-serif')
+      // .style y no .attr: asi var() resuelve como propiedad CSS en el SVG.
+      .style('font-family', 'var(--os-font-display)')
       .attr('pointer-events', 'none')
       .text((d) => (d.isCenter || d.isCanon || d.connections >= 4 ? d.label : ''));
 
@@ -792,7 +793,7 @@ export default function OSGraphBrain() {
         .attr('fill', '#94A3B8')
         .attr('font-size', '10px')
         .attr('font-weight', '600')
-        .attr('font-family', 'Montserrat, sans-serif')
+        .style('font-family', 'var(--os-font-display)')
         .attr('pointer-events', 'none')
         .text(name);
     });

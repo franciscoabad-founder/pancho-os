@@ -119,14 +119,14 @@ function PairPage() {
       style={{
         minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '24px 16px', background: 'var(--os-bg, #060C1E)', color: 'var(--os-text, #F4F6FB)',
-        fontFamily: 'var(--os-font-body, Inter, system-ui, sans-serif)',
+        fontFamily: 'var(--os-font-body, Gotham, Montserrat, Arial, sans-serif)',
       }}
     >
       <div style={{ width: '100%', maxWidth: 460 }}>
         <p className="os-eyebrow" style={{ marginBottom: 6 }}>Growth OS</p>
         <h1
           style={{
-            margin: '0 0 16px', fontFamily: 'var(--os-font-display, Montserrat, sans-serif)',
+            margin: '0 0 16px', fontFamily: 'var(--os-font-display, Gotham, Montserrat, Arial, sans-serif)',
             fontSize: 'clamp(1.4rem, 6vw, 1.9rem)', fontWeight: 800, lineHeight: 1.2,
           }}
         >

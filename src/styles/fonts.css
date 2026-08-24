@@ -1,0 +1,136 @@
+/* ============================================================================
+   Gotham self-hosted — familia unica de marca (Ultramarine v5)
+
+   Canon de marca (gbrain: marcapersonal-visual): UNA sola familia para display
+   y cuerpo. Gotham primero, Montserrat como respaldo (sistemas que la tengan
+   instalada), Arial al final. Se acabaron Montserrat/Inter/Nunito servidas por
+   Google Fonts.
+
+   Los archivos viven en public/fonts/gotham/, es decir se sirven desde la raiz
+   estatica: /fonts/gotham/<archivo>. Mismo criterio que /favicon.svg.
+   Fuente de verdad de estas reglas: design-system/tokens/fonts.css (ahi las
+   rutas son relativas al design system; aca apuntan a la ruta servida).
+
+   font-display: swap en todas: el texto se pinta con el fallback y cambia a
+   Gotham cuando termina de bajar. Nunca hay pantalla en blanco.
+
+   Este archivo se enlaza desde src/routes/__root.tsx con el mismo patron que
+   os.css (import ... ?url + link rel=stylesheet), asi que cubre TODAS las
+   rutas, incluida /login, que no carga os.css.
+   ========================================================================== */
+
+/* Thin 100 */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 100;
+  font-style: normal;
+  src: url("/fonts/gotham/Gotham-Thin.otf") format("opentype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 100;
+  font-style: italic;
+  src: url("/fonts/gotham/Gotham-ThinItalic.otf") format("opentype");
+  font-display: swap;
+}
+
+/* Extra Light 200 */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 200;
+  font-style: normal;
+  src: url("/fonts/gotham/Gotham-XLight.otf") format("opentype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 200;
+  font-style: italic;
+  src: url("/fonts/gotham/Gotham-XLightItalic.otf") format("opentype");
+  font-display: swap;
+}
+
+/* Light 300 */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 300;
+  font-style: normal;
+  src: url("/fonts/gotham/GothamLight.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 300;
+  font-style: italic;
+  src: url("/fonts/gotham/GothamLightItalic.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* Book 400 (cuerpo) */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 400;
+  font-style: normal;
+  src: url("/fonts/gotham/GothamBook.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 400;
+  font-style: italic;
+  src: url("/fonts/gotham/GothamBookItalic.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* Medium 500 */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 500;
+  font-style: normal;
+  src: url("/fonts/gotham/GothamMedium.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 500;
+  font-style: italic;
+  src: url("/fonts/gotham/GothamMediumItalic.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* Bold 700 */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 700;
+  font-style: normal;
+  src: url("/fonts/gotham/GothamBold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 700;
+  font-style: italic;
+  src: url("/fonts/gotham/GothamBoldItalic.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* Black 900 — el peso que sustituye a Nunito 800 en la macro-tipografia */
+@font-face {
+  font-family: "Gotham";
+  font-weight: 900;
+  font-style: normal;
+  src: url("/fonts/gotham/Gotham-Black.otf") format("opentype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  font-weight: 900;
+  font-style: italic;
+  src: url("/fonts/gotham/Gotham-UltraItalic.otf") format("opentype");
+  font-display: swap;
+}
+
+/* Nota: los pesos 600 y 800 no existen como archivo. El navegador los sintetiza
+   desde 500/700 y 700/900 respectivamente, que es el comportamiento estandar de
+   font-matching. No hay que inventar @font-face para ellos. */

@@ -40,10 +40,9 @@ export const Route = createFileRoute('/login')({
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&family=Inter:wght@400;500;600&display=swap',
-      },
+      // Montserrat/Inter salieron de Google: display y cuerpo son Gotham
+      // self-hosted, cuyas @font-face llegan aca desde el root (fonts.css).
+      // Los preconnect de arriba siguen sirviendo a Material Symbols.
       {
         rel: 'stylesheet',
         href: 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap',
@@ -57,7 +56,7 @@ const css = `
   body {
     background: #071132;
     color: #E8EAF0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     background-image:
       radial-gradient(ellipse 70% 55% at 50% 30%, rgba(59,78,217,0.14) 0%, transparent 70%),
@@ -89,7 +88,7 @@ const css = `
     animation: os-login-pulse 2.4s cubic-bezier(0.4,0,0.6,1) infinite;
   }
   .os-login .mode span:last-child {
-    font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif; font-size: 11px; font-weight: 700;
     letter-spacing: 0.2em; text-transform: uppercase; color: #6B7AE8;
   }
   .os-login .card {
@@ -105,12 +104,12 @@ const css = `
     box-shadow: 0 18px 48px rgba(14,23,56,0.40);
   }
   .os-login h1 {
-    font-family: 'Montserrat', sans-serif; font-size: 1.25rem; font-weight: 700;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif; font-size: 1.25rem; font-weight: 700;
     color: #E8EAF0; margin-bottom: 0.375rem;
   }
   .os-login .sub { font-size: 13px; color: #6B7280; margin-bottom: 2rem; line-height: 1.45; }
   .os-login .field-label {
-    font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 600;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif; font-size: 11px; font-weight: 600;
     letter-spacing: 0.12em; text-transform: uppercase; color: #6B7280;
     display: block; margin-bottom: 6px;
   }
@@ -120,7 +119,7 @@ const css = `
     border: 1px solid rgba(232,234,240,0.12);
     border-radius: 8px;
     padding: 0.75rem 1rem;
-    font-size: 14px; color: #E8EAF0; font-family: 'Inter', sans-serif;
+    font-size: 14px; color: #E8EAF0; font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
     outline: none; margin-bottom: 1rem; transition: border-color 0.15s;
   }
   .os-login input[type="password"]:focus { border-color: rgba(59,78,217,0.55); }
@@ -128,7 +127,7 @@ const css = `
     width: 100%;
     background: #3B4ED9; border: none; border-radius: 8px;
     padding: 0.8rem 1rem;
-    font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif; font-size: 12px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase; color: #fff;
     cursor: pointer; transition: background 0.15s, transform 0.12s;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
