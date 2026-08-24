@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pancho OS - GFIT Sesión Activa</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "ultramarine": "#3B4ED9",
+                        "primary-container": "#3b4ed9",
+                        "tertiary": "#e3c380",
+                        "background": "#071132",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "on-primary": "#00189a",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "primary": "#bcc2ff",
+                        "surface-bright": "#2f375a",
+                        "on-tertiary-container": "#f7d692",
+                        "on-error-container": "#ffdad6",
+                        "champagne": "#B5985A",
+                        "on-background": "#dde1ff",
+                        "surface-variant": "#2a3355",
+                        "secondary-fixed": "#dde1ff",
+                        "tertiary-container": "#745c24",
+                        "linen": "#FAFAF7",
+                        "outline-variant": "#454654",
+                        "surface": "#071132",
+                        "on-secondary-container": "#a2b1fa",
+                        "surface-tint": "#bcc2ff",
+                        "royal": "#1A2B6B",
+                        "on-primary-fixed": "#000b62",
+                        "surface-container-low": "#10193a",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "on-surface-variant": "#c5c5d7",
+                        "slate-light": "#E8EAF0",
+                        "tertiary-fixed": "#ffdf9d",
+                        "secondary-container": "#324283",
+                        "on-tertiary": "#3f2e00",
+                        "ultralight": "#6B7AE8",
+                        "surface-dim": "#071132",
+                        "on-primary-container": "#d4d7ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "primary-fixed": "#dfe0ff",
+                        "surface-container": "#151d3f",
+                        "ink": "#0E1738",
+                        "secondary": "#b8c4ff",
+                        "bronze": "#8A6F3D",
+                        "outline": "#8f8fa0",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container-highest": "#2a3355",
+                        "surface-container-lowest": "#030b2d",
+                        "on-secondary-fixed": "#001454",
+                        "on-surface": "#dde1ff",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#324283",
+                        "surface-container-high": "#1f284a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-secondary": "#1a2b6b",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#262e50",
+                        "inverse-primary": "#3a4dd8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "margin": "24px"
+                    },
+                    fontFamily: {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"],
+                        "body-lg": ["Montserrat"]
+                    },
+                    fontSize: {
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+                        "caption": ["12px", { lineHeight: "16px", fontWeight: "300" }],
+                        "hero-metric": ["60px", { lineHeight: "64px", letterSpacing: "-0.02em", fontWeight: "900" }],
+                        "label-eyebrow": ["13px", { lineHeight: "16px", letterSpacing: "0.14em", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0E1738; /* bg-ink */
+            color: #FAFAF7; /* text-linen */
+        }
+        
+        /* Rest Timer Circle Animation */
+        .timer-circle {
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="bg-ink min-h-screen flex flex-col font-body-lg antialiased overflow-hidden selection:bg-ultramarine selection:text-linen">
+<!-- Intent implies transactional/focus mode (Active Session). Suppressing standard navigation shell to prioritize canvas as per mandate. -->
+<!-- Top Progress Bar -->
+<div class="w-full h-2 bg-royal/30 absolute top-0 left-0 z-50">
+<div class="h-full bg-ultramarine w-[45%] transition-all duration-500 ease-out"></div>
+</div>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col px-margin pt-xl pb-margin h-full w-full max-w-md mx-auto">
+<!-- Header / Context -->
+<header class="flex justify-between items-start mb-lg">
+<div>
+<p class="font-label-eyebrow text-label-eyebrow text-champagne uppercase tracking-widest mb-xs">Serie 2 de 3</p>
+<h1 class="font-headline-lg text-headline-lg text-linen">Press de Banca</h1>
+</div>
+<button aria-label="Pause/Menu" class="text-on-surface-variant hover:text-linen transition-colors p-sm">
+<span class="material-symbols-outlined text-[32px]">more_vert</span>
+</button>
+</header>
+<!-- Big Inputs for Sweaty Fingers -->
+<section class="grid grid-cols-2 gap-md mb-xl flex-shrink-0">
+<!-- Weight Input -->
+<div class="bg-royal rounded-xl p-md flex flex-col items-center justify-center relative overflow-hidden border border-outline-variant/30">
+<label class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-sm uppercase">Peso (kg)</label>
+<div class="flex items-center justify-between w-full">
+<button class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center text-linen active:bg-ultramarine transition-colors text-headline-md font-headline-md">−</button>
+<span class="font-hero-metric text-hero-metric text-champagne">85</span>
+<button class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center text-linen active:bg-ultramarine transition-colors text-headline-md font-headline-md">+</button>
+</div>
+</div>
+<!-- Reps Input -->
+<div class="bg-royal rounded-xl p-md flex flex-col items-center justify-center relative overflow-hidden border border-outline-variant/30">
+<label class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-sm uppercase">Reps</label>
+<div class="flex items-center justify-between w-full">
+<button class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center text-linen active:bg-ultramarine transition-colors text-headline-md font-headline-md">−</button>
+<span class="font-hero-metric text-hero-metric text-champagne">8</span>
+<button class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center text-linen active:bg-ultramarine transition-colors text-headline-md font-headline-md">+</button>
+</div>
+</div>
+</section>
+<!-- Rest Timer (High Contrast / Enormous) -->
+<section class="flex-1 flex flex-col items-center justify-center mb-xl">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- SVG Circle for Timer -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 transform" viewbox="0 0 100 100">
+<circle class="opacity-30" cx="50" cy="50" fill="none" r="45" stroke="#1A2B6B" stroke-width="4"></circle>
+<circle class="timer-circle" cx="50" cy="50" fill="none" r="45" stroke="#3B4ED9" stroke-dasharray="283" stroke-dashoffset="60" stroke-width="4"></circle>
+</svg>
+<div class="text-center z-10 flex flex-col items-center">
+<span class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-2">DESCANSO</span>
+<span class="font-hero-metric text-hero-metric text-linen tracking-tighter" style="font-size: 80px; line-height: 80px;">1:15</span>
+</div>
+</div>
+</section>
+<!-- Full Width Action Button -->
+<div class="mt-auto pb-sm">
+<button class="w-full bg-ultramarine text-linen font-headline-md text-headline-md py-4 rounded-xl flex items-center justify-center gap-sm active:scale-[0.98] transition-transform">
+<span>Completar Serie</span>
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</main>
+<script>
+        // Simple interactivity for demonstration
+        document.addEventListener('DOMContentLoaded', () => {
+            const decrementBtns = document.querySelectorAll('button:has(span.material-symbols-outlined:not([data-weight="fill"]))');
+            // Logic would go here for inputs and timer
+        });
+    </script>
+</body></html>

@@ -98,31 +98,66 @@ Recreación clickeable de 4 pantallas: Sidebar, Dashboard (Hoy), Tasks
 el brief de marca, no desde el código real — son referencia de dirección
 visual, no una copia 1:1 de lo que ya existe en `src/os/components/`.
 
-## Iconografía — pendiente real
+## Iconografía — resuelto en Stitch
 
-Este sistema **no trae íconos** (honestidad del propio generador: "sin
-sistema de íconos especificado, no se inventó ninguno"). El OS en producción
-usa Material Symbols genéricos hoy. Sigue siendo la brecha más grande entre
-este sistema y una identidad realmente distintiva — ver los prompts de
-Stitch (`docs/stitch-prompts-2026-08-23.md`) donde se pidió explícitamente
-un set cuasi-original; falta correrlos y traer el resultado acá.
+Stitch generó un set propio, coherente en las 5 pantallas ancla: trazo
+simple, un ícono distintivo por módulo (Hoy, Salud, Finanzas, GFIT, Cerebro
+visibles en el sidebar), estado activo en Ultramarine. Sin exportar como
+SVG individuales todavía — hoy viven inline en el `code.html` de cada
+pantalla en `design-system/stitch/`. Extraerlos como set reusable es el
+siguiente paso concreto.
 
-## Logo — pendiente real
+## Logo — sigue pendiente
 
-Sin archivo de logo en este export. El wordmark se resuelve tipográficamente
-("FRANCISCO" ExtraLight 200 + "ABAD" Black 900 en Ultramarine), igual que
-especifica el canon de marca. Si existen PNGs reales en
-`00_Brand/contexto marca/` (OneDrive), traerlos a `design-system/assets/` y
-reemplazar el wordmark tipográfico.
+Ninguno de los dos sistemas (Claude Design ni Stitch) trajo el logo real.
+Stitch usa una foto de perfil genérica en el sidebar en vez del wordmark
+"FRANCISCO ABAD". Si existen PNGs reales en `00_Brand/contexto marca/`
+(OneDrive), traerlos a `design-system/assets/` y reemplazar.
+
+## Pantallas ancla — entregadas por Stitch (24-ago-2026)
+
+`design-system/stitch/stitch_pancho_os_operational_cockpit/`, 5 pantallas
+con `screen.png` + `code.html` cada una, más su propio `DESIGN.md` (mismo
+sistema Ultramarine v5, coincide con Claude Design en color/tipografía,
+agrega specs de grid/elevación/componentes que Claude Design no detalló):
+
+- **Hoy (desktop, light)** — One Domino como jerarquía #1, priority stack,
+  discomfort first, protocolos diarios. Correcto.
+- **Finanzas (desktop, light)** — patrimonio neto hero en champagne,
+  4 stats, tarjetas de cuenta por tipo, tabla de gastos con monto
+  original + USD. Correcto en estructura.
+- **Salud (desktop, dark)** — tabs de submódulo, 4 stat cards, sección de
+  sueño con gráfica de barras. Correcto en estructura.
+- **GFIT sesión activa (mobile)** — exactamente lo pedido: números enormes,
+  timer circular de descanso, botón ancho completo. El mejor resultado de
+  las 5.
+- **Cerebro (desktop)** — grafo tipo constelación sobre fondo Ink, panel
+  lateral con búsqueda/tags/notas recientes. Atmósfera correcta.
+
+**Gaps reales encontrados al revisar (no asumidos, vistos en las capturas):**
+1. Contenido de Cerebro en inglés ("Feynman Technique Application", "Q3
+   Revenue Projections") — el sistema pide español por defecto; Stitch no
+   lo siguió en esa pantalla específica.
+2. Los datos de ejemplo no reflejan la forma real de los datos: Finanzas
+   muestra "Cold Wallet"/"Exchange Staking" genéricos en vez de tus cuentas
+   reales (Metamask, Binance, Wise, Takenos, UglyCash); Salud muestra
+   "Deuda de sueño: 4.5 hrs" con una escala distinta a tu modelo real (14
+   días, tope 2.5 noches, ~24h). Es información nueva para Stitch, no un
+   error — nunca se le dio el modelo real de esos módulos.
+3. Fechas de ejemplo desactualizadas ("Miércoles 24 de Abril", "Octubre
+   2023") — cosmético, no importa para tomar la dirección visual.
 
 ## Siguiente paso concreto
 
-1. Traer los PNG del logo real (pendiente arriba).
-2. Correr los prompts de Stitch para el sistema de íconos + pantallas ancla.
+1. Extraer el set de íconos del `code.html` de Stitch como SVGs
+   individuales reusables.
+2. Traer los PNG del logo real cuando los ubiques en OneDrive.
 3. Migrar `src/styles/os.css` y `src/routes/__root.tsx` de las 4 fuentes
    actuales (Montserrat/Inter/JetBrains Mono/Nunito) a Gotham self-hosted +
    la escala tipográfica de este sistema — cambio de superficie completa,
    revisar en `next.os` antes de tocar producción real.
-4. Portar los 12 componentes primitivos a `src/os/components/ui/` donde
-   tenga sentido (ya existe `PageHeader.tsx`; MetricCard/ProgressBar/Badge
-   llenan huecos reales que hoy se resuelven ad hoc por página).
+4. Portar los 12 componentes primitivos de Claude Design (`Card`,
+   `MetricCard`, `ProgressBar`, etc.) a `src/os/components/ui/`, usando el
+   layout real de las 5 pantallas de Stitch como referencia de composición.
+5. Correr el prompt 2 de `docs/stitch-prompts-2026-08-23.md` (extensión al
+   resto de pantallas) una vez aprobadas estas 5 ancla.
