@@ -23,6 +23,18 @@ export interface Ejercicio {
   musculos_primarios: MusculoPrimario[] | null;
   nivel?: Nivel | null;
   instrucciones_en?: string[] | null;
+  instrucciones_es?: string[] | null;
+}
+
+/** Pasos del ejercicio, en español si existen. El catálogo viene de
+ *  free-exercise-db (inglés); los que están en rutinas reales se
+ *  tradujeron a mano (migración 20260824000003). */
+export function instruccionesEjercicio(
+  e: Pick<Ejercicio, 'instrucciones_es' | 'instrucciones_en'> | null | undefined
+): string[] {
+  const es = e?.instrucciones_es;
+  if (es && es.length) return es;
+  return e?.instrucciones_en ?? [];
 }
 
 export interface SeriePlan {

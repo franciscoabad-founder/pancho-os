@@ -8,7 +8,7 @@ import { errMsg } from '../../../lib/salud/apiHelpers';
 const TIPOS = ['weekday', 'orden', 'descanso'];
 
 const SEL =
-  '*, gfit_dia_ejercicios(*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios), gfit_series_plan(*))';
+  '*, gfit_dia_ejercicios(*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios,instrucciones_es,instrucciones_en), gfit_series_plan(*))';
 
 type SupabaseServer = ReturnType<typeof getSupabaseServer>;
 

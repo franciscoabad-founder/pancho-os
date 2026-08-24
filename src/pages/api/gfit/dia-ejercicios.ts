@@ -16,7 +16,7 @@ export const GET: APIRoute = async (context) => {
   const diaId = context.url.searchParams.get('dia_id');
   try {
     const sb = getSupabaseServer();
-    const sel = '*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios), gfit_series_plan(*)';
+    const sel = '*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios,instrucciones_es,instrucciones_en), gfit_series_plan(*)';
     if (id) {
       const { data, error } = await sb.from('gfit_dia_ejercicios').select(sel).eq('id', id).single();
       if (error) throw error;
@@ -98,7 +98,7 @@ export const POST: APIRoute = async (context) => {
 
     const { data: full } = await sb
       .from('gfit_dia_ejercicios')
-      .select('*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios), gfit_series_plan(*)')
+      .select('*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios,instrucciones_es,instrucciones_en), gfit_series_plan(*)')
       .eq('id', data.id)
       .single();
     return json({ ok: true, dia_ejercicio: full ?? data }, 201);
@@ -128,7 +128,7 @@ export const PATCH: APIRoute = async (context) => {
     if (error) throw error;
     const { data: full, error: errFull } = await sb
       .from('gfit_dia_ejercicios')
-      .select('*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios), gfit_series_plan(*)')
+      .select('*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios,instrucciones_es,instrucciones_en), gfit_series_plan(*)')
       .eq('id', id)
       .single();
     if (errFull) throw errFull;

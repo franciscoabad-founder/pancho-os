@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dia, UnidadPeso } from './tipos';
+import { instruccionesEjercicio } from './tipos';
 import { useConfirm, Button } from '../ui';
 import { card, input, btn, btnGhost } from './estilos';
 
@@ -14,6 +15,8 @@ interface SerieVivo {
   reps_plan: number | null;
   duracion_s_plan: number | null;
   descanso_s_plan: number | null;
+  /** Pasos del ejercicio, para consultar entre series sin salir del reproductor. */
+  instrucciones: string[];
 
   peso_kg: string;
   reps: string;
@@ -43,6 +46,9 @@ export default function OSGfitReproductor({ dia, unidad, onSalir }: Props) {
   const duracionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [duracionActiva, setDuracionActiva] = useState(false);
   const [duracionRestante, setDuracionRestante] = useState(0);
+  // Colapsado por defecto: el reproductor se usa con el celular en la mano
+  // entre series, y tiene que seguir siendo legible de un vistazo.
+  const [verComo, setVerComo] = useState(false);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -62,6 +68,7 @@ export default function OSGfitReproductor({ dia, unidad, onSalir }: Props) {
           reps_plan: s.reps,
           duracion_s_plan: s.duracion_s,
           descanso_s_plan: s.descanso_s,
+          instrucciones: instruccionesEjercicio(it.ejercicio),
           peso_kg: s.peso_kg != null ? String(s.peso_kg) : '',
           reps: s.reps != null ? String(s.reps) : '',
           duracion_s: s.duracion_s != null ? String(s.duracion_s) : '',
@@ -216,6 +223,30 @@ export default function OSGfitReproductor({ dia, unidad, onSalir }: Props) {
         <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-text-2)', margin: '0 0 4px' }}>
           Objetivo: <b>{actual.reps_plan || '-'} reps</b>{actual.peso_kg_plan ? ` × ${actual.peso_kg_plan} kg` : ''} {actual.duracion_s_plan ? ` | ${actual.duracion_s_plan} s` : ''}
         </p>
+
+        {actual.instrucciones.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            <button
+              onClick={() => setVerComo((v) => !v)}
+              style={{
+                ...btnGhost,
+                minHeight: 'var(--os-tap-min)',
+                fontSize: 'var(--os-text-sm)',
+                width: '100%',
+                textAlign: 'left',
+              }}
+            >
+              {verComo ? 'Ocultar cómo se hace' : 'Cómo se hace'}
+            </button>
+            {verComo && (
+              <ol style={{ margin: '8px 0 0', paddingLeft: 20, color: 'var(--os-text-2)', fontSize: 'var(--os-text-sm)', lineHeight: 1.5 }}>
+                {actual.instrucciones.map((paso, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>{paso}</li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
 
         {actual.duracion_s_plan && (
            <div style={{ textAlign: 'center', margin: '20px 0' }}>

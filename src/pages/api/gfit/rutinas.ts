@@ -15,7 +15,7 @@ export const GET: APIRoute = async (context) => {
     const sb = getSupabaseServer();
     const id = url.searchParams.get('id');
     const selDetalle =
-      '*, dias:gfit_dias(*, gfit_dia_ejercicios(*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios), gfit_series_plan(*)))';
+      '*, dias:gfit_dias(*, gfit_dia_ejercicios(*, ejercicio:ejercicios_catalogo(slug,nombre_en,nombre_es,imagenes,equipo,patron,musculos_primarios,instrucciones_es,instrucciones_en), gfit_series_plan(*)))';
     if (id) {
       const { data, error } = await sb.from('gfit_rutinas').select(selDetalle).eq('id', id).single();
       if (error) throw error;
