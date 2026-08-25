@@ -169,6 +169,35 @@ test('crearNuevoMapa: el segundo desactiva el anterior y sube de version', async
   });
 });
 
+test('crearNuevoMapa: copia items y zonas del mapa anterior por defecto (rediagnosticar no borra)', async () => {
+  await conClienteFake(async () => {
+    const m1 = await crearNuevoMapa('Primero');
+    await agregarItem(m1.id, 'amas', 'Diseñar sistemas');
+    await crearZona(m1.id, 'BrainTech', ['amas', 'bueno']);
+
+    const m2 = await crearNuevoMapa('Segundo');
+    const estado = await obtenerEstado();
+
+    assert.equal(estado.mapa?.id, m2.id);
+    assert.equal(estado.items.length, 1);
+    assert.equal(estado.items[0].texto, 'Diseñar sistemas');
+    assert.equal(estado.items[0].mapa_id, m2.id); // copiado al mapa nuevo, no referencia al viejo
+    assert.equal(estado.zonas.length, 1);
+    assert.equal(estado.zonas[0].nombre, 'BrainTech');
+  });
+});
+
+test('crearNuevoMapa: con copiarAnterior=false empieza en blanco', async () => {
+  await conClienteFake(async () => {
+    const m1 = await crearNuevoMapa('Primero');
+    await agregarItem(m1.id, 'amas', 'Diseñar sistemas');
+
+    await crearNuevoMapa('Segundo', undefined, false);
+    const estado = await obtenerEstado();
+    assert.equal(estado.items.length, 0);
+  });
+});
+
 // --- Items y zonas -----------------------------------------------------
 
 test('agregarItem: rechaza cuadrante invalido', async () => {

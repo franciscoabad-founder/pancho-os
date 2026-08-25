@@ -94,9 +94,15 @@ export async function obtenerMapaActivo(): Promise<Mapa | null> {
 }
 
 /** Crea un mapa NUEVO como version siguiente y lo marca activo, desactivando
- *  el anterior. No hay "editar version anterior": cada rediagnostico es fila
- *  nueva a proposito (ver comentario de la migracion). */
-export async function crearNuevoMapa(titulo?: unknown, nota?: unknown): Promise<Mapa> {
+ *  el anterior. La version anterior queda intacta para comparar (deriva).
+ *
+ *  Por defecto (copiarAnterior=true) los items y zonas del mapa anterior se
+ *  COPIAN al nuevo: rediagnosticar es "continuar y ajustar", no "empezar de
+ *  cero". Un usuario que ya cargo 30 frases no espera que desaparezcan al
+ *  tocar "Rediagnosticar" -- eso fue exactamente el bug reportado. Pasar
+ *  copiarAnterior=false solo para el primer mapa o si el usuario pide
+ *  explicitamente empezar en blanco. */
+export async function crearNuevoMapa(titulo?: unknown, nota?: unknown, copiarAnterior = true): Promise<Mapa> {
   const sb = clienteActual();
   const previo = await obtenerMapaActivo();
 
@@ -111,7 +117,26 @@ export async function crearNuevoMapa(titulo?: unknown, nota?: unknown): Promise<
     .select()
     .single();
   if (error) throw error;
-  return data as Mapa;
+  const nuevo = data as Mapa;
+
+  if (previo && copiarAnterior) {
+    const [{ data: items }, { data: zonas }] = await Promise.all([
+      sb.from('os_ikigai_items').select('cuadrante, texto, orden').eq('mapa_id', previo.id),
+      sb.from('os_ikigai_zonas').select('nombre, cuadrantes, descripcion, objetivo_ref, orden').eq('mapa_id', previo.id),
+    ]);
+    if (items?.length) {
+      const copia = items.map((i) => ({ ...i, mapa_id: nuevo.id }));
+      const { error: errItems } = await sb.from('os_ikigai_items').insert(copia);
+      if (errItems) throw errItems;
+    }
+    if (zonas?.length) {
+      const copia = zonas.map((z) => ({ ...z, mapa_id: nuevo.id }));
+      const { error: errZonas } = await sb.from('os_ikigai_zonas').insert(copia);
+      if (errZonas) throw errZonas;
+    }
+  }
+
+  return nuevo;
 }
 
 // --- Items --------------------------------------------------------------

@@ -62,8 +62,9 @@ export const Route = createFileRoute('/api/ikigai')({
           const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
           if (body.mapa && typeof body.mapa === 'object') {
-            const { titulo, nota } = body.mapa as { titulo?: unknown; nota?: unknown };
-            return json({ ok: true, mapa: await crearNuevoMapa(titulo, nota) }, 201);
+            const { titulo, nota, copiar_anterior } = body.mapa as { titulo?: unknown; nota?: unknown; copiar_anterior?: unknown };
+            const copiar = copiar_anterior === false ? false : true;
+            return json({ ok: true, mapa: await crearNuevoMapa(titulo, nota, copiar) }, 201);
           }
           if (body.item && typeof body.item === 'object') {
             const { mapa_id, cuadrante, texto } = body.item as { mapa_id?: string; cuadrante?: unknown; texto?: unknown };
