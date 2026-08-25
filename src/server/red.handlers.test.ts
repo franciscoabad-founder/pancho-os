@@ -6,12 +6,14 @@ import test from 'node:test';
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  agregarObjetivo,
   archivarPersona,
   conectarPersonas,
   crearPersona,
   crearPlan,
   listarPersonas,
   obtenerDiagnostico,
+  obtenerPlanActivo,
   registrarContacto,
   setClienteSupabaseRed,
 } from './red.handlers.ts';
@@ -239,5 +241,21 @@ test('crearPlan: el segundo desactiva al primero', async () => {
     await crearPlan('Meta 2', 'Frontera 2');
     const anterior = estado.planes.find((p) => p.id === p1.id);
     assert.equal(anterior?.activo, false);
+  });
+});
+
+test('crearPlan: copia los objetivos del plan anterior por defecto (mismo bug que ikigai, arreglado igual)', async () => {
+  await conClienteFake(async () => {
+    const persona = await crearPersona({ nombre: 'Ana', tipo_lazo: 'estrategico' });
+    const p1 = await crearPlan('Meta 1', 'Frontera 1');
+    await agregarObjetivo(p1.id, persona.id, 'Invitarla a la charla');
+
+    const p2 = await crearPlan('Meta 2', 'Frontera 2');
+    const { plan, objetivos } = await obtenerPlanActivo();
+
+    assert.equal(plan?.id, p2.id);
+    assert.equal(objetivos.length, 1);
+    assert.equal(objetivos[0].tactica, 'Invitarla a la charla');
+    assert.equal(objetivos[0].plan_id, p2.id); // copiado al plan nuevo, no referencia al viejo
   });
 });

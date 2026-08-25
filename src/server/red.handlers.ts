@@ -256,7 +256,15 @@ export async function obtenerPlanActivo(): Promise<{ plan: Plan | null; objetivo
   return { plan: plan as Plan, objetivos: (objetivos ?? []) as ObjetivoPlan[] };
 }
 
-export async function crearPlan(meta: unknown, frontera?: unknown, horizonteFin?: unknown): Promise<Plan> {
+/** Crea un plan nuevo y desactiva el anterior si existe. Igual que
+ *  crearNuevoMapa en ikigai.handlers.ts (mismo bug real detectado ahi:
+ *  reemplazar sin copiar se siente como perder el trabajo), los objetivos
+ *  del plan anterior se copian al nuevo por defecto -- crear un plan
+ *  encima de uno activo es "ajustar", no "empezar de cero". Hoy la UI de
+ *  OSRed.tsx solo llama esto cuando no hay plan activo (previo=null,
+ *  rama de copia nunca se ejecuta), pero la funcion queda correcta para
+ *  cuando exista un flujo de "nuevo plan" con uno ya activo. */
+export async function crearPlan(meta: unknown, frontera?: unknown, horizonteFin?: unknown, copiarAnterior = true): Promise<Plan> {
   const m = textoRequerido(meta, 'meta');
   const sb = clienteActual();
 
@@ -273,7 +281,21 @@ export async function crearPlan(meta: unknown, frontera?: unknown, horizonteFin?
     .select()
     .single();
   if (error) throw error;
-  return data as Plan;
+  const nuevo = data as Plan;
+
+  if (previo && copiarAnterior) {
+    const { data: objetivos } = await sb
+      .from('os_red_objetivos')
+      .select('persona_id, tactica, estado')
+      .eq('plan_id', (previo as { id: string }).id);
+    if (objetivos?.length) {
+      const copia = objetivos.map((o) => ({ ...o, plan_id: nuevo.id }));
+      const { error: errObjetivos } = await sb.from('os_red_objetivos').insert(copia);
+      if (errObjetivos) throw errObjetivos;
+    }
+  }
+
+  return nuevo;
 }
 
 export async function agregarObjetivo(planId: string | null, personaId: string | null, tactica?: unknown): Promise<ObjetivoPlan> {
