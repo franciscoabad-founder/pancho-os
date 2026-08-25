@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Diagnóstico de Networking Room - Pancho OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#2a3355",
+                        "surface-tint": "#bcc2ff",
+                        "background": "#071132",
+                        "on-primary-fixed": "#000b62",
+                        "champagne": "#B5985A",
+                        "tertiary-fixed": "#ffdf9d",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-container-highest": "#2a3355",
+                        "tertiary-container": "#745c24",
+                        "on-secondary-fixed": "#001454",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container": "#151d3f",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "secondary": "#b8c4ff",
+                        "primary": "#bcc2ff",
+                        "on-surface-variant": "#c5c5d7",
+                        "on-background": "#dde1ff",
+                        "on-tertiary": "#3f2e00",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a2b1fa",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "surface-container-low": "#10193a",
+                        "royal": "#1A2B6B",
+                        "surface-container-high": "#1f284a",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "ultramarine": "#3B4ED9",
+                        "secondary-container": "#324283",
+                        "bronze": "#8A6F3D",
+                        "slate-light": "#E8EAF0",
+                        "on-tertiary-container": "#f7d692",
+                        "tertiary": "#e3c380",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#1a2b6b",
+                        "linen": "#FAFAF7",
+                        "ink": "#0E1738",
+                        "inverse-primary": "#3a4dd8",
+                        "surface-bright": "#2f375a",
+                        "on-surface": "#dde1ff",
+                        "primary-container": "#3b4ed9",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "outline-variant": "#454654",
+                        "surface-dim": "#071132",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "surface-container-lowest": "#030b2d",
+                        "inverse-on-surface": "#262e50",
+                        "on-primary-container": "#d4d7ff",
+                        "outline": "#8f8fa0"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        margin: "24px",
+                        sm: "8px",
+                        lg: "24px",
+                        xs: "4px",
+                        gutter: "16px",
+                        xl: "48px",
+                        md: "16px",
+                        unit: "4px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"]
+                    },
+                    fontSize: {
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "hero-metric": ["60px", { lineHeight: "64px", letterSpacing: "-0.02em", fontWeight: "900" }],
+                        "caption": ["12px", { lineHeight: "16px", fontWeight: "300" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "label-eyebrow": ["13px", { lineHeight: "16px", letterSpacing: "0.14em", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Node Connection Canvas Background Pattern */
+        .node-canvas-bg {
+            background-image: radial-gradient(var(--tw-colors-outline-variant) 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: 0 0;
+            opacity: 0.15;
+        }
+    </style>
+</head>
+<body class="bg-ink text-linen min-h-screen flex overflow-hidden font-body-lg">
+<!-- SideNavBar Component -->
+<nav class="fixed left-0 top-0 h-full w-[240px] bg-royal border-r border-outline-variant flex flex-col py-md z-40">
+<div class="px-margin mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h1>
+<p class="font-caption text-caption text-on-surface-variant uppercase tracking-widest mt-1">Executive Cockpit</p>
+</div>
+<div class="flex-1 px-sm space-y-unit">
+<!-- Inactive -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Hoy</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span>Salud</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finanzas</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span>GFIT</span>
+</a>
+<!-- Active (Semantic match for Node/Network Mapping) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="psychology">psychology</span>
+<span>Cerebro</span>
+</a>
+</div>
+<div class="px-margin mt-auto border-t border-outline-variant/30 pt-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center border border-outline-variant overflow-hidden">
+<span class="font-label-eyebrow text-label-eyebrow text-champagne">FO</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption font-bold">Founder Profile</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="flex-1 ml-[240px] h-screen overflow-y-auto overflow-x-hidden p-margin flex flex-col gap-lg">
+<!-- Header -->
+<header class="flex justify-between items-end border-b border-outline-variant/30 pb-md">
+<div>
+<p class="font-label-eyebrow text-label-eyebrow text-ultramarine mb-unit">MÓDULO DE RELACIONES</p>
+<h2 class="font-headline-lg text-headline-lg text-champagne tracking-tight">Diagnóstico de Networking Room</h2>
+</div>
+<div class="text-right">
+<p class="font-body-lg text-body-lg text-on-surface-variant">Agosto 2026</p>
+</div>
+</header>
+<!-- Network Grid (Capacity: 16) -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-headline-md text-headline-md text-linen">Inventario de Nodos (3/16)</h3>
+<button class="bg-ultramarine text-linen px-md py-sm rounded-lg font-label-eyebrow text-label-eyebrow hover:bg-inverse-primary transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    NUEVO NODO
+                </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-gutter">
+<!-- Card 1: Filled -->
+<article class="bg-royal border border-outline-variant/40 rounded-xl p-md flex flex-col gap-md relative overflow-hidden group">
+<!-- Identity -->
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-ink border border-ultramarine/30 flex items-center justify-center flex-shrink-0">
+<span class="font-headline-md text-headline-md text-champagne">EA</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-linen leading-tight">Elena Aris</h4>
+<p class="font-caption text-caption text-on-surface-variant">VP Operaciones, TechCorp</p>
+</div>
+</div>
+<!-- Area Chips -->
+<div class="flex flex-wrap gap-xs">
+<span class="px-2 py-1 bg-surface-container-high rounded text-caption font-caption text-secondary">Trabajo</span>
+<span class="px-2 py-1 bg-surface-container-high rounded text-caption font-caption text-secondary">Sector Finanzas</span>
+</div>
+<!-- Proximity Radar -->
+<div class="py-sm flex flex-col items-center">
+<p class="font-caption text-caption text-on-surface-variant mb-sm self-start">Índice de Cercanía</p>
+<div class="relative w-24 h-24 flex items-center justify-center">
+<!-- Outer Ring (3) -->
+<div class="absolute inset-0 rounded-full border border-outline-variant/50"></div>
+<!-- Middle Ring (2) - ACTIVE -->
+<div class="absolute inset-[16px] rounded-full border-2 border-ultramarine bg-ultramarine/5 shadow-[0_0_15px_rgba(59,78,217,0.2)] transition-all"></div>
+<!-- Inner Ring (1) -->
+<div class="absolute inset-[32px] rounded-full border border-outline-variant/50"></div>
+<!-- Core -->
+<div class="absolute w-2 h-2 rounded-full bg-champagne"></div>
+</div>
+</div>
+<!-- Relationship Typology -->
+<div class="mt-auto border-t border-outline-variant/20 pt-md">
+<p class="font-caption text-caption text-on-surface-variant mb-sm">Vector de Vínculo</p>
+<div class="grid grid-cols-3 gap-xs">
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-ultramarine/20 border border-ultramarine text-ultramarine">
+<span class="material-symbols-outlined text-[16px]" data-icon="work">work</span>
+<span class="font-caption text-[10px] uppercase">Operacional</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="person">person</span>
+<span class="font-caption text-[10px] uppercase">Personal</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="account_tree">account_tree</span>
+<span class="font-caption text-[10px] uppercase">Estratégico</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2: Filled -->
+<article class="bg-royal border border-outline-variant/40 rounded-xl p-md flex flex-col gap-md relative overflow-hidden group">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-ink border border-champagne/30 flex items-center justify-center flex-shrink-0">
+<span class="font-headline-md text-headline-md text-champagne">MR</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-linen leading-tight">Marco Rossi</h4>
+<p class="font-caption text-caption text-on-surface-variant">Inversor Ángel</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-xs">
+<span class="px-2 py-1 bg-surface-container-high rounded text-caption font-caption text-secondary">Capital</span>
+<span class="px-2 py-1 bg-surface-container-high rounded text-caption font-caption text-secondary">Comunidad</span>
+</div>
+<div class="py-sm flex flex-col items-center">
+<p class="font-caption text-caption text-on-surface-variant mb-sm self-start">Índice de Cercanía</p>
+<div class="relative w-24 h-24 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border border-outline-variant/50"></div>
+<div class="absolute inset-[16px] rounded-full border border-outline-variant/50"></div>
+<!-- Inner Ring (1) - ACTIVE -->
+<div class="absolute inset-[32px] rounded-full border-2 border-ultramarine bg-ultramarine/5 shadow-[0_0_15px_rgba(59,78,217,0.2)] transition-all"></div>
+<div class="absolute w-2 h-2 rounded-full bg-champagne"></div>
+</div>
+</div>
+<div class="mt-auto border-t border-outline-variant/20 pt-md">
+<p class="font-caption text-caption text-on-surface-variant mb-sm">Vector de Vínculo</p>
+<div class="grid grid-cols-3 gap-xs">
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="work">work</span>
+<span class="font-caption text-[10px] uppercase">Operacional</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="person">person</span>
+<span class="font-caption text-[10px] uppercase">Personal</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-ultramarine/20 border border-ultramarine text-ultramarine">
+<span class="material-symbols-outlined text-[16px]" data-icon="account_tree">account_tree</span>
+<span class="font-caption text-[10px] uppercase">Estratégico</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 3: Filled -->
+<article class="bg-royal border border-outline-variant/40 rounded-xl p-md flex flex-col gap-md relative overflow-hidden group">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-ink border border-tertiary/30 flex items-center justify-center flex-shrink-0">
+<span class="font-headline-md text-headline-md text-champagne">LV</span>
+</div>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-linen leading-tight">Lucía Vargas</h4>
+<p class="font-caption text-caption text-on-surface-variant">Mentor, Board</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-xs">
+<span class="px-2 py-1 bg-surface-container-high rounded text-caption font-caption text-secondary">Comunidad</span>
+</div>
+<div class="py-sm flex flex-col items-center">
+<p class="font-caption text-caption text-on-surface-variant mb-sm self-start">Índice de Cercanía</p>
+<div class="relative w-24 h-24 flex items-center justify-center">
+<!-- Outer Ring (3) - ACTIVE -->
+<div class="absolute inset-0 rounded-full border-2 border-ultramarine bg-ultramarine/5 shadow-[0_0_15px_rgba(59,78,217,0.2)] transition-all"></div>
+<div class="absolute inset-[16px] rounded-full border border-outline-variant/50"></div>
+<div class="absolute inset-[32px] rounded-full border border-outline-variant/50"></div>
+<div class="absolute w-2 h-2 rounded-full bg-champagne"></div>
+</div>
+</div>
+<div class="mt-auto border-t border-outline-variant/20 pt-md">
+<p class="font-caption text-caption text-on-surface-variant mb-sm">Vector de Vínculo</p>
+<div class="grid grid-cols-3 gap-xs">
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="work">work</span>
+<span class="font-caption text-[10px] uppercase">Operacional</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-ultramarine/20 border border-ultramarine text-ultramarine">
+<span class="material-symbols-outlined text-[16px]" data-icon="person">person</span>
+<span class="font-caption text-[10px] uppercase">Personal</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 py-2 rounded bg-surface-container border border-transparent text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="account_tree">account_tree</span>
+<span class="font-caption text-[10px] uppercase">Estratégico</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 4: Empty Slot for adding (Representation of the remaining 13 slots) -->
+<article class="bg-surface-container-low border border-dashed border-outline-variant/50 rounded-xl p-md flex flex-col items-center justify-center gap-md cursor-pointer hover:bg-surface-variant/30 hover:border-ultramarine/50 transition-all group min-h-[380px]">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-ultramarine group-hover:scale-110 transition-all">
+<span class="material-symbols-outlined text-[32px]" data-icon="person_add">person_add</span>
+</div>
+<div class="text-center">
+<h4 class="font-body-lg text-body-lg text-on-surface-variant">Slot Disponible</h4>
+<p class="font-caption text-caption text-outline mt-1">13 espacios restantes</p>
+</div>
+</article>
+</div>
+</section>
+<!-- Topology / Scatter Plot Zone -->
+<section class="flex-1 min-h-[400px] flex flex-col">
+<div class="mb-sm">
+<h3 class="font-headline-md text-headline-md text-linen">Topología de Red</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Traza vectores de influencia entre nodos conocidos.</p>
+</div>
+<div class="flex-1 bg-royal border border-outline-variant/30 rounded-xl relative overflow-hidden flex items-center justify-center">
+<!-- Background grid pattern -->
+<div class="absolute inset-0 node-canvas-bg pointer-events-none"></div>
+<!-- Central Focus (Self) -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="w-16 h-16 rounded-full bg-ink border-2 border-champagne shadow-[0_0_30px_rgba(181,152,90,0.15)] flex items-center justify-center relative">
+<span class="font-headline-md text-headline-md font-bold text-champagne">FO</span>
+<!-- Ripple effect rings -->
+<div class="absolute inset-[-20px] rounded-full border border-champagne/10"></div>
+<div class="absolute inset-[-40px] rounded-full border border-champagne/5"></div>
+</div>
+</div>
+<!-- SVG Lines connecting nodes -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+<defs>
+<lineargradient id="lineGrad1" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#3B4ED9" stop-opacity="0.6"></stop>
+<stop offset="100%" stop-color="#B5985A" stop-opacity="0.2"></stop>
+</lineargradient>
+<lineargradient id="lineGrad2" x1="100%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#3B4ED9" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#3B4ED9" stop-opacity="0.1"></stop>
+</lineargradient>
+</defs>
+<!-- Line to Node EA -->
+<line stroke="url(#lineGrad1)" stroke-dasharray="4,4" stroke-width="2" x1="50%" x2="30%" y1="50%" y2="30%"></line>
+<!-- Line to Node MR -->
+<line stroke="url(#lineGrad2)" stroke-width="3" x1="50%" x2="75%" y1="50%" y2="40%"></line>
+<!-- Line to Node LV -->
+<line stroke="url(#lineGrad1)" stroke-width="1.5" x1="50%" x2="40%" y1="50%" y2="75%"></line>
+<!-- Cross connection EA to LV -->
+<path d="M 30% 30% Q 25% 50% 40% 75%" fill="none" opacity="0.5" stroke="#454654" stroke-width="1"></path>
+</svg>
+<!-- Node Render: EA -->
+<div class="absolute top-[30%] left-[30%] transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer hover:scale-110 transition-transform">
+<div class="w-10 h-10 rounded-full bg-surface-container border border-ultramarine flex items-center justify-center">
+<span class="font-label-eyebrow text-label-eyebrow text-linen">EA</span>
+</div>
+<span class="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 font-caption text-[10px] text-on-surface-variant whitespace-nowrap bg-ink/80 px-1 rounded">Elena A.</span>
+</div>
+<!-- Node Render: MR -->
+<div class="absolute top-[40%] left-[75%] transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer hover:scale-110 transition-transform">
+<div class="w-10 h-10 rounded-full bg-surface-container border border-champagne flex items-center justify-center">
+<span class="font-label-eyebrow text-label-eyebrow text-linen">MR</span>
+</div>
+<span class="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 font-caption text-[10px] text-on-surface-variant whitespace-nowrap bg-ink/80 px-1 rounded">Marco R.</span>
+</div>
+<!-- Node Render: LV -->
+<div class="absolute top-[75%] left-[40%] transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer hover:scale-110 transition-transform">
+<div class="w-10 h-10 rounded-full bg-surface-container border border-tertiary flex items-center justify-center">
+<span class="font-label-eyebrow text-label-eyebrow text-linen">LV</span>
+</div>
+<span class="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 font-caption text-[10px] text-on-surface-variant whitespace-nowrap bg-ink/80 px-1 rounded">Lucía V.</span>
+</div>
+<!-- Floating Tools Overlay -->
+<div class="absolute bottom-md right-md bg-surface-container-high border border-outline-variant/50 rounded-lg p-2 flex gap-2 shadow-lg">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:bg-surface-variant transition-colors" title="Conectar">
+<span class="material-symbols-outlined text-[18px]" data-icon="timeline">timeline</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:bg-surface-variant transition-colors" title="Agrupar Cluster">
+<span class="material-symbols-outlined text-[18px]" data-icon="scatter_plot">scatter_plot</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-ultramarine hover:bg-surface-variant transition-colors" title="Exportar Matriz">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</body></html>

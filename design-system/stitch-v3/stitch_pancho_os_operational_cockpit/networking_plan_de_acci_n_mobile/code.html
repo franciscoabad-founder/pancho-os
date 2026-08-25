@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Plan de Networking Room</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#2a3355",
+                      "surface-tint": "#bcc2ff",
+                      "background": "#071132",
+                      "on-primary-fixed": "#000b62",
+                      "champagne": "#B5985A",
+                      "tertiary-fixed": "#ffdf9d",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-container-highest": "#2a3355",
+                      "tertiary-container": "#745c24",
+                      "on-secondary-fixed": "#001454",
+                      "on-error-container": "#ffdad6",
+                      "inverse-surface": "#dde1ff",
+                      "surface-container": "#151d3f",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "secondary": "#b8c4ff",
+                      "primary": "#bcc2ff",
+                      "on-surface-variant": "#c5c5d7",
+                      "on-background": "#dde1ff",
+                      "on-tertiary": "#3f2e00",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#a2b1fa",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "surface-container-low": "#10193a",
+                      "royal": "#1A2B6B",
+                      "surface-container-high": "#1f284a",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "ultramarine": "#3B4ED9",
+                      "secondary-container": "#324283",
+                      "bronze": "#8A6F3D",
+                      "slate-light": "#E8EAF0",
+                      "on-tertiary-container": "#f7d692",
+                      "tertiary": "#e3c380",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-secondary": "#1a2b6b",
+                      "linen": "#FAFAF7",
+                      "ink": "#0E1738",
+                      "inverse-primary": "#3a4dd8",
+                      "surface-bright": "#2f375a",
+                      "on-surface": "#dde1ff",
+                      "primary-container": "#3b4ed9",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "outline-variant": "#454654",
+                      "surface-dim": "#071132",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "surface-container-lowest": "#030b2d",
+                      "inverse-on-surface": "#262e50",
+                      "on-primary-container": "#d4d7ff",
+                      "outline": "#8f8fa0"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Montserrat"
+                      ],
+                      "hero-metric": [
+                              "Montserrat"
+                      ],
+                      "caption": [
+                              "Montserrat"
+                      ],
+                      "headline-lg": [
+                              "Montserrat"
+                      ],
+                      "headline-md": [
+                              "Montserrat"
+                      ],
+                      "label-eyebrow": [
+                              "Montserrat"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "hero-metric": [
+                              "60px",
+                              {
+                                      "lineHeight": "64px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "300"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-eyebrow": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.14em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.ink');
+            color: theme('colors.linen');
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+      </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pb-24">
+<!-- TopAppBar -->
+<header class="hidden md:flex flex justify-between items-center w-full px-margin h-16 max-w-7xl mx-auto bg-surface dark:bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<h1 class="font-headline-md text-headline-md font-black text-linen">Pancho OS</h1>
+<nav class="flex gap-4">
+<a class="font-body-lg text-body-lg text-ultramarine font-bold border-b-2 border-ultramarine pb-1" href="#">Hoy</a>
+<a class="font-body-lg text-body-lg text-on-surface-variant hover:text-ultramarine transition-colors" href="#">Salud</a>
+<a class="font-body-lg text-body-lg text-on-surface-variant hover:text-ultramarine transition-colors" href="#">Finanzas</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-body-lg text-body-lg text-champagne hover:opacity-80 transition-opacity">Maker Mode</button>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-ultramarine">settings</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-ultramarine">notifications</span>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of a professional executive in a dark, clinical premium setting. Sharp lighting accentuates the subject's features against a dark blue background. The style is modern, sleek, and authoritative, matching the Pancho OS aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjBdLZlY_qzZWC_oWuttC9RYld1cKa1BNwdpXhGfyqPu-JIS0cnFKtiKZGJ3Ov0n8s9TFalhmNx0hEi5MMjuU065ueSMyHleYunITPY4_1Vca21J_F2cD0tzBivmp3f48TkNsm9JcAk5aLKTp-QR7yE9GE7kRZGgtftZJK6sr_fMaHB9p8avQP8rlIq4o2dp9SDZAc3ZRRNrRkAg0b3qYWNOKwQLTKvWK3eZTtovGI3SCVBjnDmHAuug"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="hidden lg:flex fixed left-0 top-0 h-full w-[240px] flex flex-col h-full py-md bg-royal border-r border-outline-variant z-40">
+<div class="px-lg pb-lg">
+<h2 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h2>
+<p class="font-caption text-caption text-on-surface-variant">Executive Cockpit</p>
+</div>
+<nav class="flex-1 px-sm space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Hoy</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-body-lg text-body-lg">Salud</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-lg text-body-lg">Finanzas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-body-lg text-body-lg">GFIT</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-body-lg text-body-lg">Cerebro</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 lg:ml-[240px] px-gutter md:px-margin py-lg md:py-xl max-w-7xl mx-auto w-full space-y-lg">
+<!-- Header -->
+<header class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-linen">Plan de Networking</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-xs">Estrategia de conexión y expansión.</p>
+</header>
+<!-- Meta de Red (Metric Card) -->
+<section class="bg-royal rounded-xl p-lg border border-outline-variant/30 flex flex-col justify-between">
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-widest mb-sm">Meta de Red Actual</h2>
+<div class="flex items-baseline gap-xs">
+<span class="font-hero-metric text-hero-metric text-champagne">15</span>
+<span class="font-body-lg text-body-lg text-on-surface-variant">Conexiones Clave</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-sm">Progreso Q3: 60% alcanzado.</p>
+</section>
+<!-- La Frontera a Cruzar (Impact Treatment) -->
+<section class="bg-ultramarine rounded-xl p-lg relative overflow-hidden shadow-[0_8px_32px_rgba(59,78,217,0.3)] border border-ultralight/20">
+<div class="relative z-10">
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-widest mb-sm opacity-90">La Frontera a Cruzar</h2>
+<h3 class="font-headline-md text-headline-md text-white font-black leading-tight">Acceso a C-Level del Sector Fintech</h3>
+<p class="font-body-lg text-body-lg text-inverse-surface mt-sm opacity-90">Establecer diálogo directo con tomadores de decisión clave para alianzas estratégicas.</p>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -bottom-10 -right-10 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+</section>
+<!-- Lista de Personas Objetivo -->
+<section class="space-y-sm">
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-widest mb-sm px-xs">Objetivos de Alto Valor</h2>
+<!-- Target Item 1 -->
+<div class="bg-surface-container rounded-lg p-md border-b border-slate-dark/50 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-body-lg text-body-lg text-linen font-bold">Elena Rostova</h4>
+<p class="font-caption text-caption text-on-surface-variant">VP Innovación, Nexus Bank</p>
+</div>
+<span class="material-symbols-outlined text-champagne" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="mt-xs">
+<label class="block font-caption text-caption text-on-surface-variant mb-xs">Táctica de Aproximación</label>
+<input class="w-full bg-ink border border-slate-dark rounded px-sm py-2 text-linen font-body-lg text-body-lg focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-colors" placeholder="Ej: Mencionar artículo sobre DeFi..." type="text"/>
+</div>
+</div>
+<!-- Target Item 2 -->
+<div class="bg-surface-container rounded-lg p-md border-b border-slate-dark/50 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-body-lg text-body-lg text-linen font-bold">David Chen</h4>
+<p class="font-caption text-caption text-on-surface-variant">Founder, Quantum Pay</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">star</span>
+</div>
+<div class="mt-xs">
+<label class="block font-caption text-caption text-on-surface-variant mb-xs">Táctica de Aproximación</label>
+<input class="w-full bg-ink border border-slate-dark rounded px-sm py-2 text-linen font-body-lg text-body-lg focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-colors" placeholder="Ej: Referencia compartida de YC..." type="text"/>
+</div>
+</div>
+<!-- Target Item 3 -->
+<div class="bg-surface-container rounded-lg p-md border-b border-slate-dark/50 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-body-lg text-body-lg text-linen font-bold">Sofia Martinez</h4>
+<p class="font-caption text-caption text-on-surface-variant">Director de Alianzas, FinCorp</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">star</span>
+</div>
+<div class="mt-xs">
+<label class="block font-caption text-caption text-on-surface-variant mb-xs">Táctica de Aproximación</label>
+<input class="w-full bg-ink border border-slate-dark rounded px-sm py-2 text-linen font-body-lg text-body-lg focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-colors" placeholder="Ej: Invitación panel de discusión..." type="text"/>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink dark:bg-ink border-t border-outline-variant">
+<!-- Hoy - ACTIVE -->
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Hoy</span>
+</a>
+<!-- Salud -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Salud</span>
+</a>
+<!-- Finanzas -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Finanzas</span>
+</a>
+<!-- GFIT -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">GFIT</span>
+</a>
+<!-- Cerebro -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Cerebro</span>
+</a>
+</nav>
+</body></html>

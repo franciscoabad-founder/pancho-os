@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Networking Room Scorecard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#2a3355",
+                      "surface-tint": "#bcc2ff",
+                      "background": "#071132",
+                      "on-primary-fixed": "#000b62",
+                      "champagne": "#B5985A",
+                      "tertiary-fixed": "#ffdf9d",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-container-highest": "#2a3355",
+                      "tertiary-container": "#745c24",
+                      "on-secondary-fixed": "#001454",
+                      "on-error-container": "#ffdad6",
+                      "inverse-surface": "#dde1ff",
+                      "surface-container": "#151d3f",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "secondary": "#b8c4ff",
+                      "primary": "#bcc2ff",
+                      "on-surface-variant": "#c5c5d7",
+                      "on-background": "#dde1ff",
+                      "on-tertiary": "#3f2e00",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#a2b1fa",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "surface-container-low": "#10193a",
+                      "royal": "#1A2B6B",
+                      "surface-container-high": "#1f284a",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "ultramarine": "#3B4ED9",
+                      "secondary-container": "#324283",
+                      "bronze": "#8A6F3D",
+                      "slate-light": "#E8EAF0",
+                      "on-tertiary-container": "#f7d692",
+                      "tertiary": "#e3c380",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-secondary": "#1a2b6b",
+                      "linen": "#FAFAF7",
+                      "ink": "#0E1738",
+                      "inverse-primary": "#3a4dd8",
+                      "surface-bright": "#2f375a",
+                      "on-surface": "#dde1ff",
+                      "primary-container": "#3b4ed9",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "outline-variant": "#454654",
+                      "surface-dim": "#071132",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "surface-container-lowest": "#030b2d",
+                      "inverse-on-surface": "#262e50",
+                      "on-primary-container": "#d4d7ff",
+                      "outline": "#8f8fa0"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Montserrat"],
+                      "hero-metric": ["Montserrat"],
+                      "caption": ["Montserrat"],
+                      "headline-lg": ["Montserrat"],
+                      "headline-md": ["Montserrat"],
+                      "label-eyebrow": ["Montserrat"]
+              },
+              "fontSize": {
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "hero-metric": ["60px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "300"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "label-eyebrow": ["13px", {"lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Custom styles for the scale positioning to ensure exactness */
+        .scale-track { position: relative; width: 100%; height: 8px; background-color: theme('colors.surface-variant'); border-radius: 9999px; }
+        .scale-tick { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 4px; height: 16px; background-color: theme('colors.outline-variant'); border-radius: 2px; }
+        .scale-tick-ideal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 32px; background-color: theme('colors.champagne'); z-index: 10; }
+        .scale-label { position: absolute; top: 32px; transform: translateX(-50%); text-align: center; white-space: nowrap; }
+        .scale-indicator { position: absolute; top: -24px; transform: translateX(-50%); z-index: 20; display: flex; flex-direction: column; align-items: center; }
+        .triangle-down { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid theme('colors.ultramarine'); }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex font-body-lg text-body-lg">
+<!-- JSON Component: SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-md fixed left-0 top-0 w-[240px] bg-royal border-r border-outline-variant z-50">
+<!-- Header -->
+<div class="px-lg mb-xl flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border border-outline-variant shrink-0">
+<img alt="Founder Profile" class="w-full h-full object-cover" data-alt="A highly detailed portrait of a professional corporate founder in a sharp dark suit. The lighting is dramatic and moody, casting strong shadows to emphasize authority and high-performance. The background is a minimalist, abstract dark space with subtle architectural lines, conveying a premium executive cockpit aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqsSsSFhadzmUxEy28PpcnbLjU-54Z4TZktzeX4iSgkkEVBmOJua-Ri89YnAhsw1F1LciMmhz9p-LhkB3JwGTcuy7cCoe2h1y3xz_4ljRpZ7XLPz211-m8hEOozuA5P0g9PZxfa1UG9XPMRAkF-PG9BBTzZb7_UyblWEMmDV8Zl3NKr3MqjnOrl4-YpFgzGA-wJPc6rimkDCtV3Rlj-wtOHZQSBWg05LrG_OkkY5LtYtTynh2GmdEnow"/>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="font-headline-md text-headline-md font-bold text-linen truncate">Pancho OS</span>
+<span class="font-caption text-caption text-on-surface-variant truncate">Executive Cockpit</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<ul class="flex flex-col gap-xs px-sm flex-grow">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Hoy</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="monitor_heart">monitor_heart</span>
+<span>Salud</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="payments">payments</span>
+<span>Finanzas</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="fitness_center">fitness_center</span>
+<span>GFIT</span>
+</a>
+</li>
+<!-- Active Tab: Cerebro (Proxy for Networking/Mind) -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold hover:bg-surface-variant/50 transition-colors scale-95 transform" href="#">
+<span class="material-symbols-outlined text-[20px] icon-filled text-ultramarine" data-icon="psychology">psychology</span>
+<span>Cerebro</span>
+</a>
+</li>
+</ul>
+<!-- Footer area of nav -->
+<div class="px-lg mt-auto">
+<div class="w-full h-px bg-outline-variant/30 my-sm"></div>
+<a class="flex items-center gap-md py-sm text-on-surface-variant hover:text-linen transition-colors font-caption text-caption" href="#">
+<span class="material-symbols-outlined text-[16px]">logout</span>
+<span>Desconectar</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-0 md:ml-[240px] w-full min-h-screen p-margin flex flex-col gap-margin max-w-7xl mx-auto">
+<!-- Page Header -->
+<header class="flex flex-col gap-xs pb-sm border-b border-outline-variant/30">
+<h1 class="font-headline-lg text-headline-lg text-linen">Networking Room</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Scorecard de Estado de Red y Vínculos Estratégicos</p>
+</header>
+<!-- Hero Element: Horizontal Scale -->
+<section class="bg-surface-container rounded-xl p-lg border border-outline-variant/20 shadow-lg relative overflow-hidden">
+<!-- Subtle background accent -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-ultramarine/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+<div class="flex justify-between items-end mb-xl relative z-10">
+<div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen tracking-[0.14em] uppercase mb-xs">Apertura de Red</h2>
+<p class="font-caption text-caption text-on-surface-variant">Posición actual de su ecosistema relacional respecto al balance óptimo.</p>
+</div>
+<div class="text-right">
+<span class="font-hero-metric text-hero-metric text-champagne block leading-none">68<span class="text-headline-md text-on-surface-variant">%</span></span>
+</div>
+</div>
+<!-- The Scale Graphic -->
+<div class="w-full pt-lg pb-xl px-sm relative z-10">
+<div class="scale-track">
+<!-- Positions 1 to 6 (0%, 20%, 40%, 60%, 80%, 100%) -->
+<div class="scale-tick" style="left: 0%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 0%;">Muy abierta</div>
+<div class="scale-tick" style="left: 20%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 20%;">Abierta</div>
+<div class="scale-tick" style="left: 40%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 40%;">Lig. abierta</div>
+<!-- Exact Center: IDEAL -->
+<div class="scale-tick-ideal shadow-[0_0_8px_rgba(181,152,90,0.5)]"></div>
+<div class="absolute top-48 transform -translate-x-1/2 left-1/2 -mt-4 bg-background border border-champagne px-2 py-0.5 rounded text-champagne font-label-eyebrow text-[10px] tracking-widest font-bold z-10">IDEAL</div>
+<div class="scale-tick" style="left: 60%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 60%;">Lig. cerrada</div>
+<div class="scale-tick" style="left: 80%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 80%;">Cerrada</div>
+<div class="scale-tick" style="left: 100%;"></div>
+<div class="scale-label font-caption text-caption text-on-surface-variant" style="left: 100%;">Muy cerrada</div>
+<!-- User Indicator (e.g., positioned at 68%) -->
+<div class="scale-indicator" style="left: 68%;">
+<div class="bg-ultramarine text-linen font-caption text-[10px] px-1.5 py-0.5 rounded mb-1 font-bold">USTED</div>
+<div class="triangle-down"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Grid Layout for Sub-sections -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-margin">
+<!-- Diversidad Block -->
+<section class="bg-surface-container rounded-xl p-lg border border-outline-variant/20 flex flex-col">
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen tracking-[0.14em] uppercase mb-lg">Diversidad por Área</h3>
+<div class="flex flex-col gap-md flex-grow justify-center">
+<!-- Tech Bar -->
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-lg text-body-lg text-on-surface">Tecnología &amp; Producto</span>
+<span class="font-body-lg text-body-lg text-on-surface font-medium">45%</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-ultramarine h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<!-- Finance Bar -->
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-lg text-body-lg text-on-surface">Capital &amp; Finanzas</span>
+<span class="font-body-lg text-body-lg text-on-surface font-medium">25%</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-ultramarine/70 h-full rounded-full" style="width: 25%"></div>
+</div>
+</div>
+<!-- Operations Bar -->
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-lg text-body-lg text-on-surface">Operaciones &amp; Legal</span>
+<span class="font-body-lg text-body-lg text-on-surface font-medium">20%</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-ultramarine/50 h-full rounded-full" style="width: 20%"></div>
+</div>
+</div>
+<!-- Marketing Bar -->
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-lg text-body-lg text-on-surface">Medios &amp; Marketing</span>
+<span class="font-body-lg text-body-lg text-on-surface font-medium">10%</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-ultramarine/30 h-full rounded-full" style="width: 10%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Balance de Vínculos Block -->
+<section class="bg-surface-container rounded-xl p-lg border border-outline-variant/20 flex flex-col relative">
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen tracking-[0.14em] uppercase mb-lg">Balance de Vínculos</h3>
+<!-- Stacked Bar Chart for Proportions -->
+<div class="mb-md mt-sm">
+<div class="flex w-full h-8 rounded-md overflow-hidden ring-1 ring-outline-variant/20">
+<!-- Operacional: 65% -->
+<div class="bg-surface-variant flex items-center justify-center text-xs font-bold text-on-surface-variant" style="width: 65%;" title="Operacional">65%</div>
+<!-- Personal: 25% -->
+<div class="bg-ultramarine/40 flex items-center justify-center text-xs font-bold text-linen" style="width: 25%;" title="Personal">25%</div>
+<!-- Estratégico: 10% (Critically low) -->
+<div class="bg-champagne flex items-center justify-center text-xs font-bold text-surface" style="width: 10%;" title="Estratégico">10%</div>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex justify-between px-sm mb-lg border-b border-outline-variant/20 pb-md">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded bg-surface-variant"></div>
+<span class="font-caption text-caption text-on-surface-variant">Operacional</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded bg-ultramarine/40"></div>
+<span class="font-caption text-caption text-on-surface-variant">Personal</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded bg-champagne"></div>
+<span class="font-caption text-caption text-linen font-bold">Estratégico</span>
+</div>
+</div>
+<!-- Soft Alert for Low Strategic Links -->
+<div class="mt-auto bg-tertiary-container/20 border border-champagne/30 rounded-lg p-md flex items-start gap-sm">
+<span class="material-symbols-outlined text-champagne shrink-0 mt-0.5" data-icon="warning">warning</span>
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-champagne mb-xs">Atención Requerida</h4>
+<p class="font-caption text-caption text-champagne/80">
+                            La proporción de vínculos estratégicos (10%) se encuentra por debajo del umbral mínimo recomendado (20%). Se sugiere activar iniciativas de networking orientadas al largo plazo.
+                        </p>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

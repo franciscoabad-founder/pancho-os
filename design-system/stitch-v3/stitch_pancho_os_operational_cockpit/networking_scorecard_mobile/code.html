@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scorecard Networking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#2a3355",
+                        "surface-tint": "#bcc2ff",
+                        "background": "#071132",
+                        "on-primary-fixed": "#000b62",
+                        "champagne": "#B5985A",
+                        "tertiary-fixed": "#ffdf9d",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-container-highest": "#2a3355",
+                        "tertiary-container": "#745c24",
+                        "on-secondary-fixed": "#001454",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container": "#151d3f",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "secondary": "#b8c4ff",
+                        "primary": "#bcc2ff",
+                        "on-surface-variant": "#c5c5d7",
+                        "on-background": "#dde1ff",
+                        "on-tertiary": "#3f2e00",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a2b1fa",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "surface-container-low": "#10193a",
+                        "royal": "#1A2B6B",
+                        "surface-container-high": "#1f284a",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "ultramarine": "#3B4ED9",
+                        "secondary-container": "#324283",
+                        "bronze": "#8A6F3D",
+                        "slate-light": "#E8EAF0",
+                        "on-tertiary-container": "#f7d692",
+                        "tertiary": "#e3c380",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#1a2b6b",
+                        "linen": "#FAFAF7",
+                        "ink": "#0E1738",
+                        "inverse-primary": "#3a4dd8",
+                        "surface-bright": "#2f375a",
+                        "on-surface": "#dde1ff",
+                        "primary-container": "#3b4ed9",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "outline-variant": "#454654",
+                        "surface-dim": "#071132",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "surface-container-lowest": "#030b2d",
+                        "inverse-on-surface": "#262e50",
+                        "on-primary-container": "#d4d7ff",
+                        "outline": "#8f8fa0"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        margin: "16px",
+                        sm: "8px",
+                        lg: "24px",
+                        xs: "4px",
+                        gutter: "16px",
+                        xl: "48px",
+                        md: "16px",
+                        unit: "4px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"]
+                    },
+                    fontSize: {
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "hero-metric": ["60px", { lineHeight: "64px", letterSpacing: "-0.02em", fontWeight: "900" }],
+                        "caption": ["12px", { lineHeight: "16px", fontWeight: "300" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "label-eyebrow": ["13px", { lineHeight: "16px", letterSpacing: "0.14em", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg min-h-screen flex flex-col md:flex-row pb-20 md:pb-0">
+<!-- Top Navigation (Desktop Only) -->
+<header class="hidden md:flex justify-between items-center w-full px-lg h-16 max-w-7xl mx-auto bg-surface border-b border-outline-variant z-40 fixed top-0 w-full">
+<div class="font-headline-md text-headline-md font-black text-linen">Pancho OS</div>
+<nav class="flex space-x-lg">
+<a class="text-on-surface-variant hover:text-ultramarine transition-colors font-body-lg text-body-lg" href="#">Hoy</a>
+<a class="text-ultramarine font-bold border-b-2 border-ultramarine pb-1 font-body-lg text-body-lg" href="#">Salud</a>
+<a class="text-on-surface-variant hover:text-ultramarine transition-colors font-body-lg text-body-lg" href="#">Finanzas</a>
+</nav>
+<div class="flex items-center space-x-md text-champagne">
+<span class="font-label-eyebrow text-label-eyebrow uppercase mr-md">Maker Mode</span>
+<span class="material-symbols-outlined cursor-pointer hover:opacity-80 transition-opacity" data-icon="settings">settings</span>
+<span class="material-symbols-outlined cursor-pointer hover:opacity-80 transition-opacity" data-icon="notifications">notifications</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 px-margin pt-md md:pt-24 pb-lg max-w-lg mx-auto w-full md:ml-60">
+<!-- Header -->
+<div class="mb-lg mt-md">
+<h1 class="font-headline-md text-headline-md text-linen mb-xs">Scorecard Networking</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Análisis de conexiones y diversidad.</p>
+</div>
+<!-- Horizontal Hero Scale -->
+<div class="bg-royal rounded-xl p-lg mb-lg border border-outline-variant relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-ultramarine/20 to-transparent pointer-events-none"></div>
+<div class="relative z-10 flex flex-col justify-between h-full">
+<div>
+<h2 class="font-label-eyebrow text-label-eyebrow text-linen uppercase tracking-widest mb-sm">Índice de Conexión Global</h2>
+<div class="font-hero-metric text-hero-metric text-champagne leading-none">8.4</div>
+</div>
+<div class="mt-lg">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-caption text-caption text-on-surface-variant">Posición Actual</span>
+<span class="font-caption text-caption text-linen font-bold">Top 12%</span>
+</div>
+<div class="w-full bg-ink rounded-full h-2 overflow-hidden">
+<div class="bg-champagne h-full rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Desglose Vertical -->
+<div class="space-y-md">
+<!-- Diversidad de Industria -->
+<div class="bg-surface-container rounded-lg p-md border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-ultramarine/20 flex items-center justify-center text-ultramarine">
+<span class="material-symbols-outlined" data-icon="diversity_3" data-weight="fill">diversity_3</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-linen font-medium">Diversidad de Industria</h3>
+<p class="font-caption text-caption text-on-surface-variant">Vínculos fuera de tech</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-linen block leading-none">32%</span>
+<span class="font-caption text-caption text-champagne flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_upward">arrow_upward</span> +4%
+                    </span>
+</div>
+</div>
+<!-- Balance de Vínculos -->
+<div class="bg-surface-container rounded-lg p-md border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-champagne/20 flex items-center justify-center text-champagne">
+<span class="material-symbols-outlined" data-icon="handshake" data-weight="fill">handshake</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-linen font-medium">Balance de Valor</h3>
+<p class="font-caption text-caption text-on-surface-variant">Relaciones bidireccionales</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-linen block leading-none">65%</span>
+<span class="font-caption text-caption text-error flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span> Requiere atención
+                    </span>
+</div>
+</div>
+<!-- Nuevas Conexiones (Alerta) -->
+<div class="bg-tertiary-container/20 rounded-lg p-md border border-tertiary-container flex items-start gap-md">
+<span class="material-symbols-outlined text-champagne mt-1" data-icon="notification_important" data-weight="fill">notification_important</span>
+<div>
+<h3 class="font-body-lg text-body-lg text-champagne font-bold mb-xs">Alerta de Inactividad</h3>
+<p class="font-caption text-caption text-on-surface-variant">3 contactos clave no han sido contactados en los últimos 90 días. Revisa tu agenda para reconectar.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink border-t border-outline-variant md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined text-[24px] mb-xs" data-icon="dashboard">dashboard</span>
+<span class="font-label-eyebrow text-[10px] tracking-widest uppercase">Hoy</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-[24px] mb-xs" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-label-eyebrow text-[10px] tracking-widest uppercase">Salud</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined text-[24px] mb-xs" data-icon="payments">payments</span>
+<span class="font-label-eyebrow text-[10px] tracking-widest uppercase">Finanzas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined text-[24px] mb-xs" data-icon="fitness_center">fitness_center</span>
+<span class="font-label-eyebrow text-[10px] tracking-widest uppercase">GFIT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined text-[24px] mb-xs" data-icon="psychology">psychology</span>
+<span class="font-label-eyebrow text-[10px] tracking-widest uppercase">Cerebro</span>
+</a>
+</nav>
+</body></html>

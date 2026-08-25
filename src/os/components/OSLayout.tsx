@@ -72,6 +72,8 @@ const ms: Record<string, string> = {
   '/notas': 'edit_note',
   '/recordatorios': 'notifications',
   '/diario': 'auto_stories',
+  '/ikigai': 'self_improvement',
+  '/red': 'diversity_3',
 };
 
 const navGroups = [
@@ -82,6 +84,8 @@ const navGroups = [
     { href: '/daily', label: 'Daily OS' },
     { href: '/revision', label: 'Revision' },
     { href: '/diario', label: 'Diario' },
+    { href: '/ikigai', label: 'Ikigai' },
+    { href: '/red', label: 'Networking Room' },
   ]},
   { label: 'Control', items: [
     { href: '/semana', label: 'Semana' },

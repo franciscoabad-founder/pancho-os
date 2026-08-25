@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Diagnóstico de Networking Room</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#2a3355",
+                        "surface-tint": "#bcc2ff",
+                        "background": "#071132",
+                        "on-primary-fixed": "#000b62",
+                        "champagne": "#B5985A",
+                        "tertiary-fixed": "#ffdf9d",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-container-highest": "#2a3355",
+                        "tertiary-container": "#745c24",
+                        "on-secondary-fixed": "#001454",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container": "#151d3f",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "secondary": "#b8c4ff",
+                        "primary": "#bcc2ff",
+                        "on-surface-variant": "#c5c5d7",
+                        "on-background": "#dde1ff",
+                        "on-tertiary": "#3f2e00",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a2b1fa",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "surface-container-low": "#10193a",
+                        "royal": "#1A2B6B",
+                        "surface-container-high": "#1f284a",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "ultramarine": "#3B4ED9",
+                        "secondary-container": "#324283",
+                        "bronze": "#8A6F3D",
+                        "slate-light": "#E8EAF0",
+                        "on-tertiary-container": "#f7d692",
+                        "tertiary": "#e3c380",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#1a2b6b",
+                        "linen": "#FAFAF7",
+                        "ink": "#0E1738",
+                        "inverse-primary": "#3a4dd8",
+                        "surface-bright": "#2f375a",
+                        "on-surface": "#dde1ff",
+                        "primary-container": "#3b4ed9",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "outline-variant": "#454654",
+                        "surface-dim": "#071132",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "surface-container-lowest": "#030b2d",
+                        "inverse-on-surface": "#262e50",
+                        "on-primary-container": "#d4d7ff",
+                        "outline": "#8f8fa0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "16px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .concentric-rings circle { transition: all 0.3s ease; }
+        .concentric-rings circle:active { stroke-width: 4px; }
+    </style>
+</head>
+<body class="bg-ink text-linen font-body-lg text-body-lg min-h-screen pb-[80px]">
+<!-- Content Canvas -->
+<main class="w-full px-margin py-lg space-y-lg max-w-md mx-auto relative overflow-hidden">
+<!-- Header -->
+<header class="mb-xl">
+<h1 class="font-headline-lg text-headline-lg text-linen">Diagnóstico de Red</h1>
+<p class="text-on-surface-variant font-caption text-caption mt-sm">Networking Room - Sala A</p>
+</header>
+<!-- Form / People Stack -->
+<section class="space-y-md">
+<!-- Person Card 1 -->
+<article class="bg-royal rounded-xl p-md border border-outline-variant/30 relative">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-surface-variant" data-alt="A close-up, dramatic portrait of a professional woman in a dark, clinical-premium corporate setting. She is wearing a sharp, tailored navy suit. The lighting is moody and cinematic with a high-key spotlight on her face. The background is a blurred, ultramarine and deep ink modern office space. The aesthetic is sophisticated, executive, and unapologetically direct." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaov25zHjxdLAFRsXsDIE25yUXEAq62T3VREg5LZa5oLKbVisFr-7J4N2beUQ8zTOTwN9qx-H53TbjfSnhIS3IECOplBWZ-o8Z0RzcDhZI0mD56KnRAPWMNo0ESzbX5KE5XBim6RLFem_OfLN1IK-0Uq8ttYeR4cJwbilr9g5vP6FTzzl9Oyxeo0FwnTaisli3J7twJ0QV4F7qEW8WAV-ysFYc4O86-pxq65dgayxy-HpRokQZFYmntg"/>
+<div>
+<h2 class="font-headline-md text-headline-md text-linen text-lg">Elena Rostova</h2>
+<p class="font-caption text-caption text-champagne">VP Engineering</p>
+</div>
+</div>
+</div>
+<!-- Area Chips -->
+<div class="flex flex-wrap gap-xs mb-md">
+<span class="bg-surface-variant/50 text-secondary border border-secondary/20 px-2 py-1 rounded-sm font-label-eyebrow text-[10px]">IA</span>
+<span class="bg-surface-variant/50 text-secondary border border-secondary/20 px-2 py-1 rounded-sm font-label-eyebrow text-[10px]">SYSTEMS</span>
+</div>
+<!-- Interactive Concentric Rings (Trust/Influence/Access) -->
+<div class="flex items-center justify-between bg-surface-container-highest p-sm rounded-lg mb-md">
+<span class="font-caption text-caption text-on-surface-variant">Nivel de Impacto</span>
+<svg class="w-12 h-12 concentric-rings cursor-pointer" viewbox="0 0 50 50">
+<circle cx="25" cy="25" fill="none" r="20" stroke="#2a3355" stroke-width="2"></circle>
+<circle cx="25" cy="25" fill="none" r="14" stroke="#3B4ED9" stroke-width="2"></circle>
+<circle cx="25" cy="25" fill="#3B4ED9" r="8"></circle>
+</svg>
+</div>
+<!-- Connection Link Buttons -->
+<div class="grid grid-cols-2 gap-sm">
+<button class="bg-ultramarine text-linen font-label-eyebrow text-[11px] py-2 rounded-lg w-full active:scale-95 transition-transform">CONECTAR</button>
+<button class="bg-surface-variant text-linen font-label-eyebrow text-[11px] py-2 rounded-lg w-full border border-outline-variant active:scale-95 transition-transform">OBSERVAR</button>
+</div>
+</article>
+<!-- Person Card 2 -->
+<article class="bg-royal rounded-xl p-md border border-outline-variant/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-surface-variant" data-alt="A striking portrait of a male executive in his 40s. He has a sharp jawline and short, neatly styled hair. He is wearing a dark charcoal turtleneck. The lighting is cool, clinical, and precise, casting subtle shadows that emphasize depth. The background is completely abstract, composed of deep indigo and ink tones, matching a high-end corporate dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClHMGO5nMXQ4QigA_oDRvguqN811z5G_f8oeyJkGgJyjehDwkXAsaLyDXIxCtasiA5Z-nyX2AWD7JMEwesE1H2rDlqwkVyp4fJMOjr5mQC72BshPhFuSCbCysziK4cbdZA7yDLhxEBYLtOyWkOeSiUMaDlNWy70lFEM2uHWXO18-z5GDhF9JIZXcDjlpBynktJk8__N2LieNTVzuNlRpIA_3o_Y_QPinGk0Axr_wJoTU35Lmlw_LQ5_A"/>
+<div>
+<h2 class="font-headline-md text-headline-md text-linen text-lg">Marcus Vance</h2>
+<p class="font-caption text-caption text-champagne">Director de Operaciones</p>
+</div>
+</div>
+</div>
+<!-- Area Chips -->
+<div class="flex flex-wrap gap-xs mb-md">
+<span class="bg-surface-variant/50 text-secondary border border-secondary/20 px-2 py-1 rounded-sm font-label-eyebrow text-[10px]">LOGÍSTICA</span>
+<span class="bg-surface-variant/50 text-secondary border border-secondary/20 px-2 py-1 rounded-sm font-label-eyebrow text-[10px]">FINANZAS</span>
+</div>
+<!-- Interactive Concentric Rings -->
+<div class="flex items-center justify-between bg-surface-container-highest p-sm rounded-lg mb-md">
+<span class="font-caption text-caption text-on-surface-variant">Nivel de Impacto</span>
+<svg class="w-12 h-12 concentric-rings cursor-pointer" viewbox="0 0 50 50">
+<circle cx="25" cy="25" fill="none" r="20" stroke="#3B4ED9" stroke-width="2"></circle>
+<circle cx="25" cy="25" fill="none" r="14" stroke="#2a3355" stroke-width="2"></circle>
+<circle cx="25" cy="25" fill="#2a3355" r="8"></circle>
+</svg>
+</div>
+<!-- Connection Link Buttons -->
+<div class="grid grid-cols-2 gap-sm">
+<button class="bg-surface-variant text-linen font-label-eyebrow text-[11px] py-2 rounded-lg w-full border border-outline-variant active:scale-95 transition-transform">CONECTAR</button>
+<button class="bg-surface-variant text-linen font-label-eyebrow text-[11px] py-2 rounded-lg w-full border border-outline-variant active:scale-95 transition-transform">OBSERVAR</button>
+</div>
+</article>
+</section>
+<!-- Topology Drag Section -->
+<section class="mt-xl">
+<h3 class="font-label-eyebrow text-label-eyebrow text-champagne mb-md">TOPOLOGÍA DE RED</h3>
+<div class="bg-royal rounded-xl h-64 border border-outline-variant relative overflow-hidden flex items-center justify-center p-4">
+<!-- Abstract nodes for small screen -->
+<div class="absolute inset-0 bg-surface-variant/10"></div>
+<!-- Node 1 -->
+<div class="absolute top-8 left-8 w-8 h-8 rounded-full bg-ultramarine flex items-center justify-center shadow-lg border-2 border-linen cursor-pointer active:scale-110 transition-transform z-10">
+<span class="font-caption text-[10px] font-bold text-linen">E</span>
+</div>
+<!-- Node 2 -->
+<div class="absolute bottom-12 right-10 w-6 h-6 rounded-full bg-surface-container-highest border border-champagne flex items-center justify-center cursor-pointer active:scale-110 transition-transform z-10">
+<span class="font-caption text-[8px] text-champagne">M</span>
+</div>
+<!-- Central Hub -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-ink border-2 border-ultramarine flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-ultramarine text-sm">hub</span>
+</div>
+<!-- Faux SVGLines connecting them -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 1;">
+<line stroke="#454654" stroke-dasharray="2,2" stroke-width="1" x1="15%" x2="50%" y1="20%" y2="50%"></line>
+<line opacity="0.5" stroke="#3B4ED9" stroke-width="1" x1="85%" x2="50%" y1="75%" y2="50%"></line>
+</svg>
+<p class="absolute bottom-2 text-center w-full font-caption text-[10px] text-on-surface-variant">Arrastre para vincular nodos</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-ink dark:bg-ink border-t border-outline-variant hidden md:hidden flex justify-around items-center px-gutter py-sm" style="display: flex;">
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-eyebrow text-[9px] uppercase tracking-wider">Hoy</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">monitor_heart</span>
+<span class="font-label-eyebrow text-[9px] uppercase tracking-wider">Salud</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">payments</span>
+<span class="font-label-eyebrow text-[9px] uppercase tracking-wider">Finanzas</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1">fitness_center</span>
+<span class="font-label-eyebrow text-[9px] uppercase tracking-wider">GFIT</span>
+</a>
+<!-- Active Tab: Cerebro (Mapping "Networking Room/Topology" to Knowledge/Network conceptually as it fits best among the 5 options provided for a complex diagnostic tool) -->
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm active:scale-90 transition-all w-16" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-eyebrow text-[9px] uppercase tracking-wider">Cerebro</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mapa de Networking - Pancho OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#2a3355",
+                        "surface-tint": "#bcc2ff",
+                        "background": "#071132",
+                        "on-primary-fixed": "#000b62",
+                        "champagne": "#B5985A",
+                        "tertiary-fixed": "#ffdf9d",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-container-highest": "#2a3355",
+                        "tertiary-container": "#745c24",
+                        "on-secondary-fixed": "#001454",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container": "#151d3f",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "secondary": "#b8c4ff",
+                        "primary": "#bcc2ff",
+                        "on-surface-variant": "#c5c5d7",
+                        "on-background": "#dde1ff",
+                        "on-tertiary": "#3f2e00",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a2b1fa",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "surface-container-low": "#10193a",
+                        "royal": "#1A2B6B",
+                        "surface-container-high": "#1f284a",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "ultramarine": "#3B4ED9",
+                        "secondary-container": "#324283",
+                        "bronze": "#8A6F3D",
+                        "slate-light": "#E8EAF0",
+                        "on-tertiary-container": "#f7d692",
+                        "tertiary": "#e3c380",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#1a2b6b",
+                        "linen": "#FAFAF7",
+                        "ink": "#0E1738",
+                        "inverse-primary": "#3a4dd8",
+                        "surface-bright": "#2f375a",
+                        "on-surface": "#dde1ff",
+                        "primary-container": "#3b4ed9",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "outline-variant": "#454654",
+                        "surface-dim": "#071132",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "surface-container-lowest": "#030b2d",
+                        "inverse-on-surface": "#262e50",
+                        "on-primary-container": "#d4d7ff",
+                        "outline": "#8f8fa0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "24px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for drawer */
+        .drawer-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .drawer-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .drawer-scroll::-webkit-scrollbar-thumb {
+            background-color: #454654;
+            border-radius: 4px;
+        }
+        
+        /* Node graph styles */
+        .node { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); transition: all 0.3s ease; }
+        .node-primary { background-color: #3B4ED9; z-index: 10; }
+        .node-secondary { background-color: #B5985A; z-index: 5; }
+        .node-tertiary { background-color: #8A6F3D; opacity: 0.8; z-index: 1; }
+        .link { position: absolute; background-color: #E8EAF0; opacity: 0.2; transform-origin: 0 50%; z-index: 0; }
+        
+        /* Pulse animation for active node */
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+        .active-node::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+            background-color: inherit; border-radius: 50%;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-background text-linen overflow-hidden h-screen w-screen relative">
+<!-- Top App Bar (Mobile optimized - hidden on md per instructions, but keeping structure if needed) -->
+<header class="hidden md:flex justify-between items-center w-full px-margin h-16 max-w-7xl mx-auto bg-surface border-b border-outline-variant fixed top-0 z-50">
+<div class="font-headline-md text-headline-md font-black text-linen">Pancho OS</div>
+<nav class="flex gap-lg">
+<a class="text-on-surface-variant font-normal hover:text-ultramarine transition-colors font-body-lg text-body-lg" href="#">Hoy</a>
+<a class="text-on-surface-variant font-normal hover:text-ultramarine transition-colors font-body-lg text-body-lg" href="#">Salud</a>
+<a class="text-on-surface-variant font-normal hover:text-ultramarine transition-colors font-body-lg text-body-lg" href="#">Finanzas</a>
+<a class="text-ultramarine font-bold border-b-2 border-ultramarine pb-1 font-body-lg text-body-lg" href="#">Cerebro</a>
+</nav>
+<div class="flex items-center gap-sm">
+<button class="bg-ultramarine text-linen px-4 py-2 rounded font-label-eyebrow text-label-eyebrow">Maker Mode</button>
+<span class="material-symbols-outlined text-champagne cursor-pointer">settings</span>
+<span class="material-symbols-outlined text-champagne cursor-pointer">notifications</span>
+</div>
+</header>
+<!-- Main Content Canvas - Networking Graph -->
+<main class="w-full h-full relative" id="graph-container">
+<!-- Interactive Graph Area -->
+<div class="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing origin-center" id="zoom-layer" style="transform: scale(1) translate(0px, 0px);">
+<!-- Links -->
+<div class="link" style="width: 150px; height: 1px; top: 40%; left: 50%; transform: rotate(45deg);"></div>
+<div class="link" style="width: 120px; height: 1px; top: 40%; left: 50%; transform: rotate(135deg);"></div>
+<div class="link" style="width: 200px; height: 1px; top: 40%; left: 50%; transform: rotate(-30deg);"></div>
+<div class="link" style="width: 180px; height: 1px; top: 65%; left: 35%; transform: rotate(10deg);"></div>
+<div class="link" style="width: 100px; height: 1px; top: 25%; left: 70%; transform: rotate(80deg);"></div>
+<!-- Nodes -->
+<!-- Central Node (User) -->
+<div class="node node-primary active-node" style="top: 40%; left: 50%; width: 24px; height: 24px;"></div>
+<!-- Secondary Nodes (Direct Connections) -->
+<div class="node node-secondary" style="top: 55%; left: 65%; width: 16px; height: 16px;">
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-caption text-caption text-on-surface-variant whitespace-nowrap">Tech Team</span>
+</div>
+<div class="node node-secondary" style="top: 25%; left: 35%; width: 16px; height: 16px;">
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-caption text-caption text-on-surface-variant whitespace-nowrap">Investors</span>
+</div>
+<div class="node node-secondary" style="top: 30%; left: 70%; width: 16px; height: 16px;">
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-caption text-caption text-on-surface-variant whitespace-nowrap">Mentors</span>
+</div>
+<!-- Tertiary Nodes (Extended Network) -->
+<div class="node node-tertiary" style="top: 65%; left: 35%; width: 8px; height: 8px;"></div>
+<div class="node node-tertiary" style="top: 68%; left: 42%; width: 8px; height: 8px;"></div>
+<div class="node node-tertiary" style="top: 20%; left: 25%; width: 8px; height: 8px;"></div>
+<div class="node node-tertiary" style="top: 15%; left: 40%; width: 8px; height: 8px;"></div>
+<div class="node node-tertiary" style="top: 45%; left: 80%; width: 8px; height: 8px;"></div>
+<div class="node node-tertiary" style="top: 25%; left: 85%; width: 8px; height: 8px;"></div>
+</div>
+<!-- Controls overlay (zoom/recenter) -->
+<div class="absolute top-margin right-margin flex flex-col gap-sm z-20 md:top-24">
+<button class="w-10 h-10 rounded-full bg-royal/80 border border-outline-variant flex items-center justify-center text-linen backdrop-blur-sm" onclick="zoomIn()">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-royal/80 border border-outline-variant flex items-center justify-center text-linen backdrop-blur-sm" onclick="zoomOut()">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-royal/80 border border-outline-variant flex items-center justify-center text-ultramarine backdrop-blur-sm mt-2" onclick="recenter()">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+</div>
+</main>
+<!-- Filter & Search Drawer (Bottom Sheet) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-high border-t border-outline-variant rounded-t-xl z-40 transition-transform duration-300 transform translate-y-[calc(100%-80px)] pb-[80px]" id="drawer">
+<!-- Handle for dragging -->
+<div class="w-full flex justify-center py-2 cursor-pointer" onclick="toggleDrawer()">
+<div class="w-12 h-1 bg-outline-variant rounded-full"></div>
+</div>
+<!-- Drawer Header (Visible when collapsed) -->
+<div class="px-gutter pb-sm flex justify-between items-center" onclick="toggleDrawer()">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-champagne">person_search</span>
+<span class="font-headline-md text-headline-md text-linen">Directorio</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" id="drawer-icon">expand_less</span>
+</div>
+<!-- Drawer Content -->
+<div class="px-gutter max-h-[60vh] overflow-y-auto drawer-scroll flex flex-col gap-lg pb-lg">
+<!-- Search -->
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-ink border border-outline-variant rounded-lg py-2 pl-10 pr-4 text-linen font-body-lg focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-colors" placeholder="Buscar por nombre o empresa..." type="text"/>
+</div>
+<!-- Filters -->
+<div>
+<h3 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-sm uppercase">Área de Interés</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1 rounded-full bg-ultramarine text-linen font-caption text-caption border border-ultramarine">Tecnología</button>
+<button class="px-3 py-1 rounded-full bg-transparent text-on-surface-variant font-caption text-caption border border-outline-variant hover:border-on-surface-variant">Finanzas</button>
+<button class="px-3 py-1 rounded-full bg-transparent text-on-surface-variant font-caption text-caption border border-outline-variant hover:border-on-surface-variant">Salud</button>
+<button class="px-3 py-1 rounded-full bg-transparent text-on-surface-variant font-caption text-caption border border-outline-variant hover:border-on-surface-variant">Operaciones</button>
+</div>
+</div>
+<div>
+<h3 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-sm uppercase">Tipo de Vínculo</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1 rounded-full bg-surface-variant text-linen font-caption text-caption border border-transparent flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-champagne"></span> Directo
+                    </button>
+<button class="px-3 py-1 rounded-full bg-surface-variant text-linen font-caption text-caption border border-transparent flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-bronze"></span> Extendido
+                    </button>
+</div>
+</div>
+<!-- Result List (Sample) -->
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex items-center justify-between p-sm border border-outline-variant rounded bg-surface">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-royal flex items-center justify-center text-champagne font-bold">JD</div>
+<div>
+<p class="font-body-lg text-linen leading-tight">Juan Pérez</p>
+<p class="font-caption text-on-surface-variant">CTO @ TechCorp</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-ultramarine">chevron_right</span>
+</div>
+<div class="flex items-center justify-between p-sm border border-outline-variant rounded bg-surface">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-royal flex items-center justify-center text-champagne font-bold">MR</div>
+<div>
+<p class="font-body-lg text-linen leading-tight">María Rodríguez</p>
+<p class="font-caption text-on-surface-variant">VP Finanzas</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-ultramarine">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink border-t border-outline-variant">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Hoy</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Salud</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Finanzas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">GFIT</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow mt-1">Cerebro</span>
+</div>
+</nav>
+<!-- Basic Interaction Script -->
+<script>
+        // Drawer Logic
+        let drawerOpen = false;
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const icon = document.getElementById('drawer-icon');
+            if (drawerOpen) {
+                drawer.classList.replace('translate-y-0', 'translate-y-[calc(100%-80px)]');
+                icon.textContent = 'expand_less';
+            } else {
+                drawer.classList.replace('translate-y-[calc(100%-80px)]', 'translate-y-0');
+                icon.textContent = 'expand_more';
+            }
+            drawerOpen = !drawerOpen;
+        }
+
+        // Basic Zoom/Pan Logic (Simulated for visual structure)
+        const zoomLayer = document.getElementById('zoom-layer');
+        let currentScale = 1;
+        let posX = 0, posY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        function updateTransform() {
+            zoomLayer.style.transform = `translate(${posX}px, ${posY}px) scale(${currentScale})`;
+        }
+
+        function zoomIn() {
+            currentScale = Math.min(currentScale + 0.2, 3);
+            updateTransform();
+        }
+
+        function zoomOut() {
+            currentScale = Math.max(currentScale - 0.2, 0.5);
+            updateTransform();
+        }
+
+        function recenter() {
+            currentScale = 1;
+            posX = 0;
+            posY = 0;
+            updateTransform();
+        }
+
+        // Simple pan implementation
+        zoomLayer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - posX;
+            startY = e.clientY - posY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            posX = e.clientX - startX;
+            posY = e.clientY - startY;
+            updateTransform();
+        });
+
+        // Touch support for mobile panning
+        zoomLayer.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startX = e.touches[0].clientX - posX;
+            startY = e.touches[0].clientY - posY;
+        });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            posX = e.touches[0].clientX - startX;
+            posY = e.touches[0].clientY - startY;
+            updateTransform();
+        });
+    </script>
+</body></html>

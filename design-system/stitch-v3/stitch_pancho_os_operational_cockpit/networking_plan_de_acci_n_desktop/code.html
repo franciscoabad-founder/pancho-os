@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Plan de Networking Room</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Montserrat -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#2a3355",
+                        "surface-tint": "#bcc2ff",
+                        "background": "#071132",
+                        "on-primary-fixed": "#000b62",
+                        "champagne": "#B5985A",
+                        "tertiary-fixed": "#ffdf9d",
+                        "ultralight": "#6B7AE8",
+                        "surface": "#071132",
+                        "surface-container-highest": "#2a3355",
+                        "tertiary-container": "#745c24",
+                        "on-secondary-fixed": "#001454",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dde1ff",
+                        "surface-container": "#151d3f",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-fixed-variant": "#324283",
+                        "on-primary": "#00189a",
+                        "secondary": "#b8c4ff",
+                        "primary": "#bcc2ff",
+                        "on-surface-variant": "#c5c5d7",
+                        "on-background": "#dde1ff",
+                        "on-tertiary": "#3f2e00",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a2b1fa",
+                        "on-primary-fixed-variant": "#1b31c1",
+                        "surface-container-low": "#10193a",
+                        "royal": "#1A2B6B",
+                        "surface-container-high": "#1f284a",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "ultramarine": "#3B4ED9",
+                        "secondary-container": "#324283",
+                        "bronze": "#8A6F3D",
+                        "slate-light": "#E8EAF0",
+                        "on-tertiary-container": "#f7d692",
+                        "tertiary": "#e3c380",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#1a2b6b",
+                        "linen": "#FAFAF7",
+                        "ink": "#0E1738",
+                        "inverse-primary": "#3a4dd8",
+                        "surface-bright": "#2f375a",
+                        "on-surface": "#dde1ff",
+                        "primary-container": "#3b4ed9",
+                        "tertiary-fixed-dim": "#e3c380",
+                        "outline-variant": "#454654",
+                        "surface-dim": "#071132",
+                        "on-tertiary-fixed-variant": "#59440d",
+                        "surface-container-lowest": "#030b2d",
+                        "inverse-on-surface": "#262e50",
+                        "on-primary-container": "#d4d7ff",
+                        "outline": "#8f8fa0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "24px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Montserrat"],
+                        "hero-metric": ["Montserrat"],
+                        "caption": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "label-eyebrow": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "hero-metric": ["60px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "300" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-eyebrow": ["13px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for minimalist feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a3355; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #454654; }
+    </style>
+</head>
+<body class="bg-ink min-h-screen text-on-surface font-body-lg flex selection:bg-ultramarine selection:text-linen antialiased">
+<!-- Shared Component: SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[240px] bg-royal border-r border-outline-variant flex flex-col py-md z-50">
+<!-- Header / Brand -->
+<div class="px-margin mb-xl">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container border border-outline-variant">
+<img alt="Founder Profile" class="w-full h-full object-cover" data-alt="A highly professional studio headshot of a minimalist founder figure, stark lighting, dark premium background, monochromatic cinematic feel, ultra-sharp focus on facial structure." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2kUb5Sn8a1LW0n8F3YnIksPV_LGzgzSolk6UEyGiTBzz63TtPgIR3FNewP2cfZSKAEFcs10AuxN4-WwHmGv1sj61ZGnD2qEjSKVnAjNQxiKyCaSq_I6kM_YE6du-nPsRkLcZgRdpcM0-hag_YaVHWLUWEjBYV6z55IhIifBTs7z9-PruyjlQH09vR-6mwobmKecLDBfm6cgKgBuwFnEuW3Z0FjVQTm4bf9GBTdpE_yw2G6IIGACoAwg"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h1>
+</div>
+</div>
+<p class="font-caption text-caption text-champagne tracking-widest uppercase">Executive Cockpit</p>
+</div>
+<!-- Navigation Links -->
+<ul class="flex-1 flex flex-col gap-xs">
+<!-- Hoy - Inactive -->
+<li>
+<a class="flex items-center gap-md px-margin py-md text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-lg text-body-lg">Hoy</span>
+</a>
+</li>
+<!-- Salud - Inactive -->
+<li>
+<a class="flex items-center gap-md px-margin py-md text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">monitor_heart</span>
+<span class="font-body-lg text-body-lg">Salud</span>
+</a>
+</li>
+<!-- Finanzas - Inactive -->
+<li>
+<a class="flex items-center gap-md px-margin py-md text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-body-lg text-body-lg">Finanzas</span>
+</a>
+</li>
+<!-- GFIT - Inactive -->
+<li>
+<a class="flex items-center gap-md px-margin py-md text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">fitness_center</span>
+<span class="font-body-lg text-body-lg">GFIT</span>
+</a>
+</li>
+<!-- Cerebro - ACTIVE (Networking implies strategy/knowledge expansion) -->
+<li>
+<a class="flex items-center gap-md px-margin py-md border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-body-lg text-body-lg">Cerebro</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-[240px] flex-1 flex flex-col p-xl h-screen overflow-y-auto">
+<!-- Header -->
+<header class="mb-lg flex justify-between items-end">
+<div>
+<p class="font-label-eyebrow text-label-eyebrow text-ultralight mb-xs uppercase">Ejecución Estratégica</p>
+<h2 class="font-headline-lg text-headline-lg text-linen">Networking Room</h2>
+</div>
+<div class="text-right">
+<p class="font-caption text-caption text-on-surface-variant">Protocolo Activo</p>
+<p class="font-body-lg text-body-lg text-champagne font-bold">Modo Expansión</p>
+</div>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-margin flex-1 pb-xl">
+<!-- SECTION: La Frontera a Cruzar (Heavy Visual Weight) -->
+<div class="col-span-12 relative rounded-xl overflow-hidden bg-ultramarine flex flex-col justify-end p-lg min-h-[280px] shadow-2xl shadow-ultramarine/20 group">
+<!-- Abstract dark pattern to break solid color slightly -->
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent pointer-events-none"></div>
+<div class="relative z-10 w-full max-w-4xl">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-linen opacity-80 text-[20px]">warning</span>
+<h3 class="font-label-eyebrow text-label-eyebrow text-linen/80 uppercase tracking-widest">La Frontera a Cruzar</h3>
+</div>
+<!-- Massive, borderless input for emotional statement -->
+<textarea class="w-full bg-transparent font-headline-lg text-headline-lg text-linen placeholder:text-linen/30 border-none focus:ring-0 p-0 resize-none h-[120px] leading-tight" placeholder="Define el miedo, la inercia o la barrera social que debes destruir hoy para alcanzar a tus objetivos..."></textarea>
+</div>
+</div>
+<!-- SECTION: Meta de Red (Minimalist Large Field) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-low rounded-xl p-lg border border-outline-variant/30 flex flex-col">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-champagne text-[20px]">track_changes</span>
+<h3 class="font-label-eyebrow text-label-eyebrow text-champagne uppercase">Meta de Red</h3>
+</div>
+<div class="flex-1 flex items-center">
+<textarea class="w-full bg-transparent font-headline-md text-headline-md text-linen placeholder:text-on-surface-variant/40 border-b border-outline-variant/50 focus:border-ultramarine focus:ring-0 px-0 pb-sm resize-none h-32 transition-colors" placeholder="Ej: Asegurar 1 reunión con un inversor Serie A esta semana..."></textarea>
+</div>
+<div class="mt-md flex justify-end">
+<button class="bg-surface-variant text-linen font-label-eyebrow text-label-eyebrow uppercase px-md py-sm rounded hover:bg-ultramarine transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">done</span>
+                        Fijar Meta
+                    </button>
+</div>
+</div>
+<!-- SECTION: Personas Objetivo & Tácticas (Priority Stack) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container rounded-xl p-lg border border-outline-variant/30 flex flex-col">
+<div class="flex items-center justify-between mb-lg pb-md border-b border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-ultramarine text-[20px]">person_search</span>
+<h3 class="font-label-eyebrow text-label-eyebrow text-ultramarine uppercase">Personas Objetivo</h3>
+</div>
+<button class="text-on-surface-variant hover:text-linen transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- List / Priority Stack -->
+<div class="flex flex-col gap-xs flex-1">
+<!-- Item 1: Alejandro V. -->
+<div class="flex items-start md:items-center flex-col md:flex-row gap-md p-md rounded-lg hover:bg-surface-variant/30 transition-colors border-b border-outline-variant/20 last:border-0 group">
+<div class="flex items-center gap-md min-w-[200px]">
+<div class="w-10 h-10 rounded-full bg-royal flex items-center justify-center font-bold text-linen border border-outline-variant/50">
+                                AV
+                            </div>
+<div>
+<p class="font-body-lg text-body-lg font-bold text-linen">Alejandro V.</p>
+<p class="font-caption text-caption text-on-surface-variant">CEO, TechNova</p>
+</div>
+</div>
+<div class="flex-1 w-full relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none group-focus-within:text-ultramarine transition-colors">edit_note</span>
+<input class="w-full bg-ink border border-outline-variant/50 rounded-md py-sm pl-xl pr-md text-body-lg font-body-lg text-linen placeholder:text-on-surface-variant/40 focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-all" placeholder="Escribe tu táctica de abordaje aquí..." type="text"/>
+</div>
+</div>
+<!-- Item 2: Mónica P. -->
+<div class="flex items-start md:items-center flex-col md:flex-row gap-md p-md rounded-lg hover:bg-surface-variant/30 transition-colors border-b border-outline-variant/20 last:border-0 group">
+<div class="flex items-center gap-md min-w-[200px]">
+<div class="w-10 h-10 rounded-full bg-royal flex items-center justify-center font-bold text-linen border border-outline-variant/50">
+                                MP
+                            </div>
+<div>
+<p class="font-body-lg text-body-lg font-bold text-linen">Mónica P.</p>
+<p class="font-caption text-caption text-on-surface-variant">VP Product</p>
+</div>
+</div>
+<div class="flex-1 w-full relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none group-focus-within:text-ultramarine transition-colors">edit_note</span>
+<input class="w-full bg-ink border border-outline-variant/50 rounded-md py-sm pl-xl pr-md text-body-lg font-body-lg text-linen placeholder:text-on-surface-variant/40 focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-all" placeholder="Escribe tu táctica de abordaje aquí..." type="text"/>
+</div>
+</div>
+<!-- Item 3: Carlos G. -->
+<div class="flex items-start md:items-center flex-col md:flex-row gap-md p-md rounded-lg hover:bg-surface-variant/30 transition-colors border-b border-outline-variant/20 last:border-0 group">
+<div class="flex items-center gap-md min-w-[200px]">
+<div class="w-10 h-10 rounded-full bg-royal flex items-center justify-center font-bold text-linen border border-outline-variant/50">
+                                CG
+                            </div>
+<div>
+<p class="font-body-lg text-body-lg font-bold text-linen">Carlos G.</p>
+<p class="font-caption text-caption text-on-surface-variant">Angel Investor</p>
+</div>
+</div>
+<div class="flex-1 w-full relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none group-focus-within:text-ultramarine transition-colors">edit_note</span>
+<input class="w-full bg-ink border border-outline-variant/50 rounded-md py-sm pl-xl pr-md text-body-lg font-body-lg text-linen placeholder:text-on-surface-variant/40 focus:border-ultramarine focus:ring-1 focus:ring-ultramarine outline-none transition-all" placeholder="Escribe tu táctica de abordaje aquí..." type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

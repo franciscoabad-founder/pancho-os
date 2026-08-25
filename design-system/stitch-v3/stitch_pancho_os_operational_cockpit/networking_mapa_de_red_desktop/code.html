@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Networking Room - Pancho OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#2a3355",
+                      "surface-tint": "#bcc2ff",
+                      "background": "#071132",
+                      "on-primary-fixed": "#000b62",
+                      "champagne": "#B5985A",
+                      "tertiary-fixed": "#ffdf9d",
+                      "ultralight": "#6B7AE8",
+                      "surface": "#071132",
+                      "surface-container-highest": "#2a3355",
+                      "tertiary-container": "#745c24",
+                      "on-secondary-fixed": "#001454",
+                      "on-error-container": "#ffdad6",
+                      "inverse-surface": "#dde1ff",
+                      "surface-container": "#151d3f",
+                      "on-tertiary-fixed": "#251a00",
+                      "on-secondary-fixed-variant": "#324283",
+                      "on-primary": "#00189a",
+                      "secondary": "#b8c4ff",
+                      "primary": "#bcc2ff",
+                      "on-surface-variant": "#c5c5d7",
+                      "on-background": "#dde1ff",
+                      "on-tertiary": "#3f2e00",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#a2b1fa",
+                      "on-primary-fixed-variant": "#1b31c1",
+                      "surface-container-low": "#10193a",
+                      "royal": "#1A2B6B",
+                      "surface-container-high": "#1f284a",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "ultramarine": "#3B4ED9",
+                      "secondary-container": "#324283",
+                      "bronze": "#8A6F3D",
+                      "slate-light": "#E8EAF0",
+                      "on-tertiary-container": "#f7d692",
+                      "tertiary": "#e3c380",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#dde1ff",
+                      "primary-fixed": "#dfe0ff",
+                      "on-secondary": "#1a2b6b",
+                      "linen": "#FAFAF7",
+                      "ink": "#0E1738",
+                      "inverse-primary": "#3a4dd8",
+                      "surface-bright": "#2f375a",
+                      "on-surface": "#dde1ff",
+                      "primary-container": "#3b4ed9",
+                      "tertiary-fixed-dim": "#e3c380",
+                      "outline-variant": "#454654",
+                      "surface-dim": "#071132",
+                      "on-tertiary-fixed-variant": "#59440d",
+                      "surface-container-lowest": "#030b2d",
+                      "inverse-on-surface": "#262e50",
+                      "on-primary-container": "#d4d7ff",
+                      "outline": "#8f8fa0"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "24px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Montserrat"],
+                      "hero-metric": ["Montserrat"],
+                      "caption": ["Montserrat"],
+                      "headline-lg": ["Montserrat"],
+                      "headline-md": ["Montserrat"],
+                      "label-eyebrow": ["Montserrat"]
+              },
+              "fontSize": {
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "hero-metric": ["60px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "300"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "label-eyebrow": ["13px", {"lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Custom scrollbar for panel */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3355;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex font-body-lg">
+<!-- SideNavBar (Desktop Only) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 h-full w-[240px] bg-royal border-r border-outline-variant py-md z-40">
+<!-- Brand / Header -->
+<div class="px-lg pb-xl flex flex-col gap-xs">
+<h1 class="font-headline-md text-headline-md font-bold text-linen">Pancho OS</h1>
+<span class="font-label-eyebrow text-label-eyebrow text-champagne">Executive Cockpit</span>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-xs px-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Hoy</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span>Salud</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finanzas</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant font-normal hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span>GFIT</span>
+</a>
+<!-- Active State: Cerebro (Closest match for graph/network logic) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg border-l-4 border-ultramarine text-linen bg-ultramarine/10 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Cerebro</span>
+</a>
+</nav>
+<!-- Avatar / Bottom Profile -->
+<div class="mt-auto px-lg pt-lg border-t border-outline-variant flex items-center gap-md">
+<img alt="Founder Profile" class="w-10 h-10 rounded-full object-cover border border-slate-light/20" data-alt="A hyper-realistic, dramatic studio portrait of a corporate executive founder. The lighting is low-key with a sharp rim light highlighting the jawline and shoulder. The background is a solid, deep slate grey. The mood is serious, authoritative, and clinical-premium, perfectly suited for a high-end operating system dashboard avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT9E-DsFdEgga-9bSVDz1tyc0WmB14S13j5maItzuOeaCHAMgmai7pP-iSD-sHGzlV1ET1nNHqDua9oRE8u7kfXNBVJolOOdlOEjwXjGQVc3BMSx2EkJUyC4z-eiQrCMl1m270PwS68Qk0tEu6x2UvtbwS5IdPQy34iiMCJMwnWl5XoJ5hlouCkk6Zt-5Tc4XQnHhjXZm2oQA7Bb_ZOr8hYQaAqZ_3j--l8Ouo2Galyn6j3l8ggv57ew"/>
+<div class="flex flex-col">
+<span class="font-label-eyebrow text-label-eyebrow text-linen">Admin</span>
+<span class="font-caption text-caption text-on-surface-variant">Online</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col ml-0 md:ml-[240px] h-screen relative">
+<!-- TopAppBar -->
+<header class="hidden md:flex justify-between items-center w-full px-margin h-16 bg-surface border-b border-outline-variant shrink-0 z-30">
+<!-- Breadcrumb / Section Title -->
+<div class="flex items-center gap-sm">
+<span class="font-label-eyebrow text-label-eyebrow text-on-surface-variant uppercase tracking-widest">Cerebro</span>
+<span class="material-symbols-outlined text-outline-variant text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="font-headline-md text-headline-md text-champagne">Networking Room</span>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-lg">
+<button class="font-label-eyebrow text-label-eyebrow text-linen bg-ultramarine px-md py-sm rounded hover:opacity-80 transition-opacity">Maker Mode</button>
+<div class="flex items-center gap-md text-on-surface-variant">
+<button class="hover:text-ultramarine transition-colors"><span class="material-symbols-outlined" data-icon="settings">settings</span></button>
+<button class="hover:text-ultramarine transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-champagne rounded-full"></span>
+</button>
+</div>
+</div>
+</header>
+<!-- Application Canvas: Graph & Sidebar -->
+<div class="flex-1 flex overflow-hidden bg-ink relative">
+<!-- Graph Container (Canvas) -->
+<div class="flex-1 relative overflow-hidden flex items-center justify-center">
+<!-- Decorative Grid Background for scale -->
+<div class="absolute inset-0 border-[0.5px] border-surface-variant/20" style="background-image: radial-gradient(#2a3355 1px, transparent 1px); background-size: 32px 32px; opacity: 0.1;"></div>
+<!-- Simulated Network Graph Layers -->
+<div class="relative w-full h-full max-w-4xl max-h-4xl">
+<!-- Connections (Links) - Slate-Light 20% opacity -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" style="opacity: 0.2;">
+<!-- Center Hub to Primary Nodes -->
+<line stroke="#E8EAF0" stroke-width="1" x1="50%" x2="30%" y1="50%" y2="30%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="50%" x2="70%" y1="50%" y2="25%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="50%" x2="80%" y1="50%" y2="60%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="50%" x2="25%" y1="50%" y2="70%"></line>
+<!-- Secondary Connections -->
+<line stroke="#E8EAF0" stroke-width="1" x1="30%" x2="20%" y1="30%" y2="15%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="30%" x2="40%" y1="30%" y2="10%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="70%" x2="85%" y1="25%" y2="15%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="80%" x2="90%" y1="60%" y2="80%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="80%" x2="65%" y1="60%" y2="85%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="25%" x2="15%" y1="70%" y2="85%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="25%" x2="40%" y1="70%" y2="80%"></line>
+<!-- Cross Connections -->
+<line stroke="#E8EAF0" stroke-width="1" x1="40%" x2="70%" y1="10%" y2="25%"></line>
+<line stroke="#E8EAF0" stroke-width="1" x1="65%" x2="40%" y1="85%" y2="80%"></line>
+</svg>
+<!-- Nodes -->
+<!-- Center Node (User/Ego) -->
+<div class="absolute top-[50%] left-[50%] w-8 h-8 -ml-4 -mt-4 bg-linen rounded-full shadow-[0_0_15px_rgba(250,250,247,0.3)] z-10 cursor-pointer hover:scale-110 transition-transform flex items-center justify-center">
+<div class="w-4 h-4 bg-ink rounded-full"></div>
+</div>
+<div class="absolute top-[50%] left-[50%] mt-5 -ml-10 w-20 text-center font-label-eyebrow text-label-eyebrow text-linen">PANCHO OS</div>
+<!-- Primary Nodes (Champagne - e.g., Investors) -->
+<div class="absolute top-[30%] left-[30%] w-6 h-6 -ml-3 -mt-3 bg-champagne rounded-full shadow-[0_0_10px_rgba(181,152,90,0.4)] z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[30%] left-[30%] mt-4 -ml-6 w-12 text-center font-caption text-caption text-on-surface-variant">VC Fund A</div>
+<div class="absolute top-[25%] left-[70%] w-5 h-5 -ml-2.5 -mt-2.5 bg-champagne rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[80%] left-[40%] w-6 h-6 -ml-3 -mt-3 bg-champagne rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<!-- Secondary Nodes (Ultramarine - e.g., Mentors/Advisors) -->
+<div class="absolute top-[60%] left-[80%] w-5 h-5 -ml-2.5 -mt-2.5 bg-ultramarine rounded-full shadow-[0_0_10px_rgba(59,78,217,0.4)] z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[60%] left-[80%] mt-4 -ml-8 w-16 text-center font-caption text-caption text-on-surface-variant">Advisor M.</div>
+<div class="absolute top-[70%] left-[25%] w-7 h-7 -ml-3.5 -mt-3.5 bg-ultramarine rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[10%] left-[40%] w-4 h-4 -ml-2 -mt-2 bg-ultramarine rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<!-- Tertiary Nodes (Bronze - e.g., Operators/Peers) -->
+<div class="absolute top-[15%] left-[20%] w-3 h-3 -ml-1.5 -mt-1.5 bg-bronze rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[15%] left-[85%] w-4 h-4 -ml-2 -mt-2 bg-bronze rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[80%] left-[90%] w-3 h-3 -ml-1.5 -mt-1.5 bg-bronze rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[85%] left-[65%] w-5 h-5 -ml-2.5 -mt-2.5 bg-bronze rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+<div class="absolute top-[85%] left-[15%] w-3 h-3 -ml-1.5 -mt-1.5 bg-bronze rounded-full z-10 cursor-pointer hover:scale-110 transition-transform"></div>
+</div>
+<!-- Floating Legend -->
+<div class="absolute bottom-lg left-lg bg-surface-container-low/80 backdrop-blur-md border border-outline-variant p-sm rounded-lg flex gap-md">
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-champagne"></div>
+<span class="font-caption text-caption text-on-surface-variant">Inversores</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-ultramarine"></div>
+<span class="font-caption text-caption text-on-surface-variant">Mentores</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-bronze"></div>
+<span class="font-caption text-caption text-on-surface-variant">Operadores</span>
+</div>
+</div>
+</div>
+<!-- Right Panel (Filters & Context) -->
+<aside class="w-[320px] bg-surface-container-high border-l border-outline-variant flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+<!-- Panel Header -->
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-highest">
+<h2 class="font-headline-md text-[18px] text-linen">Directorio de Red</h2>
+<button class="text-on-surface-variant hover:text-linen"><span class="material-symbols-outlined" data-icon="filter_list">filter_list</span></button>
+</div>
+<!-- Search Block -->
+<div class="p-lg border-b border-outline-variant">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline-variant" data-icon="search">search</span>
+<input class="w-full bg-ink border border-outline-variant rounded-lg pl-xl pr-sm py-sm text-linen font-body-lg text-body-lg focus:border-ultramarine focus:ring-1 focus:ring-ultramarine placeholder:text-outline-variant" placeholder="Buscar nodo o entidad..." type="text"/>
+</div>
+</div>
+<!-- Scrollable Filters -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-xl">
+<!-- Filter Group: Sector -->
+<div class="flex flex-col gap-sm">
+<h3 class="font-label-eyebrow text-label-eyebrow text-champagne">SECTOR ESTRATÉGICO</h3>
+<div class="flex flex-col gap-xs mt-sm">
+<label class="flex items-center gap-sm cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant group-hover:border-champagne flex items-center justify-center bg-ink">
+<span class="material-symbols-outlined text-[14px] text-champagne opacity-0 group-hover:opacity-50" data-icon="check">check</span>
+</div>
+<span class="font-body-lg text-[14px] text-on-surface-variant group-hover:text-linen">Fintech &amp; DeFi</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<div class="w-5 h-5 rounded border border-ultramarine bg-ultramarine flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-linen" data-icon="check">check</span>
+</div>
+<span class="font-body-lg text-[14px] text-linen">Salud Digital (HealthTech)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant group-hover:border-champagne flex items-center justify-center bg-ink">
+<span class="material-symbols-outlined text-[14px] text-champagne opacity-0 group-hover:opacity-50" data-icon="check">check</span>
+</div>
+<span class="font-body-lg text-[14px] text-on-surface-variant group-hover:text-linen">Inteligencia Artificial</span>
+</label>
+</div>
+</div>
+<!-- Filter Group: Vínculo -->
+<div class="flex flex-col gap-sm">
+<h3 class="font-label-eyebrow text-label-eyebrow text-champagne">TIPO DE VÍNCULO</h3>
+<!-- Toggle Pills -->
+<div class="flex flex-wrap gap-xs mt-sm">
+<button class="px-sm py-[4px] rounded-full border border-champagne bg-champagne/10 text-champagne font-caption text-caption flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-champagne"></span> Inversores
+                            </button>
+<button class="px-sm py-[4px] rounded-full border border-ultramarine bg-ultramarine/10 text-ultramarine font-caption text-caption flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-ultramarine"></span> Mentores
+                            </button>
+<button class="px-sm py-[4px] rounded-full border border-outline-variant text-on-surface-variant hover:border-bronze hover:text-bronze font-caption text-caption flex items-center gap-xs transition-colors">
+<span class="w-2 h-2 rounded-full bg-bronze opacity-50"></span> Operadores
+                            </button>
+<button class="px-sm py-[4px] rounded-full border border-outline-variant text-on-surface-variant hover:border-linen hover:text-linen font-caption text-caption flex items-center gap-xs transition-colors">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span> Inactivos
+                            </button>
+</div>
+</div>
+<!-- Filter Group: Intensidad (Cercanía) -->
+<div class="flex flex-col gap-sm">
+<h3 class="font-label-eyebrow text-label-eyebrow text-champagne">CERCANÍA (TAMAÑO NODO)</h3>
+<div class="w-full mt-sm px-xs">
+<input class="w-full h-1 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-ultramarine" max="100" min="1" type="range" value="50"/>
+<div class="flex justify-between mt-2 font-caption text-caption text-on-surface-variant">
+<span>Distante</span>
+<span>Core</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Bottom -->
+<div class="p-lg border-t border-outline-variant bg-surface-container-highest">
+<button class="w-full bg-ink border border-ultramarine text-ultramarine font-label-eyebrow text-label-eyebrow py-sm rounded-lg hover:bg-ultramarine hover:text-linen transition-colors flex justify-center items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                        Nuevo Nodo
+                    </button>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

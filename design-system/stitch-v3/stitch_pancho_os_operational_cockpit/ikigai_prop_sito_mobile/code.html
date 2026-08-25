@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mapa Ikigai - Pancho OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#2a3355",
+                    "surface-tint": "#bcc2ff",
+                    "background": "#071132",
+                    "on-primary-fixed": "#000b62",
+                    "champagne": "#B5985A",
+                    "tertiary-fixed": "#ffdf9d",
+                    "ultralight": "#6B7AE8",
+                    "surface": "#071132",
+                    "surface-container-highest": "#2a3355",
+                    "tertiary-container": "#745c24",
+                    "on-secondary-fixed": "#001454",
+                    "on-error-container": "#ffdad6",
+                    "inverse-surface": "#dde1ff",
+                    "surface-container": "#151d3f",
+                    "on-tertiary-fixed": "#251a00",
+                    "on-secondary-fixed-variant": "#324283",
+                    "on-primary": "#00189a",
+                    "secondary": "#b8c4ff",
+                    "primary": "#bcc2ff",
+                    "on-surface-variant": "#c5c5d7",
+                    "on-background": "#dde1ff",
+                    "on-tertiary": "#3f2e00",
+                    "error-container": "#93000a",
+                    "on-secondary-container": "#a2b1fa",
+                    "on-primary-fixed-variant": "#1b31c1",
+                    "surface-container-low": "#10193a",
+                    "royal": "#1A2B6B",
+                    "surface-container-high": "#1f284a",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "primary-fixed-dim": "#bcc2ff",
+                    "ultramarine": "#3B4ED9",
+                    "secondary-container": "#324283",
+                    "bronze": "#8A6F3D",
+                    "slate-light": "#E8EAF0",
+                    "on-tertiary-container": "#f7d692",
+                    "tertiary": "#e3c380",
+                    "error": "#ffb4ab",
+                    "secondary-fixed": "#dde1ff",
+                    "primary-fixed": "#dfe0ff",
+                    "on-secondary": "#1a2b6b",
+                    "linen": "#FAFAF7",
+                    "ink": "#0E1738",
+                    "inverse-primary": "#3a4dd8",
+                    "surface-bright": "#2f375a",
+                    "on-surface": "#dde1ff",
+                    "primary-container": "#3b4ed9",
+                    "tertiary-fixed-dim": "#e3c380",
+                    "outline-variant": "#454654",
+                    "surface-dim": "#071132",
+                    "on-tertiary-fixed-variant": "#59440d",
+                    "surface-container-lowest": "#030b2d",
+                    "inverse-on-surface": "#262e50",
+                    "on-primary-container": "#d4d7ff",
+                    "outline": "#8f8fa0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "gutter": "16px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": [
+                            "Montserrat"
+                    ],
+                    "hero-metric": [
+                            "Montserrat"
+                    ],
+                    "caption": [
+                            "Montserrat"
+                    ],
+                    "headline-lg": [
+                            "Montserrat"
+                    ],
+                    "headline-md": [
+                            "Montserrat"
+                    ],
+                    "label-eyebrow": [
+                            "Montserrat"
+                    ]
+            },
+            "fontSize": {
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "hero-metric": [
+                            "60px",
+                            {
+                                    "lineHeight": "64px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "900"
+                            }
+                    ],
+                    "caption": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "300"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-eyebrow": [
+                            "13px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.14em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-surface');
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .ikigai-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1.2;
+            max-width: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .ikigai-circle {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .ikigai-circle:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        
+        .circle-passion {
+            top: 5%;
+            left: 20%;
+            width: 60%;
+            height: 50%;
+            background: linear-gradient(135deg, theme('colors.ultramarine'), theme('colors.royal'));
+        }
+        
+        .circle-mission {
+            top: 25%;
+            right: 5%;
+            width: 60%;
+            height: 50%;
+            background: linear-gradient(135deg, theme('colors.champagne'), theme('colors.tertiary-container'));
+        }
+        
+        .circle-vocation {
+            bottom: 5%;
+            left: 20%;
+            width: 60%;
+            height: 50%;
+            background: linear-gradient(135deg, theme('colors.secondary-container'), theme('colors.surface-variant'));
+        }
+        
+        .circle-profession {
+            top: 25%;
+            left: 5%;
+            width: 60%;
+            height: 50%;
+            background: linear-gradient(135deg, theme('colors.surface-bright'), theme('colors.ink'));
+        }
+        
+        .ikigai-label {
+            position: absolute;
+            z-index: 20;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: theme('colors.linen');
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        
+        .label-passion { top: 15%; left: 50%; transform: translateX(-50%); }
+        .label-mission { top: 50%; right: 12%; transform: translateY(-50%); }
+        .label-vocation { bottom: 15%; left: 50%; transform: translateX(-50%); }
+        .label-profession { top: 50%; left: 12%; transform: translateY(-50%); }
+        
+        .label-ikigai {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: theme('colors.champagne');
+        }
+
+        .metric-card {
+            background-color: theme('colors.royal');
+            border: 1px solid theme('colors.outline-variant');
+            border-radius: theme('borderRadius.lg');
+            padding: theme('spacing.md');
+        }
+    </style>
+</head>
+<body class="md:hidden pb-24"> <!-- Mobile only for this specific task context -->
+<!-- Header / Top Bar for Context -->
+<header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-outline-variant px-margin h-16 flex items-center justify-between">
+<h1 class="font-headline-md text-headline-md font-black text-linen">Mapa Ikigai</h1>
+<div class="flex gap-sm text-champagne">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</div>
+</header>
+<main class="px-margin py-lg space-y-xl">
+<!-- Ikigai Venn Diagram Section -->
+<section class="flex flex-col items-center">
+<h2 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-md self-start uppercase">Visualización de Propósito</h2>
+<div class="ikigai-container">
+<div class="ikigai-circle circle-passion"></div>
+<div class="ikigai-circle circle-mission"></div>
+<div class="ikigai-circle circle-vocation"></div>
+<div class="ikigai-circle circle-profession"></div>
+<div class="ikigai-label label-passion">Lo que amas</div>
+<div class="ikigai-label label-mission">Lo que el mundo necesita</div>
+<div class="ikigai-label label-vocation">Por lo que te pagan</div>
+<div class="ikigai-label label-profession">En lo que eres bueno</div>
+<div class="ikigai-label label-ikigai font-black">IKIGAI</div>
+</div>
+</section>
+<!-- Life Zones Section -->
+<section>
+<h2 class="font-label-eyebrow text-label-eyebrow text-on-surface-variant mb-md uppercase">Zonas de Vida</h2>
+<div class="space-y-sm">
+<!-- Zone Item 1 -->
+<div class="metric-card flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-ultramarine/20 flex items-center justify-center text-ultramarine">
+<span class="material-symbols-outlined" data-icon="domain">domain</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-bold text-linen">Mi Empresa</h3>
+<p class="font-caption text-caption text-on-surface-variant">Ventas, Operaciones, Liderazgo</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-body-lg text-body-lg font-bold text-champagne">85%</span>
+<div class="w-16 h-1 bg-surface-container mt-1 rounded-full overflow-hidden">
+<div class="h-full bg-champagne w-[85%]"></div>
+</div>
+</div>
+</div>
+<!-- Zone Item 2 -->
+<div class="metric-card flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/30 flex items-center justify-center text-champagne">
+<span class="material-symbols-outlined" data-icon="family_restroom">family_restroom</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-bold text-linen">Familia</h3>
+<p class="font-caption text-caption text-on-surface-variant">Tiempo calidad, Conexión</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-body-lg text-body-lg font-bold text-champagne">92%</span>
+<div class="w-16 h-1 bg-surface-container mt-1 rounded-full overflow-hidden">
+<div class="h-full bg-champagne w-[92%]"></div>
+</div>
+</div>
+</div>
+<!-- Zone Item 3 -->
+<div class="metric-card flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="self_improvement">self_improvement</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-bold text-linen">Desarrollo Personal</h3>
+<p class="font-caption text-caption text-on-surface-variant">Lectura, Meditación, Cursos</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-body-lg text-body-lg font-bold text-champagne">60%</span>
+<div class="w-16 h-1 bg-surface-container mt-1 rounded-full overflow-hidden">
+<div class="h-full bg-champagne w-[60%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (from JSON) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm bg-ink border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined mb-xs" data-icon="dashboard">dashboard</span>
+<span class="font-label-eyebrow text-label-eyebrow">Hoy</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined mb-xs" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-label-eyebrow text-label-eyebrow">Salud</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined mb-xs" data-icon="payments">payments</span>
+<span class="font-label-eyebrow text-label-eyebrow">Finanzas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-sm hover:bg-royal rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined mb-xs" data-icon="fitness_center">fitness_center</span>
+<span class="font-label-eyebrow text-label-eyebrow">GFIT</span>
+</a>
+<!-- Active Tab: Cerebro (closest match to Ikigai/Purpose/Mind) -->
+<a class="flex flex-col items-center justify-center bg-ultramarine text-linen rounded-xl p-sm scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-xs" data-icon="psychology" data-weight="fill" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-eyebrow text-label-eyebrow">Cerebro</span>
+</a>
+</nav>
+</body></html>
