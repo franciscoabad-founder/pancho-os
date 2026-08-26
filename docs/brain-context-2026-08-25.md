@@ -57,12 +57,16 @@ La conexión O↔D está implementada y validada: el trimestral persiste `objeti
 1. B: aprobaciones como notificación en topbar, decisión con timestamp, expiración y respuesta desde Telegram.
 2. C: triage conversacional de Bandeja/Notas/Pendientes/Recordatorios y deadline/prioridad.
 3. D: KPIs relacionados con objetivos (implementado, migrado y commiteado en `dbba247`).
-4. K: Finanzas agéntica.
+4. K: implementada primera capa agéntica. `/api/finanzas/asesor` detecta cobros vencidos, pagos próximos y cobertura de liquidez; solo crea propuestas en `os_aprobaciones` tras acción explícita, nunca mueve dinero ni cambia estados financieros. Probada y desplegada en `d82104b`.
 9. M: implementada la primera vertical visual de salud (dashboard y estiramiento) con hero contextual, KPI cards responsive, estados de error, rutinas vacías seguras, accesibilidad del cronómetro y reduced-motion. Brief visual en `docs/health/health-design-brief.md`; PR #5 mergeada en `master` (`f07051e`).
 10. L: Health Connect Android.
-11. N: nudges/journeys RPG basados en el research, después de decidir dramatización y colateral.
+11. N: implementado nudge contextual en Hábitos a partir de `/api/habitos/brief`: siguiente acción, progreso del journey y tono de reinicio amable. No envía notificaciones ni aplica penalizaciones automáticas.
 12. P: scaffolding de integraciones de redes y métricas.
-13. Q: grafo de interconexión entre Journal, Networking, proyectos y tareas.
+13. Q: implementada la primera vista `/conexiones`, de solo lectura. Une proyectos con tareas y Journal por el campo estructurado `proyecto`, y planes de Networking con personas por objetivos de red; no infiere relaciones desde texto libre. Queda pendiente una visualización interactiva si aporta más que la vista operacional actual.
+
+## Producción: credenciales Supabase (actualizado por Codex)
+
+El VPS tenía una service role legacy y el proceso activo (`pancho-os-next`) atendía el dominio. Se migró a secret key moderna y se ajustó `src/server/supabase.ts` para enviar claves opacas `sb_secret_...` exclusivamente como header `apikey`, no como `Authorization: Bearer`. `GET /api/kpis`, `/api/finanzas/asesor` y `/api/conexiones` respondieron 200 localmente en el proceso activo después del deploy de `d82104b`.
 
 Contenido (Radar/Planner) y Hermes Cockpit ya no deben tratarse como trabajo pendiente de branches antiguas: verificar siempre `git log` y las rutas TanStack actuales antes de portar algo.
 
