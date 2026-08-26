@@ -43,24 +43,39 @@ function beep() {
 export default function OSSaludEstiramiento() {
   const [rutinas, setRutinas] = useState<RutinaEstiramiento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activa, setActiva] = useState<RutinaEstiramiento | null>(null);
 
   useEffect(() => {
-    fetch('/api/salud/estiramiento').then((r) => r.json()).then((d) => { setRutinas(d.rutinas ?? []); setLoading(false); });
+    fetch('/api/salud/estiramiento')
+      .then((r) => { if (!r.ok) throw new Error('No se pudieron cargar las rutinas'); return r.json(); })
+      .then((d) => { setRutinas(Array.isArray(d.rutinas) ? d.rutinas : []); })
+      .catch((e) => { setLoadError(e instanceof Error ? e.message : 'No se pudieron cargar las rutinas'); })
+      .finally(() => setLoading(false));
   }, []);
 
   if (activa) return <Reproductor rutina={activa} onSalir={() => setActiva(null)} />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {loading ? <Spinner /> :
+    <div className="salud-stretch" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="salud-section-intro">
+        <div>
+          <p className="salud-eyebrow">Movilidad</p>
+          <h1 className="salud-hero-title">Baja el ritmo. Muévete mejor.</h1>
+        </div>
+        <span className="salud-section-count">{rutinas.length} {rutinas.length === 1 ? 'rutina' : 'rutinas'}</span>
+      </div>
+      {loading ? <Spinner /> : loadError ? <EmptyState icon="error" title="No se pudieron cargar" text={loadError} /> :
         !rutinas.length ? <EmptyState icon="self_improvement" title="Sin rutinas" text="Corre el seed de estiramiento para cargar las rutinas guiadas." /> :
         rutinas.map((r) => (
-          <div key={r.id} style={card}>
+          <div key={r.id} className="salud-routine-card" style={card}>
+            <div className="salud-routine-mark" aria-hidden="true"><span className="material-symbols-outlined">self_improvement</span></div>
+            <div className="salud-routine-body">
             <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--os-text)', margin: 0 }}>{r.nombre}</p>
             {r.descripcion && <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: '3px 0 0' }}>{r.descripcion}</p>}
             <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: '6px 0 10px' }}>{r.pasos?.length ?? 0} pasos</p>
-            <Button onClick={() => setActiva(r)}>▶ Empezar</Button>
+            {r.pasos?.length ? <Button onClick={() => setActiva(r)}>▶ Empezar</Button> : <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: 0 }}>Sin pasos disponibles.</p>}
+            </div>
           </div>
         ))
       }
@@ -147,7 +162,7 @@ function Reproductor({ rutina, onSalir }: { rutina: RutinaEstiramiento; onSalir:
 
       {/* Cronómetro grande */}
       <div style={{ position: 'relative', width: 240, height: 240 }}>
-        <svg viewBox="0 0 120 120" width="240" height="240" style={{ transform: 'rotate(-90deg)' }}>
+        <svg viewBox="0 0 120 120" width="240" height="240" style={{ transform: 'rotate(-90deg)' }} role="img" aria-label={`${restante} segundos restantes en ${actual?.nombre ?? 'paso actual'}`}>
           <circle cx="60" cy="60" r="54" fill="none" stroke="var(--os-line)" strokeWidth="6" />
           <circle cx="60" cy="60" r="54" fill="none" stroke="var(--os-accent)" strokeWidth="6" strokeLinecap="round"
             strokeDasharray={`${pctPaso * C} ${C}`} style={{ transition: 'stroke-dasharray 1s linear' }} />
