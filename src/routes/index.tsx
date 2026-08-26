@@ -1,8 +1,10 @@
 // Home real del OS, portada de src/pages/index.astro a TanStack Start.
 //
 // Reemplaza el scaffold de TanStack Start por el dashboard "Hoy": onboarding,
-// One Domino + Priority Stack + wins + discomfort + semana + objetivos
-// (OSHoy), acceso a Salud, y el feed de notas del brain.
+// captura hacia el agente, One Domino + wins + priority stack + discomfort +
+// rutinas + semana + objetivos (OSHoy), accesos rapidos y el feed del brain.
+//
+// Hoy es la unica home del dia: la ruta /daily (Daily OS) se fusiono aca.
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
@@ -10,6 +12,7 @@ import OSLayout, { tituloOs } from '../os/components/OSLayout.tsx';
 import OSOnboarding from '../os/components/OSOnboarding.tsx';
 import OSHoy from '../os/components/OSHoy.tsx';
 import OSAccesosRapidos from '../os/components/OSAccesosRapidos.tsx';
+import OSPedirAlAgente from '../os/components/OSPedirAlAgente.tsx';
 
 export const Route = createFileRoute('/')({
   head: () => ({ meta: [{ title: tituloOs('Hoy') }] }),
@@ -43,6 +46,10 @@ function HomePage() {
             {fechaLarga}
           </span>
         </div>
+
+        {/* Caja de captura hacia Hermes: arriba del dashboard porque es la via mas
+            rapida de meter algo al OS sin navegar a ningun modulo. */}
+        <OSPedirAlAgente />
 
         {/* Hoy: domino, priority stack, wins, checklist, discomfort, principios, semana, norte */}
         <OSHoy />
