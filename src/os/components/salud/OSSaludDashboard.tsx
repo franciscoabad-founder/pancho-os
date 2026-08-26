@@ -22,17 +22,19 @@ export default function OSSaludDashboard() {
   const [sesion, setSesion] = useState<any>(null);
   const [peso, setPeso] = useState<any>(null);
   const [sueno, setSueno] = useState<any>(null);
+  const [dashboardError, setDashboardError] = useState(false);
 
   useEffect(() => {
     setNowMs(Date.now());
     const t = setInterval(() => setNowMs(Date.now()), 30000);
     Promise.all([
-      fetch('/api/salud/comidas-log').then((r) => r.json()).catch(() => null),
-      fetch('/api/salud/ayunos?abierto=1').then((r) => r.json()).catch(() => null),
-      fetch('/api/salud/sesiones?limit=1').then((r) => r.json()).catch(() => null),
-      fetch('/api/salud/cuerpo').then((r) => r.json()).catch(() => null),
-      fetch('/api/biometricas').then((r) => r.json()).catch(() => null),
+      fetch('/api/salud/comidas-log').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => ({ __error: true })),
+      fetch('/api/salud/ayunos?abierto=1').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => ({ __error: true })),
+      fetch('/api/salud/sesiones?limit=1').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => ({ __error: true })),
+      fetch('/api/salud/cuerpo').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => ({ __error: true })),
+      fetch('/api/biometricas').then((r) => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => ({ __error: true })),
     ]).then(([m, a, s, c, b]) => {
+      setDashboardError([m, a, s, c, b].some((x) => x?.__error));
       if (m?.totales) setMacros(m.totales);
       if (a?.ayuno) setAyuno(a.ayuno);
       if (s?.sesiones?.length) setSesion(s.sesiones[0]);
@@ -46,11 +48,22 @@ export default function OSSaludDashboard() {
   const horasAyuno = ayuno && nowMs ? duracionHoras(ayuno.inicio, null, nowMs) : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="salud-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <section className="salud-hero" aria-labelledby="salud-hero-title">
+        <div>
+          <p className="salud-eyebrow">Panel de salud</p>
+          <h1 id="salud-hero-title" className="salud-hero-title">Hoy, un dato a la vez.</h1>
+          <p className="salud-hero-copy">Registra lo esencial y deja que tu ritmo marque el siguiente paso.</p>
+        </div>
+        <a className="salud-hero-action" href={ayuno ? '/salud/ayuno' : '/gfit'}>
+          {ayuno ? 'Ver ayuno' : 'Empezar sesión'} <span aria-hidden="true">→</span>
+        </a>
+      </section>
+      {dashboardError && <p role="status" style={{ margin: 0, color: 'var(--os-warn)', fontSize: 'var(--os-text-xs)' }}>Algunos datos no están disponibles ahora; los valores mostrados pueden estar incompletos.</p>}
       {/* Resumen del día */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+      <div className="salud-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
         <a href="/salud/nutricion" style={{ ...card, textDecoration: 'none' }}>
-          <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Hoy · calorías</p>
+          <p className="salud-kpi-label" style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Hoy · calorías</p>
           <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--os-text)', margin: '4px 0 0' }}>
             {macros ? Math.round(macros.kcal) : '—'}<span style={{ fontSize: 12, color: 'var(--os-muted)' }}> kcal</span>
           </p>
@@ -96,7 +109,7 @@ export default function OSSaludDashboard() {
       </div>
 
       {/* Navegación a submódulos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10 }}>
+      <div className="salud-module-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10 }}>
         {submodulos.map((s) => (
           <a key={s.href} href={s.href} className="os-card-interactive" style={{ ...card, textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="material-symbols-outlined" style={{ fontSize: 24, color: 'var(--os-accent-light)' }}>{s.icon}</span>
