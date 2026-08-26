@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import OSLayout, { tituloOs } from '../os/components/OSLayout.tsx';
 import OSOnboarding from '../os/components/OSOnboarding.tsx';
 import OSHoy from '../os/components/OSHoy.tsx';
+import OSAccesosRapidos from '../os/components/OSAccesosRapidos.tsx';
 
 export const Route = createFileRoute('/')({
   head: () => ({ meta: [{ title: tituloOs('Hoy') }] }),
@@ -46,32 +47,8 @@ function HomePage() {
         {/* Hoy: domino, priority stack, wins, checklist, discomfort, principios, semana, norte */}
         <OSHoy />
 
-        {/* Salud */}
-        <a
-          href="/salud"
-          className="os-card os-card-interactive"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem',
-            textDecoration: 'none',
-          }}
-        >
-          <span className="material-symbols-outlined" style={{
-            fontSize: 26, color: 'var(--os-accent-light)', flexShrink: 0,
-          }}>
-            favorite
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--os-text)', margin: 0 }}>
-              Salud
-            </p>
-            <p style={{ fontSize: 12, color: 'var(--os-muted)', margin: '2px 0 0' }}>
-              Nutricion, ayuno, entrenamiento, cuerpo y estiramiento
-            </p>
-          </div>
-          <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--os-muted)' }}>
-            chevron_right
-          </span>
-        </a>
+        {/* Accesos rapidos: reemplaza la card ancha que antes solo llevaba a Salud */}
+        <OSAccesosRapidos />
 
         {/* Brain feed: notas REALES del brain (gbrain) via /api/brain/notes. */}
         <div className="os-card">
