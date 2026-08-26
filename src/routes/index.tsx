@@ -16,9 +16,13 @@ export const Route = createFileRoute('/')({
 });
 
 function HomePage() {
-  const fechaLarga = new Date().toLocaleDateString('es-EC', {
+  // es-EC devuelve la fecha entera en minuscula ("martes, 25 de agosto de 2026").
+  // Se sube solo la primera letra a mano: `text-transform: capitalize` subia
+  // tambien las de "de" y "agosto".
+  const fechaCruda = new Date().toLocaleDateString('es-EC', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+  const fechaLarga = fechaCruda.charAt(0).toUpperCase() + fechaCruda.slice(1);
 
   return (
     <OSLayout title="Hoy">
@@ -34,9 +38,7 @@ function HomePage() {
             <p className="os-eyebrow" style={{ marginBottom: 6 }}>Growth OS</p>
             <h1 className="os-h1">Hoy</h1>
           </div>
-          <span style={{
-            fontSize: 12, color: 'var(--os-muted)', textTransform: 'capitalize',
-          }}>
+          <span style={{ fontSize: 12, color: 'var(--os-muted)' }}>
             {fechaLarga}
           </span>
         </div>
