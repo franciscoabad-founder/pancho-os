@@ -14,6 +14,7 @@ import {
   type ConvertirInput,
   type NotaInput,
 } from '../../server/notas.handlers.ts';
+import { ErrorPendientes } from '../../server/pendientes.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
 
@@ -55,6 +56,7 @@ export const Route = createFileRoute('/api/notas')({
           if (err instanceof Error && err.message === 'contenido requerido') {
             return json({ error: err.message }, 400);
           }
+          if (err instanceof ErrorPendientes) return json({ error: err.message }, err.status);
           return respuestaError(err);
         }
       },

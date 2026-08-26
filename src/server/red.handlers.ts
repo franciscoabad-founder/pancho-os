@@ -113,6 +113,10 @@ export async function listarPersonas(soloActivas = true): Promise<Persona[]> {
 }
 
 export async function crearPersona(input: PersonaInput): Promise<Persona> {
+  const existentes = await listarPersonas(true);
+  if (existentes.length >= MAX_PERSONAS_RECOMENDADO) {
+    throw new Error(`limite recomendado de ${MAX_PERSONAS_RECOMENDADO} personas activas alcanzado; archiva una antes de agregar otra`);
+  }
   const nombre = textoRequerido(input.nombre, 'nombre');
   const tipoLazo = String(input.tipo_lazo ?? '').trim();
   if (!TIPOS_LAZO.includes(tipoLazo as TipoLazo)) throw new Error(`tipo_lazo invalido: usa ${TIPOS_LAZO.join('|')}`);

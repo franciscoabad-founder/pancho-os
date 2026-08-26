@@ -7,10 +7,8 @@
 // /api/gastos, /api/presupuestos y /api/por-cobrar, y el mismo comportamiento
 // visible: resumen, filtros de por cobrar y de gastos, barras de presupuesto.
 //
-// Igual que en el original (nota "fase 2a"), se mantienen a proposito los
-// prompt() de edicion de saldo y limite y los confirm() de borrado: cambiarlos
-// implica rehacer el flujo de edicion. Los errores de PATCH/DELETE siguen
-// saliendo en la caja de error inline de arriba, no en alert().
+// Los saldos y límites se editan en línea: no se interrumpe el contexto con
+// dialogs del navegador y el valor visible nunca queda oculto detrás de prompt().
 
 import { useCallback, useEffect, useState } from 'react';
 import { MONEDAS_COMUNES, MONEDA_BASE } from '../../lib/finanzas/monedas.ts';
@@ -25,6 +23,7 @@ interface PorCobrar { id: string; cliente: string; proyecto?: string | null; mon
 interface PorPagar { id: string; beneficiario: string; concepto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_limite?: string | null }
 interface Gasto {
   id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null;
+  proyecto?: string | null;
   monto?: number | null; moneda?: string | null; monto_usd?: number | null; conversion_aproximada?: boolean | null;
 }
 interface Presupuesto { id: string; categoria: string; limite_mensual?: number | null }
@@ -245,6 +244,10 @@ export default function OSFinanzas() {
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroCat, setFiltroCat] = useState('');
   const [mesResumen, setMesResumen] = useState(() => new Date().toISOString().slice(0, 7));
+  const [editandoSaldo, setEditandoSaldo] = useState<string | null>(null);
+  const [saldoDraft, setSaldoDraft] = useState('');
+  const [editandoPresupuesto, setEditandoPresupuesto] = useState<string | null>(null);
+  const [limiteDraft, setLimiteDraft] = useState('');
 
   const cargarTodo = useCallback(async () => {
     try {
@@ -295,6 +298,28 @@ export default function OSFinanzas() {
       setFinError('Error al eliminar: ' + (e instanceof Error ? e.message : 'error desconocido'));
     }
   }, [cargarTodo]);
+
+  function guardarSaldo(id: string) {
+    const valor = saldoDraft.trim();
+    const monto = Number(valor);
+    setEditandoSaldo(null);
+    if (!valor || !Number.isFinite(monto)) {
+      setFinError('Ingresa un saldo numérico antes de guardar.');
+      return;
+    }
+    void patch('cuentas', id, { saldo: monto });
+  }
+
+  function guardarLimite(id: string) {
+    const valor = limiteDraft.trim();
+    const monto = Number(valor);
+    setEditandoPresupuesto(null);
+    if (!valor || !Number.isFinite(monto)) {
+      setFinError('Ingresa un límite numérico antes de guardar.');
+      return;
+    }
+    void patch('presupuestos', id, { limite_mensual: monto });
+  }
 
   // ---- Resumen (todo en USD, la moneda base del OS) ----
   // Las cuentas bloqueadas o cerradas no suman al disponible: el banco de
@@ -552,17 +577,9 @@ export default function OSFinanzas() {
                   </div>
                 ) : null}
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const val = prompt('Nuevo saldo:', String(Number(c.saldo) || 0));
-                  if (val === null) return;
-                  void patch('cuentas', c.id, { saldo: Number(val) || 0 });
-                }}
-                style={{ fontSize: 'var(--os-text-sm)', minHeight: 'var(--os-tap-min)', color: 'var(--os-champagne)', fontFamily: 'var(--os-font-mono)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {money(c.saldo, c.moneda)}
-              </button>
+              {editandoSaldo === c.id ? (
+                <input autoFocus type="number" step="any" value={saldoDraft} onChange={(e) => setSaldoDraft(e.target.value)} onBlur={() => guardarSaldo(c.id)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setEditandoSaldo(null); }} aria-label={`Saldo de ${c.nombre}`} className="os-input os-mono" style={{ width: 110 }} />
+              ) : <button type="button" onClick={() => { setSaldoDraft(String(Number(c.saldo) || 0)); setEditandoSaldo(c.id); }} title="Editar saldo" style={{ fontSize: 'var(--os-text-sm)', minHeight: 'var(--os-tap-min)', color: 'var(--os-champagne)', fontFamily: 'var(--os-font-mono)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>{money(c.saldo, c.moneda)}</button>}
               <BotonBorrar onClick={() => { if (confirm('Eliminar esta cuenta?')) void del('cuentas', c.id); }} />
             </div>
           ))}
@@ -770,6 +787,7 @@ export default function OSFinanzas() {
           <input name="fecha" type="date" className="os-input os-date" />
           <input name="categoria" type="text" placeholder="Categoria" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="descripcion" type="text" placeholder="Descripcion" className="os-input" style={{ flex: 2, minWidth: 160 }} />
+          <input name="proyecto" type="text" placeholder="Proyecto" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="monto" type="number" step="any" placeholder="Monto" className="os-input os-mono" style={{ width: 110 }} />
           <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 100 }} aria-label="Moneda">
             {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo} title={m.nombre}>{m.codigo}</option>)}
@@ -860,17 +878,7 @@ export default function OSFinanzas() {
                   <span style={{ fontSize: 12, color: over ? 'var(--os-error)' : 'var(--os-champagne)', fontFamily: 'var(--os-font-mono)', fontWeight: 700 }}>
                     {money(usado)} / {money(limite)}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const val = prompt('Nuevo limite mensual:', String(limite));
-                      if (val === null) return;
-                      void patch('presupuestos', p.id, { limite_mensual: Number(val) || 0 });
-                    }}
-                    style={{ fontSize: 11, minHeight: 'var(--os-tap-min)', color: 'var(--os-muted)', background: 'none', border: '1px solid var(--os-line)', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontFamily: 'var(--os-font-display)', fontWeight: 600 }}
-                  >
-                    editar
-                  </button>
+                  {editandoPresupuesto === p.id ? <input autoFocus type="number" step="any" value={limiteDraft} onChange={(e) => setLimiteDraft(e.target.value)} onBlur={() => guardarLimite(p.id)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setEditandoPresupuesto(null); }} aria-label={`Límite de ${p.categoria}`} className="os-input os-mono" style={{ width: 100 }} /> : <button type="button" onClick={() => { setLimiteDraft(String(limite)); setEditandoPresupuesto(p.id); }} style={{ fontSize: 11, minHeight: 'var(--os-tap-min)', color: 'var(--os-muted)', background: 'none', border: '1px solid var(--os-line)', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontFamily: 'var(--os-font-display)', fontWeight: 600 }}>editar</button>}
                   <BotonBorrar onClick={() => { if (confirm('Eliminar este presupuesto?')) void del('presupuestos', p.id); }} />
                 </div>
                 <div style={{ height: 6, background: 'var(--os-surface-hi)', borderRadius: 99, overflow: 'hidden' }}>

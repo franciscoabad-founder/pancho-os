@@ -9,6 +9,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import OSLayout, { tituloOs } from '../../../os/components/OSLayout.tsx';
 import PageHeader from '../../../os/components/ui/PageHeader.tsx';
 import OSContentRadar from '../../../organs/contenido/ui/OSContentRadar.tsx';
+import ContenidoNav from '../../../organs/contenido/ui/ContenidoNav.tsx';
 
 // Ver el comentario equivalente en planner.tsx: era `<style is:global>`.
 const cssRadar = `
@@ -32,6 +33,7 @@ function RadarPage() {
           title="Content Radar"
           subtitle="Descubre oportunidades de contenido a partir de una palabra semilla."
         />
+        <ContenidoNav />
         <OSContentRadar />
       </div>
     </OSLayout>

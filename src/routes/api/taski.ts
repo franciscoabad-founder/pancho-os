@@ -34,8 +34,11 @@ export const Route = createFileRoute('/api/taski')({
         if (!(await isOsAuthorized(request))) return noAutorizado();
         if (!taskiConfigurado()) return sinToken();
 
+        const sessionId = new URL(request.url).searchParams.get('session_id')?.trim() || SESSION_ID;
+        const perfil = new URL(request.url).searchParams.get('profile_id')?.trim() || 'vps-default';
+        if (!['vps-default', 'homelab-local', 'laptop-local'].includes(perfil)) return json({ error: 'profile_id invalido' }, 400);
         try {
-          return json({ session_id: SESSION_ID, mensajes: await historialTaski() });
+          return json({ session_id: sessionId, profile_id: perfil, mensajes: await historialTaski(sessionId, perfil) });
         } catch (err) {
           return errorHermes(err, 'Hermes tardo demasiado en responder');
         }
@@ -46,19 +49,24 @@ export const Route = createFileRoute('/api/taski')({
         if (!taskiConfigurado()) return sinToken();
 
         let message: string;
+        let sessionId: string;
+        let perfil: string;
         try {
           const body = (await request.json()) as Record<string, unknown>;
           message = (body.message ?? '').toString().trim();
+          sessionId = (body.session_id ?? '').toString().trim() || SESSION_ID;
+          perfil = (body.profile_id ?? '').toString().trim() || 'vps-default';
         } catch {
           return json({ error: 'JSON invalido' }, 400);
         }
+        if (!['vps-default', 'homelab-local', 'laptop-local'].includes(perfil)) return json({ error: 'profile_id invalido' }, 400);
         if (!message) return json({ error: 'Mensaje requerido' }, 400);
         if (message.length > MAX_LARGO_MENSAJE) {
           return json({ error: `Mensaje demasiado largo (max ${MAX_LARGO_MENSAJE})` }, 400);
         }
 
         try {
-          return json({ reply: await enviarATaski(message), session_id: SESSION_ID });
+          return json({ reply: await enviarATaski(message, sessionId, perfil), session_id: sessionId, profile_id: perfil });
         } catch (err) {
           return errorHermes(err, 'Hermes tardo demasiado en responder. Intenta de nuevo.');
         }

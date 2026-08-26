@@ -11,6 +11,7 @@
 // en el mensaje inline debajo del formulario, no en alert().
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useProyectosActivos } from '../hooks/useProyectosActivos.ts';
 
 const ETAPAS = ['nuevo', 'prospecto', 'contacto', 'propuesta', 'negociacion', 'cerrado'] as const;
 type Etapa = (typeof ETAPAS)[number];
@@ -41,7 +42,11 @@ export interface Lead {
   id: string;
   nombre: string;
   empresa?: string | null;
+  cargo?: string | null;
+  producto?: string | null;
   proyecto?: string | null;
+  ultimo_contacto?: string | null;
+  proximo_contacto?: string | null;
   etapa?: string | null;
   probabilidad?: number | null;
   scoring?: number | null;
@@ -82,6 +87,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function OSCrm() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const proyectos = useProyectosActivos();
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [filtro, setFiltro] = useState<'todos' | Etapa>('todos');
@@ -129,7 +135,12 @@ export default function OSCrm() {
     const body = {
       nombre: fd.get('nombre'),
       empresa: fd.get('empresa'),
+      cargo: fd.get('cargo'),
+      producto: fd.get('producto'),
       proyecto: fd.get('proyecto'),
+      ultimo_contacto: fd.get('ultimo_contacto'),
+      proximo_contacto: fd.get('proximo_contacto'),
+      notas: fd.get('notas'),
       etapa: fd.get('etapa'),
     };
     try {
@@ -259,7 +270,11 @@ export default function OSCrm() {
       >
         <input name="nombre" type="text" placeholder="Nombre del lead *" required className="os-input" style={{ ...inputStyle, flex: 2, minWidth: 140 }} />
         <input name="empresa" type="text" placeholder="Empresa" className="os-input" style={{ ...inputStyle, flex: 1, minWidth: 110 }} />
-        <input name="proyecto" type="text" placeholder="Proyecto" className="os-input" style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
+        <input name="cargo" type="text" placeholder="Cargo" className="os-input" style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
+        <input name="producto" type="text" placeholder="Producto" className="os-input" style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
+        <select name="proyecto" className="os-input" style={{ ...inputStyle, cursor: 'pointer', background: 'var(--os-bg)' }} defaultValue=""><option value="">Proyecto</option>{proyectos.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+        <input name="proximo_contacto" type="date" title="Próximo contacto" className="os-input" style={inputStyle} />
+        <input name="notas" type="text" placeholder="Notas" className="os-input" style={{ ...inputStyle, flex: 2, minWidth: 150 }} />
         <select name="etapa" className="os-input" style={{ ...inputStyle, cursor: 'pointer', background: 'var(--os-bg)' }} defaultValue="nuevo">
           {ETAPAS.map((e) => <option key={e} value={e}>{ETAPA_LABEL[e]}</option>)}
         </select>
@@ -314,6 +329,7 @@ export default function OSCrm() {
                       <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 'var(--os-text-sm)', fontWeight: 700, color: 'var(--os-champagne)', margin: '0 0 6px' }}>{fmtValor(lead.valor)}</p>
                     )}
                     {lead.proyecto && <p style={{ fontSize: 11, color: 'var(--os-text)', margin: '0 0 6px' }}>{lead.proyecto}</p>}
+                    {lead.notas && <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 6px', whiteSpace: 'pre-wrap' }}>{lead.notas}</p>}
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 999, fontFamily: 'var(--os-font-display)', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: ec.fg, background: ec.bg }}>
                       {ETAPA_LABEL[etapa]}
                     </span>
@@ -331,7 +347,7 @@ export default function OSCrm() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
             <thead>
               <tr>
-                {['Lead', 'Empresa', 'Proyecto', 'Etapa'].map((h) => (
+                {['Lead', 'Empresa', 'Cargo', 'Producto', 'Proyecto', 'Próximo contacto', 'Notas', 'Etapa'].map((h) => (
                   <th key={h} style={{ ...thStyle, textAlign: 'left' }}>{h}</th>
                 ))}
                 {['Prob %', 'Scoring', 'Valor'].map((h) => (
@@ -343,10 +359,10 @@ export default function OSCrm() {
             </thead>
             <tbody>
               {cargando && (
-                <tr><td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>Cargando...</td></tr>
+                <tr><td colSpan={13} style={{ padding: '2rem', textAlign: 'center', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>Cargando...</td></tr>
               )}
               {!cargando && !visibles.length && (
-                <tr><td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>Sin leads. Agrega uno arriba.</td></tr>
+                <tr><td colSpan={13} style={{ padding: '2rem', textAlign: 'center', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>Sin leads. Agrega uno arriba.</td></tr>
               )}
               {!cargando && visibles.map((l) => {
                 const ec = ETAPA_COLOR[l.etapa ?? ''] ?? ETAPA_COLOR_DEFAULT;
@@ -366,7 +382,11 @@ export default function OSCrm() {
                       {l.nombre}
                     </td>
                     <td style={{ padding: '9px 10px', color: 'var(--os-text-2)' }}>{l.empresa ?? ''}</td>
+                    <td style={{ padding: '9px 10px', color: 'var(--os-text-2)' }}>{l.cargo ?? ''}</td>
+                    <td style={{ padding: '9px 10px', color: 'var(--os-text-2)' }}>{l.producto ?? ''}</td>
                     <td style={{ padding: '9px 10px', color: 'var(--os-text-2)' }}>{l.proyecto ?? ''}</td>
+                    <td style={{ padding: '9px 10px', color: 'var(--os-text-2)', whiteSpace: 'nowrap' }}>{l.proximo_contacto ?? ''}</td>
+                    <td style={{ padding: '9px 10px', color: 'var(--os-muted)', maxWidth: 180 }}>{l.notas ?? ''}</td>
                     <td style={{ padding: '9px 10px' }}>
                       <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--os-font-display)', letterSpacing: '0.05em', color: ec.fg, background: ec.bg, padding: '2px 9px', borderRadius: 999 }}>
                         {etapaLabel}

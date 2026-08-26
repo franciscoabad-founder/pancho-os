@@ -1,14 +1,18 @@
 // Home real del OS, portada de src/pages/index.astro a TanStack Start.
 //
 // Reemplaza el scaffold de TanStack Start por el dashboard "Hoy": onboarding,
-// One Domino + Priority Stack + wins + discomfort + semana + objetivos
-// (OSHoy), acceso a Salud, y el feed de notas del brain.
+// captura hacia el agente, One Domino + wins + priority stack + discomfort +
+// rutinas + semana + objetivos (OSHoy), accesos rapidos y el feed del brain.
+//
+// Hoy es la unica home del dia: la ruta /daily (Daily OS) se fusiono aca.
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import OSLayout, { tituloOs } from '../os/components/OSLayout.tsx';
 import OSOnboarding from '../os/components/OSOnboarding.tsx';
 import OSHoy from '../os/components/OSHoy.tsx';
+import OSAccesosRapidos from '../os/components/OSAccesosRapidos.tsx';
+import OSPedirAlAgente from '../os/components/OSPedirAlAgente.tsx';
 
 export const Route = createFileRoute('/')({
   head: () => ({ meta: [{ title: tituloOs('Hoy') }] }),
@@ -16,9 +20,13 @@ export const Route = createFileRoute('/')({
 });
 
 function HomePage() {
-  const fechaLarga = new Date().toLocaleDateString('es-EC', {
+  // es-EC devuelve la fecha entera en minuscula ("martes, 25 de agosto de 2026").
+  // Se sube solo la primera letra a mano: `text-transform: capitalize` subia
+  // tambien las de "de" y "agosto".
+  const fechaCruda = new Date().toLocaleDateString('es-EC', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+  const fechaLarga = fechaCruda.charAt(0).toUpperCase() + fechaCruda.slice(1);
 
   return (
     <OSLayout title="Hoy">
@@ -34,42 +42,20 @@ function HomePage() {
             <p className="os-eyebrow" style={{ marginBottom: 6 }}>Growth OS</p>
             <h1 className="os-h1">Hoy</h1>
           </div>
-          <span style={{
-            fontSize: 12, color: 'var(--os-muted)', textTransform: 'capitalize',
-          }}>
+          <span style={{ fontSize: 12, color: 'var(--os-muted)' }}>
             {fechaLarga}
           </span>
         </div>
 
+        {/* Caja de captura hacia Hermes: arriba del dashboard porque es la via mas
+            rapida de meter algo al OS sin navegar a ningun modulo. */}
+        <OSPedirAlAgente />
+
         {/* Hoy: domino, priority stack, wins, checklist, discomfort, principios, semana, norte */}
         <OSHoy />
 
-        {/* Salud */}
-        <a
-          href="/salud"
-          className="os-card os-card-interactive"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem',
-            textDecoration: 'none',
-          }}
-        >
-          <span className="material-symbols-outlined" style={{
-            fontSize: 26, color: 'var(--os-accent-light)', flexShrink: 0,
-          }}>
-            favorite
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--os-text)', margin: 0 }}>
-              Salud
-            </p>
-            <p style={{ fontSize: 12, color: 'var(--os-muted)', margin: '2px 0 0' }}>
-              Nutricion, ayuno, entrenamiento, cuerpo y estiramiento
-            </p>
-          </div>
-          <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--os-muted)' }}>
-            chevron_right
-          </span>
-        </a>
+        {/* Accesos rapidos: reemplaza la card ancha que antes solo llevaba a Salud */}
+        <OSAccesosRapidos />
 
         {/* Brain feed: notas REALES del brain (gbrain) via /api/brain/notes. */}
         <div className="os-card">

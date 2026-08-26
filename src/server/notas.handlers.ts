@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
+import { normalizarDeadline, normalizarPrioridad } from './pendientes.handlers.ts';
 
 // Seam para tests: en produccion siempre resuelve a clienteActual(); los
 // tests inyectan un doble en memoria y no tocan Supabase real. Mismo patron que
@@ -118,6 +119,8 @@ export async function convertirNota(convertir: ConvertirInput): Promise<{ nota: 
         titulo: (payload.titulo as string | undefined)?.trim() || (nota.contenido as string).slice(0, 200),
         detalle: (payload.detalle as string | undefined)?.trim() || ((payload.titulo ? nota.contenido : null) as string | null),
         proyecto: (payload.proyecto as string | undefined)?.trim() || null,
+        deadline: normalizarDeadline(payload.deadline),
+        prioridad: normalizarPrioridad(payload.prioridad),
         origen_nota_id: nota.id,
       }])
       .select()
@@ -125,13 +128,13 @@ export async function convertirNota(convertir: ConvertirInput): Promise<{ nota: 
     if (error) throw error;
     creado = data;
   } else if (destino === 'tarea') {
-    const { data, error } = await sb
-      .from('tareas')
+      const { data, error } = await sb
+        .from('tareas')
       .insert([{
         titulo: (payload.titulo as string | undefined)?.trim() || (nota.contenido as string).slice(0, 200),
         proyecto: (payload.proyecto as string | undefined)?.trim() || null,
         estado: 'pendiente',
-        deadline: (payload.deadline as string | undefined) || null,
+        deadline: normalizarDeadline(payload.deadline),
         prioridad: ['low', 'medium', 'high', 'critical'].includes(payload.prioridad as string) ? payload.prioridad : 'medium',
         grupo: (payload.grupo as string | undefined)?.trim() || 'general',
         tipo: (payload.tipo as string | undefined)?.trim() || null,
@@ -167,7 +170,12 @@ export async function convertirNota(convertir: ConvertirInput): Promise<{ nota: 
     .eq('id', nota.id)
     .select()
     .single();
-  if (updateError) throw updateError;
+  if (updateError) {
+    const table = destino === 'pendiente' ? 'pendientes' : destino === 'tarea' ? 'tareas' : 'recordatorios';
+    const { error: rollbackError } = await sb.from(table).delete().eq('id', (creado as { id: string }).id);
+    if (rollbackError) throw new Error(`${updateError.message}; compensacion fallida: ${rollbackError.message}`);
+    throw updateError;
+  }
 
   return { nota: notaActualizada as Nota, creado, destino };
 }

@@ -24,6 +24,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { datosDaily } from '../data/daily.ts';
 import OSJugadorBar from './OSJugadorBar.tsx';
 import TaskiBubble from './TaskiBubble.tsx';
+import OSAprobacionesBell from './OSAprobacionesBell.tsx';
 
 // Formato de titulo del OS, unico para todas las paginas. Se usa `·` como
 // separador, igual que src/routes/login.tsx.
@@ -48,7 +49,6 @@ const ms: Record<string, string> = {
   '/': 'dashboard',
   '/sistema': 'account_tree',
   '/aprobaciones': 'approval_delegation',
-  '/daily': 'wb_sunny',
   '/revision': 'history',
   '/semana': 'calendar_view_week',
   '/kpis': 'bar_chart',
@@ -74,16 +74,15 @@ const ms: Record<string, string> = {
   '/diario': 'auto_stories',
   '/ikigai': 'self_improvement',
   '/red': 'diversity_3',
+  '/hermes': 'smart_toy',
 };
 
 const navGroups = [
   { label: 'Sistema', items: [
     { href: '/', label: 'Hoy' },
-    { href: '/sistema', label: 'Mi Sistema' },
+    { href: '/hermes', label: 'Hermes' },
     { href: '/aprobaciones', label: 'Aprobaciones' },
-    { href: '/daily', label: 'Daily OS' },
-    { href: '/revision', label: 'Revision' },
-    { href: '/diario', label: 'Diario' },
+    { href: '/diario', label: 'Journal' },
     { href: '/ikigai', label: 'Ikigai' },
     { href: '/red', label: 'Networking Room' },
   ]},
@@ -111,6 +110,13 @@ const navGroups = [
   ]},
   { label: 'Conocimiento', items: [
     { href: '/cerebro', label: 'Cerebro' },
+  ]},
+  // Configuracion queda al final a proposito: Accesos (ex "Mi Sistema", es el
+  // panel de pairing/tokens) y Week Review (ex "Revision", se confundia con
+  // Aprobaciones) no son de uso diario, son de mantenimiento.
+  { label: 'Configuracion', items: [
+    { href: '/revision', label: 'Week Review' },
+    { href: '/sistema', label: 'Accesos' },
   ]},
 ];
 
@@ -598,6 +604,7 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
             />
           </div>
           <SoloCliente><OSJugadorBar /></SoloCliente>
+          <SoloCliente><OSAprobacionesBell /></SoloCliente>
           <BotonTema />
           <a href="/api/os-auth?action=logout" className="cmd-logout" title="Cerrar sesion">salir</a>
         </div>
@@ -615,6 +622,7 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
           </span>
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <SoloCliente><OSAprobacionesBell /></SoloCliente>
           <BotonTema />
           <button className="menu-btn" onClick={() => setChatAbierto(true)} aria-label="Preguntar al cerebro">
             <span className="material-symbols-outlined" style={{ fontSize: 21, color: 'var(--os-muted)' }}>search</span>

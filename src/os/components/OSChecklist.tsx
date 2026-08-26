@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import type { CheckItem } from '../data/types';
 
-// Checklist estatico (daily.astro): items vienen por props, estado local.
-// Distinto de OSChecklistHoy, que trae habitos desde /api/habitos.
+// Checklist estatico: items vienen por props y el marcado vive solo en estado
+// local, asi que se reinicia al recargar. Lo usa Hoy para Ancla AM y Cierre PM,
+// que todavia no tienen tabla propia.
+// Distinto de OSChecklistHoy, que trae habitos desde /api/habitos y si persiste.
 // Regla de color: hecho/completado = champagne, nunca verde.
 
 interface Props {

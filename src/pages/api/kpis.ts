@@ -14,7 +14,7 @@ function pgCode(err: unknown): string | undefined {
   return (err as { code?: string })?.code;
 }
 
-const CAMPOS_KPI = ['label', 'unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo'];
+const CAMPOS_KPI = ['label', 'unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo', 'objetivo_id'];
 
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
@@ -98,7 +98,7 @@ export const POST: APIRoute = async (context) => {
     const label = typeof body.label === 'string' ? body.label.trim() : '';
     if (!label) return json({ error: 'label requerido' }, 400);
     const insert: Record<string, unknown> = { label };
-    for (const c of ['unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo']) {
+    for (const c of ['unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo', 'objetivo_id']) {
       if (c in body) insert[c] = body[c];
     }
     const { data, error } = await sb.from('os_kpis').insert([insert]).select().single();

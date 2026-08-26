@@ -18,7 +18,13 @@ export function setClienteSupabaseAprobaciones(fn: (() => SupabaseClient) | null
 }
 
 export const ESTADOS = ['pendiente', 'aprobado', 'rechazado'];
-const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado'];
+const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado', 'expira_at'];
+const ACTORES = new Set(['web', 'hermes', 'api']);
+
+function normalizarActor(value: unknown): string {
+  const actor = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ACTORES.has(actor) ? actor : 'web';
+}
 
 export class ErrorAprobaciones extends Error {
   status: number;
@@ -35,10 +41,14 @@ export interface AprobacionInput {
   opciones?: unknown;
   recomendacion?: unknown;
   estado?: unknown;
+  expira_at?: unknown;
 }
 
 /** `estado` filtra por columna cuando viene en la query; null trae todo. */
 export async function listarAprobaciones(estado: string | null): Promise<unknown[]> {
+  if (estado && !ESTADOS.includes(estado)) {
+    throw new ErrorAprobaciones(`estado debe ser uno de: ${ESTADOS.join(', ')}`, 400);
+  }
   const sb = clienteActual();
   let query = sb.from('os_aprobaciones').select('*').order('created_at', { ascending: false });
   if (estado) query = query.eq('estado', estado);
@@ -50,6 +60,10 @@ export async function listarAprobaciones(estado: string | null): Promise<unknown
 export async function crearAprobacion(body: AprobacionInput): Promise<unknown> {
   const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : '';
   if (!titulo) throw new ErrorAprobaciones('titulo requerido', 400);
+  const expiraAt = body.expira_at == null || body.expira_at === '' ? null : String(body.expira_at);
+  if (expiraAt && Number.isNaN(Date.parse(expiraAt))) {
+    throw new ErrorAprobaciones('expira_at invalido', 400);
+  }
   const sb = clienteActual();
   const { data, error } = await sb
     .from('os_aprobaciones')
@@ -58,7 +72,10 @@ export async function crearAprobacion(body: AprobacionInput): Promise<unknown> {
       contexto: body.contexto ?? null,
       opciones: Array.isArray(body.opciones) ? body.opciones : [],
       recomendacion: body.recomendacion ?? null,
-      estado: ESTADOS.includes(body.estado as string) ? body.estado : 'pendiente',
+      estado: 'pendiente',
+      decidido_at: null,
+      decidido_por: null,
+      expira_at: expiraAt,
     }])
     .select()
     .single();
@@ -71,10 +88,29 @@ export async function actualizarAprobacion(id: string, body: Record<string, unkn
     throw new ErrorAprobaciones(`estado debe ser uno de: ${ESTADOS.join(', ')}`, 400);
   }
   const sb = clienteActual();
+  const { data: actual, error: lecturaError } = await sb.from('os_aprobaciones').select('estado, expira_at').eq('id', id).maybeSingle();
+  if (lecturaError) throw lecturaError;
+  if (!actual) throw new ErrorAprobaciones('aprobacion no encontrada', 404);
+  if (body.estado && body.estado !== 'pendiente' && actual.estado === 'pendiente' && actual.expira_at && new Date(actual.expira_at).getTime() <= Date.now()) {
+    throw new ErrorAprobaciones('la aprobacion ya expiro', 409);
+  }
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if ('expira_at' in body && body.expira_at != null && body.expira_at !== '' && Number.isNaN(Date.parse(String(body.expira_at)))) {
+    throw new ErrorAprobaciones('expira_at invalido', 400);
+  }
+  if ('estado' in body && body.estado !== 'pendiente') {
+    patch.decidido_at = new Date().toISOString();
+    patch.decidido_por = normalizarActor(body.decidido_por);
+  } else if (body.estado === 'pendiente') {
+    patch.decidido_at = null;
+    patch.decidido_por = null;
+  }
   for (const c of CAMPOS) if (c in body) patch[c] = body[c];
-  const { data, error } = await sb.from('os_aprobaciones').update(patch).eq('id', id).select().single();
+  let updateQuery = sb.from('os_aprobaciones').update(patch).eq('id', id);
+  if (body.estado && body.estado !== 'pendiente') updateQuery = updateQuery.eq('estado', 'pendiente');
+  const { data, error } = await updateQuery.select().maybeSingle();
   if (error) throw error;
+  if (!data) throw new ErrorAprobaciones('la aprobacion ya fue decidida o no existe', 409);
   return data;
 }
 

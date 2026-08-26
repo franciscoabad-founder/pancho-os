@@ -18,7 +18,14 @@ export function setClienteSupabaseKpis(fn: (() => SupabaseClient) | null): void 
   clienteActual = fn ?? getSupabaseServer;
 }
 
-export const CAMPOS_KPI = ['label', 'unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo'];
+export const CAMPOS_KPI = ['label', 'unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo', 'objetivo_id'];
+
+function validarObjetivoId(value: unknown): void {
+  if (value === undefined || value === null || value === '') return;
+  if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+    throw new Error('objetivo_id invalido');
+  }
+}
 
 export async function listarSerie(serieId: string, diasRaw: string | null): Promise<unknown[]> {
   const dias = Number(diasRaw) || 30;
@@ -88,8 +95,9 @@ export async function registrarValorKpi(body: Record<string, unknown>): Promise<
 export async function crearKpi(body: Record<string, unknown>): Promise<unknown> {
   const label = typeof body.label === 'string' ? body.label.trim() : '';
   if (!label) throw new Error('label requerido');
+  validarObjetivoId(body.objetivo_id);
   const insert: Record<string, unknown> = { label };
-  for (const c of ['unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo']) {
+  for (const c of ['unidad', 'meta', 'categoria', 'orden', 'fuente', 'activo', 'objetivo_id']) {
     if (c in body) insert[c] = body[c];
   }
   const sb = clienteActual();
@@ -100,6 +108,7 @@ export async function crearKpi(body: Record<string, unknown>): Promise<unknown> 
 
 export async function actualizarKpi(id: string, body: Record<string, unknown>): Promise<unknown> {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if ('objetivo_id' in body) validarObjetivoId(body.objetivo_id);
   for (const c of CAMPOS_KPI) if (c in body) patch[c] = body[c];
   const sb = clienteActual();
   const { data, error } = await sb.from('os_kpis').update(patch).eq('id', id).select().single();

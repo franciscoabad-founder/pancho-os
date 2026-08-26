@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
+import { useProyectosActivos } from '../hooks/useProyectosActivos.ts';
 
 interface Tarea {
   id: string;
   titulo: string;
   proyecto: string | null;
+  notas: string | null;
   estado: string;
   urgente: boolean;
   deadline: string | null;
@@ -47,20 +49,6 @@ function grupoRank(g: string) {
   return 50;
 }
 
-const pillStyle = (meta: { color: string; bg: string }): React.CSSProperties => ({
-  display: 'inline-block',
-  fontSize: 11,
-  fontFamily: 'var(--os-font-display)',
-  fontWeight: 700,
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-  color: meta.color,
-  background: meta.bg,
-  borderRadius: 999,
-  padding: '3px 10px',
-  whiteSpace: 'nowrap',
-});
-
 const selectStyle: React.CSSProperties = {
   background: 'var(--os-surface)',
   border: '1px solid var(--os-line)',
@@ -90,6 +78,7 @@ function OSTareasInner() {
   const toast = useToast();
   const { confirm, sheet } = useConfirm();
   const [tareas, setTareas] = useState<Tarea[]>([]);
+  const proyectos = useProyectosActivos();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [colapsados, setColapsados] = useState<Record<string, boolean>>({});
@@ -167,10 +156,10 @@ function OSTareasInner() {
     patch(t.id, { deadline: v || null });
   }
 
-  function editarProyecto(t: Tarea) {
-    const val = window.prompt('Proyecto:', t.proyecto || '');
-    if (val === null) return;
-    patch(t.id, { proyecto: val.trim() || null });
+  function editarNotas(t: Tarea) {
+    const notas = window.prompt('Notas:', t.notas || '');
+    if (notas === null) return;
+    patch(t.id, { notas: notas.trim() || null });
   }
 
   function editarTipo(t: Tarea) {
@@ -300,6 +289,7 @@ function OSTareasInner() {
             >
               {t.titulo}
             </span>
+            {t.notas && <span title={t.notas} style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>· {t.notas}</span>}
             {!esSub && hijos.length > 0 && (
               <span className="os-mono" style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', flexShrink: 0 }}>
                 {hijos.filter((h) => estadoValue(h.estado) === 'hecho').length}/{hijos.length}
@@ -328,11 +318,11 @@ function OSTareasInner() {
           </select>
 
           {/* Proyecto */}
-          <button onClick={() => editarProyecto(t)} title="Cambiar proyecto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            {t.proyecto
-              ? <span style={pillStyle({ color: 'var(--os-accent-light)', bg: 'rgba(59,78,217,0.14)' })}>{t.proyecto}</span>
-              : <span style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>+ proyecto</span>}
-          </button>
+          <select value={t.proyecto ?? ''} onChange={(e) => patch(t.id, { proyecto: e.target.value || null })} title="Cambiar proyecto" style={{ ...selectStyle, maxWidth: 130 }}>
+            <option value="">+ proyecto</option>
+            {t.proyecto && !proyectos.includes(t.proyecto) && <option value={t.proyecto}>{t.proyecto}</option>}
+            {proyectos.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
 
           {/* Tipo */}
           <button onClick={() => editarTipo(t)} title="Cambiar tipo" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
@@ -361,6 +351,9 @@ function OSTareasInner() {
             <button onClick={() => eliminar(t.id)} title="Eliminar"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--os-muted)', padding: 4, lineHeight: 1, display: 'flex' }}>
               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
+            </button>
+            <button onClick={() => editarNotas(t)} title="Editar notas" style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.notas ? 'var(--os-accent-light)' : 'var(--os-muted)', padding: 4, lineHeight: 1, display: 'flex' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>sticky_note_2</span>
             </button>
           </div>
         </div>
@@ -414,7 +407,7 @@ function OSTareasInner() {
       {/* Alta rapida */}
       <form onSubmit={agregar} className="os-card-2" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '0.875rem 1rem', marginBottom: '1.25rem' }}>
         <input value={nTitulo} onChange={(e) => setNTitulo(e.target.value)} placeholder="Titulo de la tarea *" required style={{ ...inputStyle, flex: 2, minWidth: 170 }} />
-        <input value={nProyecto} onChange={(e) => setNProyecto(e.target.value)} placeholder="Proyecto" style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
+        <select value={nProyecto} onChange={(e) => setNProyecto(e.target.value)} style={{ ...selectStyle, minHeight: 36, flex: 1, minWidth: 100 }}><option value="">Proyecto</option>{proyectos.map((p) => <option key={p} value={p}>{p}</option>)}</select>
         <input type="date" value={nDeadline} onChange={(e) => setNDeadline(e.target.value)} style={inputStyle} />
         <select value={nPrioridad} onChange={(e) => setNPrioridad(e.target.value)} style={{ ...selectStyle, color: (PRIORIDAD_META[nPrioridad] ?? PRIORIDAD_META.medium).color, padding: '6px 8px', minHeight: 36 }}>
           <option value="low">Low</option>

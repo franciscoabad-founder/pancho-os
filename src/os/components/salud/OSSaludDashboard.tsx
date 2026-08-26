@@ -21,6 +21,7 @@ export default function OSSaludDashboard() {
   const [nowMs, setNowMs] = useState(0);
   const [sesion, setSesion] = useState<any>(null);
   const [peso, setPeso] = useState<any>(null);
+  const [sueno, setSueno] = useState<any>(null);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -30,11 +31,14 @@ export default function OSSaludDashboard() {
       fetch('/api/salud/ayunos?abierto=1').then((r) => r.json()).catch(() => null),
       fetch('/api/salud/sesiones?limit=1').then((r) => r.json()).catch(() => null),
       fetch('/api/salud/cuerpo').then((r) => r.json()).catch(() => null),
-    ]).then(([m, a, s, c]) => {
+      fetch('/api/biometricas').then((r) => r.json()).catch(() => null),
+    ]).then(([m, a, s, c, b]) => {
       if (m?.totales) setMacros(m.totales);
       if (a?.ayuno) setAyuno(a.ayuno);
       if (s?.sesiones?.length) setSesion(s.sesiones[0]);
       if (c?.mediciones?.length) setPeso(c.mediciones[0]);
+      const ultimoSueno = b?.biometricas?.find((fila: { sueno_min?: number | null }) => fila.sueno_min != null);
+      if (ultimoSueno) setSueno(ultimoSueno);
     });
     return () => clearInterval(t);
   }, []);
@@ -77,6 +81,16 @@ export default function OSSaludDashboard() {
           <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Último peso</p>
           {peso?.peso_kg != null ? (
             <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--os-champagne)', margin: '4px 0 0' }}>{peso.peso_kg}<span style={{ fontSize: 12, color: 'var(--os-muted)' }}> kg</span></p>
+          ) : <p style={{ fontSize: 14, color: 'var(--os-muted)', margin: '4px 0 0' }}>Sin registro</p>}
+        </a>
+
+        <a href="/salud/sueno" style={{ ...card, textDecoration: 'none' }}>
+          <p style={{ fontSize: 11, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Último sueño</p>
+          {sueno?.sueno_min != null ? (
+            <>
+              <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--os-accent-light)', margin: '4px 0 0' }}>{Math.floor(sueno.sueno_min / 60)}h {sueno.sueno_min % 60}m</p>
+              <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: '2px 0 0' }}>{sueno.fecha ?? 'Último registro'}</p>
+            </>
           ) : <p style={{ fontSize: 14, color: 'var(--os-muted)', margin: '4px 0 0' }}>Sin registro</p>}
         </a>
       </div>

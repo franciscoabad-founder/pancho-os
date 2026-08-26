@@ -9,6 +9,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import OSLayout, { tituloOs } from '../../../os/components/OSLayout.tsx';
 import PageHeader from '../../../os/components/ui/PageHeader.tsx';
 import OSContentPlanner from '../../../organs/contenido/ui/OSContentPlanner.tsx';
+import ContenidoNav from '../../../organs/contenido/ui/ContenidoNav.tsx';
 
 // Era `<style is:global>` en el .astro. Aca va como <style> plano: el shell del
 // OS ya inyecta su CSS de la misma forma (ver OSLayout.tsx), y estas reglas son
@@ -34,6 +35,7 @@ function PlannerPage() {
           title="Content Planner"
           subtitle="La semana de contenido: una historia padre, maximo tres piezas, y el veredicto al final."
         />
+        <ContenidoNav />
         <OSContentPlanner />
       </div>
     </OSLayout>

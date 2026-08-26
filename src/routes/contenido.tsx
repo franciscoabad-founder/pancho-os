@@ -7,6 +7,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import OSLayout, { tituloOs } from '../os/components/OSLayout.tsx';
 import PageHeader from '../os/components/ui/PageHeader.tsx';
 import OSContenido from '../organs/contenido/ui/OSContenido.tsx';
+import ContenidoNav from '../organs/contenido/ui/ContenidoNav.tsx';
 
 export const Route = createFileRoute('/contenido')({
   head: () => ({ meta: [{ title: tituloOs('Contenido') }] }),
@@ -23,32 +24,7 @@ function ContenidoPage() {
           subtitle="Ideas, produccion y repurposing en un solo pipeline."
         />
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <a
-            href="/contenido"
-            className="os-pill os-pill-accent"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', border: '1px solid var(--os-line)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit_note</span>
-            Pipeline
-          </a>
-          <a
-            href="/os/contenido/planner"
-            className="os-pill"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', border: '1px solid var(--os-line)', color: 'var(--os-muted)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>calendar_view_week</span>
-            Planner
-          </a>
-          <a
-            href="/os/contenido/radar"
-            className="os-pill"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', border: '1px solid var(--os-line)', color: 'var(--os-muted)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>radar</span>
-            Radar
-          </a>
-        </div>
+        <ContenidoNav />
 
         <OSContenido />
       </div>

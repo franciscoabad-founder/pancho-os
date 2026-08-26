@@ -7,6 +7,8 @@ interface Pendiente {
   detalle: string | null;
   proyecto: string | null;
   estado: 'abierto' | 'convertido' | 'descartado' | 'hecho';
+  deadline: string | null;
+  prioridad: 'low' | 'medium' | 'high' | 'critical';
   convertido_a: string | null;
   created_at: string;
 }
@@ -16,6 +18,12 @@ const ESTADO_META: Record<string, { label: string; color: string; bg: string }> 
   convertido: { label: 'Convertido', color: 'var(--os-champagne)', bg: 'rgba(181,152,90,0.12)' },
   descartado: { label: 'Descartado', color: 'var(--os-muted)', bg: 'rgba(107,114,128,0.14)' },
   hecho:      { label: 'Hecho',      color: 'var(--os-champagne)', bg: 'rgba(181,152,90,0.12)' },
+};
+const PRIORIDAD_META: Record<string, { label: string; color: string }> = {
+  low: { label: 'Baja', color: 'var(--os-muted)' },
+  medium: { label: 'Media', color: 'var(--os-text-2)' },
+  high: { label: 'Alta', color: 'var(--os-warn)' },
+  critical: { label: 'Crítica', color: 'var(--os-error)' },
 };
 
 const inputStyle: React.CSSProperties = {
@@ -47,6 +55,8 @@ function OSPendientesInner() {
   const [pendientes, setPendientes] = useState<Pendiente[]>([]);
   const [titulo, setTitulo] = useState('');
   const [proyecto, setProyecto] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [prioridad, setPrioridad] = useState('medium');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -76,12 +86,14 @@ function OSPendientesInner() {
       const res = await fetch('/api/pendientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo: titulo.trim(), proyecto: proyecto.trim() || null }),
+        body: JSON.stringify({ titulo: titulo.trim(), proyecto: proyecto.trim() || null, deadline: deadline || null, prioridad }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setTitulo('');
       setProyecto('');
+      setDeadline('');
+      setPrioridad('medium');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -125,11 +137,15 @@ function OSPendientesInner() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
-      await fetch(`/api/pendientes?id=${encodeURIComponent(p.id)}`, {
+      const marcarRes = await fetch(`/api/pendientes?id=${encodeURIComponent(p.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: 'convertido', convertido_a: 'tarea', convertido_id: data.tarea?.id ?? null }),
       });
+      if (!marcarRes.ok) {
+        const detalle = await marcarRes.json().catch(() => ({}));
+        throw new Error(detalle.error || `No se pudo marcar el pendiente (${marcarRes.status})`);
+      }
       await load();
       toast.show('Convertido a tarea.', 'ok');
     } catch (err) {
@@ -156,6 +172,10 @@ function OSPendientesInner() {
           placeholder="Proyecto"
           style={{ ...inputStyle, flex: 1, minWidth: 110 }}
         />
+        <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} aria-label="Deadline" style={{ ...inputStyle, minWidth: 145 }} />
+        <select value={prioridad} onChange={(e) => setPrioridad(e.target.value)} aria-label="Prioridad" style={{ ...inputStyle, minWidth: 110 }}>
+          <option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option><option value="critical">Crítica</option>
+        </select>
         <Button type="submit" size="sm" disabled={busy}>
           {busy ? 'Guardando...' : 'Agregar'}
         </Button>
@@ -195,6 +215,10 @@ function OSPendientesInner() {
                   {p.titulo}
                 </p>
                 {p.proyecto && <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-accent-light)', margin: '2px 0 0' }}>{p.proyecto}</p>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 3, fontSize: 'var(--os-text-xs)' }}>
+                  {p.deadline && <span style={{ color: new Date(`${p.deadline}T23:59:59`) < new Date() && p.estado === 'abierto' ? 'var(--os-error)' : 'var(--os-muted)' }}>Hasta {p.deadline}</span>}
+                  <span style={{ color: (PRIORIDAD_META[p.prioridad] ?? PRIORIDAD_META.medium).color }}>{(PRIORIDAD_META[p.prioridad] ?? PRIORIDAD_META.medium).label}</span>
+                </div>
               </div>
               <span style={{
                 fontSize: 'var(--os-text-xs)', fontFamily: 'var(--os-font-display)', fontWeight: 700, letterSpacing: '0.08em',

@@ -22,6 +22,7 @@ interface Entrada {
   proyecto: string | null;
   publicable: boolean;
   brain_slug: string | null;
+  mood: string | null;
 }
 
 const TIPOS: Array<{ valor: Tipo; label: string }> = [
@@ -79,9 +80,12 @@ const chipActivo: React.CSSProperties = {
 function fechaLarga(fecha: string): string {
   // fecha viene como YYYY-MM-DD: se construye local para no correr un dia por UTC.
   const [y, m, d] = fecha.split('-').map(Number);
-  return new Date(y, (m ?? 1) - 1, d).toLocaleDateString('es', {
+  const texto = new Date(y, (m ?? 1) - 1, d).toLocaleDateString('es', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+  // Solo la primera letra: `text-transform: capitalize` subia tambien las de
+  // "de" y "agosto".
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 export default function OSDiario() {
@@ -96,6 +100,8 @@ export default function OSDiario() {
   const [tipo, setTipo] = useState<Tipo>('dia');
   const [proyecto, setProyecto] = useState('');
   const [tags, setTags] = useState('');
+  const [mood, setMood] = useState('neutral');
+  const [sugerencias, setSugerencias] = useState<{ tareas: string[]; personas: string[] }>({ tareas: [], personas: [] });
 
   // Edicion en linea
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -129,7 +135,7 @@ export default function OSDiario() {
     if (!contenido.trim() || busy) return;
     setBusy(true);
     try {
-      await llamar('/api/journal', {
+      const resultado = await llamar('/api/journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,10 +144,16 @@ export default function OSDiario() {
           proyecto: proyecto || null,
           tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
           fuente: 'os',
+          mood,
         }),
       });
+      setSugerencias((resultado.sugerencias as { tareas?: string[]; personas?: string[] } | undefined) ? {
+        tareas: (resultado.sugerencias as { tareas?: string[] }).tareas ?? [],
+        personas: (resultado.sugerencias as { personas?: string[] }).personas ?? [],
+      } : { tareas: [], personas: [] });
       setContenido('');
       setTags('');
+      setMood('neutral');
       setError('');
       await load();
     } catch (err) {
@@ -149,6 +161,16 @@ export default function OSDiario() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function crearSugerenciaTarea(titulo: string) {
+    await accion(() => llamar('/api/tareas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo, notas: 'Sugerida desde Journal' }) }), 'Tarea creada.');
+    setSugerencias((s) => ({ ...s, tareas: s.tareas.filter((t) => t !== titulo) }));
+  }
+
+  async function crearSugerenciaPersona(nombre: string) {
+    await accion(() => llamar('/api/red', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ persona: { nombre, tipo_lazo: 'personal', notas: 'Sugerida desde Journal' } }) }), 'Persona creada.');
+    setSugerencias((s) => ({ ...s, personas: s.personas.filter((p) => p !== nombre) }));
   }
 
   async function accion(fn: () => Promise<unknown>, mensaje?: string) {
@@ -234,6 +256,9 @@ export default function OSDiario() {
           </select>
           <input value={tags} onChange={(ev) => setTags(ev.target.value)} placeholder="tags separados por coma"
             style={{ ...inputStyle, width: 'auto', flex: 1, minWidth: 160 }} />
+          <select value={mood} onChange={(ev) => setMood(ev.target.value)} aria-label="Estado de ánimo" style={{ ...inputStyle, width: 'auto', minWidth: 130 }}>
+            <option value="muy_bajo">Muy bajo</option><option value="bajo">Bajo</option><option value="neutral">Neutral</option><option value="alto">Alto</option><option value="muy_alto">Muy alto</option>
+          </select>
           <Button type="submit" size="sm" disabled={busy || !contenido.trim()}>
             {busy ? 'Guardando...' : 'Registrar'}
           </Button>
@@ -242,13 +267,18 @@ export default function OSDiario() {
 
       {error && <p style={{ color: 'var(--os-error)', fontSize: 'var(--os-text-xs)', marginBottom: 10 }}>Error: {error}</p>}
       {aviso && <p style={{ color: 'var(--os-champagne)', fontSize: 'var(--os-text-xs)', marginBottom: 10 }}>{aviso}</p>}
+      {(sugerencias.tareas.length > 0 || sugerencias.personas.length > 0) && <div className="os-card-2" style={{ marginBottom: 12 }}>
+        <p className="os-section-title">Sugerencias detectadas</p>
+        {sugerencias.tareas.map((t) => <div key={`t-${t}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}><span style={{ flex: 1, fontSize: 13 }}>Tarea: {t}</span><Button size="sm" onClick={() => void crearSugerenciaTarea(t)}>Crear tarea</Button></div>)}
+        {sugerencias.personas.map((p) => <div key={`p-${p}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}><span style={{ flex: 1, fontSize: 13 }}>Persona: {p}</span><Button size="sm" onClick={() => void crearSugerenciaPersona(p)}>Añadir a red</Button></div>)}
+      </div>}
       {loading && <Spinner />}
 
       {!loading && !entradas.length && (
         <div className="os-card-2">
           <EmptyState
             icon="auto_stories"
-            title="Diario vacio"
+            title="Journal vacio"
             text="Documenta el dia. Cada entrada es materia prima para tu contenido y para la pagina del dia en el brain."
           />
         </div>
@@ -260,7 +290,7 @@ export default function OSDiario() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <h3 style={{
                 fontFamily: 'var(--os-font-display)', fontSize: 'var(--os-text-sm)', fontWeight: 700,
-                textTransform: 'capitalize', color: 'var(--os-text)', margin: 0,
+                color: 'var(--os-text)', margin: 0,
               }}>
                 {fechaLarga(dia.fecha)}
               </h3>
@@ -295,6 +325,7 @@ export default function OSDiario() {
                     <span style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', fontFamily: 'var(--os-font-mono)' }}>
                       {e.fuente}
                     </span>
+                    {e.mood && <span style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-champagne)' }}>mood: {e.mood.replace('_', ' ')}</span>}
                     <button type="button" onClick={() => togglePublicable(e)}
                       title={e.publicable ? 'Marcada como material de contenido' : 'Marcar como material de contenido'}
                       style={{

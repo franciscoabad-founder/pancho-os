@@ -19,7 +19,7 @@ export function setClienteSupabaseRevision(fn: (() => SupabaseClient) | null): v
   clienteActual = fn ?? getSupabaseServer;
 }
 
-export const TIPOS = ['semanal', 'mensual', 'reset90'];
+export const TIPOS = ['semanal', 'mensual', 'reset90', 'anual', 'trimestral'];
 
 export class ErrorRevision extends Error {
   status: number;

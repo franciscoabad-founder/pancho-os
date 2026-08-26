@@ -9,7 +9,7 @@ import { getSupabaseServer } from '../../lib/supabase';
 import { isOsAuthorized, json } from '../../os/lib/osAuth';
 import { errMsg } from '../../lib/salud/apiHelpers';
 
-const TIPOS = ['semanal', 'mensual', 'reset90'];
+const TIPOS = ['semanal', 'mensual', 'reset90', 'anual', 'trimestral'];
 
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);

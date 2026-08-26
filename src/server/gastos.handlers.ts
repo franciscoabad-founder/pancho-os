@@ -24,6 +24,7 @@ export interface GastoInput {
   descripcion?: string;
   monto?: unknown;
   cuenta?: string;
+  proyecto?: string;
   /** Moneda en la que se pago. Por defecto USD, la base del OS. */
   moneda?: string;
   /** Alias explicitos: si vienen, mandan sobre monto/moneda. */
@@ -83,6 +84,7 @@ export async function crearGasto(body: GastoInput): Promise<unknown> {
       categoria: body.categoria?.trim() || null,
       descripcion: body.descripcion?.trim() || null,
       cuenta: body.cuenta?.trim() || null,
+      proyecto: body.proyecto?.trim() || null,
       ...(await columnasDeMoneda(montoEntrada, monedaEntrada)),
     }])
     .select()

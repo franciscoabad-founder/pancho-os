@@ -93,6 +93,7 @@ function semanaIso(fecha: Date): string {
 
 export default function OSRed() {
   const [tab, setTab] = useState<'personas' | 'scorecard' | 'plan'>('personas');
+  const [pasoGuiado, setPasoGuiado] = useState<1 | 2 | 3>(1);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -183,10 +184,55 @@ export default function OSRed() {
   const vencidos = personas.filter(estaVencida);
   const dist = distanciaPct(diagnostico?.apertura.densidad ?? 0.5);
 
+  // Ruta corta basada en el diagnóstico de Willburn: mapear, leer el patrón
+  // y convertirlo en una conversación concreta. No crea datos adicionales ni
+  // reemplaza las pestañas; sólo hace explícito el siguiente paso.
+  const pasoCta = pasoGuiado === 1
+    ? personas.length === 0 ? 'Ir a personas' : 'Revisar scorecard'
+    : pasoGuiado === 2 ? 'Definir plan' : vencidos.length > 0 ? 'Mandar contactos a tareas' : plan ? 'Volver a personas' : 'Crear plan';
+
+  function avanzarRuta() {
+    if (pasoGuiado === 1) {
+      if (personas.length === 0) { setTab('personas'); return; }
+      setPasoGuiado(2); setTab('scorecard'); return;
+    }
+    if (pasoGuiado === 2) { setPasoGuiado(3); setTab('plan'); return; }
+    if (vencidos.length > 0) { void generarTareas(); return; }
+    if (!plan) { setTab('plan'); return; }
+    setPasoGuiado(1); setTab('personas');
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {error && <p style={{ color: 'var(--os-error)', fontSize: 'var(--os-text-xs)' }}>Error: {error}</p>}
       {aviso && <p style={{ color: 'var(--os-champagne)', fontSize: 'var(--os-text-xs)' }}>{aviso}</p>}
+
+      <section className="os-card-2" aria-label="Ruta guiada de diagnóstico" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <p className="os-eyebrow" style={{ marginBottom: 4 }}>Ruta guiada · 3 pasos</p>
+            <p style={{ margin: 0, color: 'var(--os-text)', fontSize: 'var(--os-text-base)', fontWeight: 700 }}>
+              {pasoGuiado === 1 ? 'Mapea a las personas importantes' : pasoGuiado === 2 ? 'Lee el patrón de tu red' : 'Elige una acción pequeña'}
+            </p>
+          </div>
+          <span style={{ color: 'var(--os-muted)', fontSize: 'var(--os-text-xs)' }}>Paso {pasoGuiado} de 3</span>
+        </div>
+        <p style={{ margin: 0, color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)', lineHeight: 1.45 }}>
+          {pasoGuiado === 1
+            ? 'Anota hasta 16 personas con contacto directo en los últimos seis meses. Incluye vínculos operacionales, personales y estratégicos.'
+            : pasoGuiado === 2
+              ? 'Compara apertura, diversidad, cercanía y tipo de vínculo. El scorecard orienta la conversación; no es una etiqueta permanente.'
+              : vencidos.length > 0
+                ? `Tienes ${vencidos.length} contacto(s) vencido(s). Conviértelos en tareas para esta semana.`
+                : plan
+                  ? 'Tu plan está definido. Da seguimiento a una persona esta semana y registra el contacto.'
+                  : 'Define una meta de red y la frontera que quieres cruzar para convertir el diagnóstico en práctica.'}
+        </p>
+        <div style={{ display: 'flex', gap: 6 }} aria-hidden="true">
+          {[1, 2, 3].map((n) => <span key={n} style={{ height: 4, flex: 1, borderRadius: 999, background: n <= pasoGuiado ? 'var(--os-accent)' : 'var(--os-line)' }} />)}
+        </div>
+        <div><Button size="sm" onClick={avanzarRuta}>{pasoCta}</Button></div>
+      </section>
 
       {vencidos.length > 0 && (
         <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

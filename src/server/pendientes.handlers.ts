@@ -20,6 +20,8 @@ export function setClienteSupabasePendientes(fn: (() => SupabaseClient) | null):
 }
 
 export const ESTADOS = ['abierto', 'convertido', 'descartado', 'hecho'];
+export const PRIORIDADES = ['low', 'medium', 'high', 'critical'];
+const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export class ErrorPendientes extends Error {
   status: number;
@@ -39,6 +41,26 @@ export interface PendienteInput {
   origen_nota_id?: unknown;
   convertido_a?: unknown;
   convertido_id?: unknown;
+  deadline?: unknown;
+  prioridad?: unknown;
+}
+
+function fechaValida(value: unknown): boolean {
+  if (value === null || value === undefined || value === '') return true;
+  if (typeof value !== 'string' || !FECHA_RE.test(value)) return false;
+  const d = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+}
+
+export function normalizarDeadline(value: unknown): string | null {
+  if (!fechaValida(value)) throw new ErrorPendientes('deadline debe tener formato YYYY-MM-DD', 400);
+  return typeof value === 'string' && value ? value : null;
+}
+
+export function normalizarPrioridad(value: unknown): string {
+  const prioridad = value === undefined || value === null || value === '' ? 'medium' : String(value);
+  if (!PRIORIDADES.includes(prioridad)) throw new ErrorPendientes('prioridad invalida', 400);
+  return prioridad;
 }
 
 export async function listarPendientes(): Promise<unknown[]> {
@@ -63,6 +85,8 @@ export async function crearPendiente(body: PendienteInput): Promise<unknown> {
       proyecto: (body.proyecto as string | undefined)?.trim() || null,
       estado: ESTADOS.includes(body.estado as string) ? body.estado : 'abierto',
       origen_nota_id: body.origen_nota_id || null,
+      deadline: normalizarDeadline(body.deadline),
+      prioridad: normalizarPrioridad(body.prioridad),
     }])
     .select()
     .single();
@@ -88,6 +112,8 @@ export async function actualizarPendiente(id: string | null, body: PendienteInpu
   }
   if ('convertido_a' in body) patch.convertido_a = body.convertido_a || null;
   if ('convertido_id' in body) patch.convertido_id = body.convertido_id || null;
+  if ('deadline' in body) patch.deadline = normalizarDeadline(body.deadline);
+  if ('prioridad' in body) patch.prioridad = normalizarPrioridad(body.prioridad);
   if (!Object.keys(patch).length) throw new ErrorPendientes('sin campos para actualizar', 400);
   patch.updated_at = new Date().toISOString();
 

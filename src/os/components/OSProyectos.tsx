@@ -29,6 +29,14 @@ interface ProyectoPagina {
   fecha: string;
 }
 
+interface ProyectoKpi { id: string; label: string; valor_actual: number | null; meta: number | null; unidad: string | null; objetivo_id: string | null }
+interface ProyectoGasto { id: string; descripcion: string | null; monto_usd?: number | null; monto?: number | null; moneda?: string | null; proyecto?: string | null; fecha?: string | null }
+interface ProyectoCobro { id: string; cliente: string; monto?: number | null; moneda?: string | null; estado?: string | null; proyecto?: string | null }
+interface ProyectoPago { id: string; beneficiario: string; monto?: number | null; moneda?: string | null; estado?: string | null; proyecto?: string | null }
+interface ProyectoTarea { id: string; titulo: string; estado: string; proyecto?: string | null; deadline?: string | null }
+interface ProyectoPendiente { id: string; titulo: string; estado: string; proyecto?: string | null; deadline?: string | null; prioridad?: string }
+interface ProyectoDetalle { kpis: ProyectoKpi[]; gastos: ProyectoGasto[]; cobros: ProyectoCobro[]; pagos: ProyectoPago[]; tareas: ProyectoTarea[]; pendientes: ProyectoPendiente[] }
+
 const PRIORIDAD_LABEL: Record<number, string> = {
   0: 'Urgente', 1: 'Dinero', 2: 'Soporte', 3: 'Estabilizar', 4: 'Pausado',
 };
@@ -91,6 +99,7 @@ function OSProyectosInner() {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [modalPaginas, setModalPaginas] = useState<ProyectoPagina[]>([]);
+  const [modalDetalle, setModalDetalle] = useState<ProyectoDetalle | null>(null);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -102,18 +111,45 @@ function OSProyectosInner() {
   }, [modalOpen]);
 
   async function abrirProyecto(l: Linea) {
-    if (!l.brain_tag) return;
     setModalOpen(true);
     setModalNombre(l.nombre);
     setModalTag(l.brain_tag);
     setModalLoading(true);
     setModalError('');
     setModalPaginas([]);
+    setModalDetalle(null);
     try {
-      const res = await fetch(`/api/brain/proyecto?tag=${encodeURIComponent(l.brain_tag)}`);
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || String(res.status));
-      setModalPaginas(data.paginas ?? []);
+      const [brainRes, kpiRes, gastoRes, cobroRes, pagoRes, tareaRes, pendienteRes] = await Promise.all([
+        l.brain_tag ? fetch(`/api/brain/proyecto?tag=${encodeURIComponent(l.brain_tag)}`) : Promise.resolve(null),
+        fetch('/api/kpis', { cache: 'no-store' }), fetch('/api/gastos', { cache: 'no-store' }),
+        fetch('/api/por-cobrar', { cache: 'no-store' }), fetch('/api/por-pagar', { cache: 'no-store' }), fetch('/api/tareas', { cache: 'no-store' }),
+        fetch('/api/pendientes', { cache: 'no-store' }),
+      ]);
+      if (brainRes) {
+        try {
+          const data = await brainRes.json();
+          if (brainRes.ok && !data.error) setModalPaginas(data.paginas ?? []);
+        } catch {
+          // Brain es contexto opcional; el detalle local sigue siendo usable.
+        }
+      }
+      const fallos: string[] = [];
+      const json = async (res: Response, nombre: string) => {
+        if (!res.ok) { fallos.push(nombre); return {}; }
+        return res.json();
+      };
+      const [k, g, c, pp, t, p] = await Promise.all([
+        json(kpiRes, 'KPIs'), json(gastoRes, 'gastos'), json(cobroRes, 'por cobrar'), json(pagoRes, 'por pagar'), json(tareaRes, 'tareas'), json(pendienteRes, 'pendientes'),
+      ]);
+      if (fallos.length) setModalError(`Datos incompletos: no cargaron ${fallos.join(', ')}.`);
+      setModalDetalle({
+        kpis: (k.kpis ?? []).filter((x: ProyectoKpi) => x.objetivo_id === l.objetivo_id),
+        gastos: (g.gastos ?? []).filter((x: ProyectoGasto) => coincideProyecto(x.proyecto, l)),
+        cobros: (c.por_cobrar ?? []).filter((x: ProyectoCobro) => coincideProyecto(x.proyecto, l)),
+        pagos: (pp.por_pagar ?? []).filter((x: ProyectoPago) => coincideProyecto(x.proyecto, l)),
+        tareas: (t.tareas ?? []).filter((x: ProyectoTarea) => coincideProyecto(x.proyecto, l)),
+        pendientes: (p.pendientes ?? []).filter((x: ProyectoPendiente) => coincideProyecto(x.proyecto, l)),
+      });
     } catch (err) {
       setModalError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -217,7 +253,7 @@ function OSProyectosInner() {
                   style={{
                     borderLeft: `3px solid ${PRIORIDAD_COLOR[stack]}`,
                     opacity: stack === 4 ? 0.7 : 1,
-                    cursor: l.brain_tag ? 'pointer' : 'default',
+                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
@@ -297,7 +333,7 @@ function OSProyectosInner() {
               fontSize: 11, color: 'var(--os-accent-light)', letterSpacing: '0.1em', textTransform: 'uppercase',
               fontFamily: 'var(--os-font-display)', margin: '0 0 6px',
             }}>
-              Proyecto · #{modalTag}
+              Proyecto{modalTag ? ` · #${modalTag}` : ''}
             </p>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--os-text)', margin: '0 0 1rem', fontFamily: 'var(--os-font-display)' }}>
               {modalNombre}
@@ -307,13 +343,16 @@ function OSProyectosInner() {
               <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>Leyendo el cerebro...</p>
             )}
 
-            {!modalLoading && modalError && (
+            {!modalLoading && modalError && !modalDetalle && (
               <p style={{ color: 'var(--os-error)', fontSize: 13 }}>Error: {modalError}</p>
+            )}
+            {!modalLoading && modalError && modalDetalle && (
+              <p style={{ color: 'var(--os-error)', fontSize: 13 }}>Aviso: {modalError}</p>
             )}
 
             {!modalLoading && !modalError && modalPaginas.length === 0 && (
               <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>
-                Sin contexto en el cerebro para esta linea. Captura notas con el tag <b>#{modalTag}</b> y apareceran aqui.
+                {modalTag ? <>Sin contexto en el cerebro para esta linea. Captura notas con el tag <b>#{modalTag}</b> y apareceran aqui.</> : 'Sin contexto en el cerebro para esta linea.'}
               </p>
             )}
 
@@ -354,11 +393,45 @@ function OSProyectosInner() {
                 )}
               </div>
             ))}
+
+            {!modalLoading && modalDetalle && (
+              <div style={{ marginTop: 18, borderTop: '1px solid var(--os-line)', paddingTop: 14 }}>
+                <p className="os-section-title" style={{ marginBottom: 10 }}>Operación del proyecto</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 8 }}>
+                  <div className="os-tag">KPIs · {modalDetalle.kpis.length}</div>
+                  <div className="os-tag">Gastos · {modalDetalle.gastos.length}</div>
+                  <div className="os-tag">Por cobrar · {modalDetalle.cobros.length}</div>
+                  <div className="os-tag">Por pagar · {modalDetalle.pagos.length}</div>
+                  <div className="os-tag">Tareas · {modalDetalle.tareas.length}</div>
+                  <div className="os-tag">Pendientes · {modalDetalle.pendientes.length}</div>
+                </div>
+                {modalDetalle.kpis.map((k) => <p key={k.id} style={{ fontSize: 12, color: 'var(--os-accent-light)', margin: '8px 0 0' }}>{k.label}: {k.valor_actual ?? '—'}{k.unidad ? ` ${k.unidad}` : ''}{k.meta !== null ? ` / meta ${k.meta}` : ''}</p>)}
+                {modalDetalle.gastos.length > 0 && <p style={{ fontSize: 12, color: 'var(--os-text-2)', margin: '8px 0 0' }}>Gasto acumulado: {modalDetalle.gastos.reduce((sum, g) => sum + Number(g.monto_usd ?? g.monto ?? 0), 0).toFixed(2)} USD</p>}
+                {modalDetalle.cobros.length > 0 && <p style={{ fontSize: 12, color: 'var(--os-text-2)', margin: '8px 0 0' }}>Por cobrar: {totalesPorMoneda(modalDetalle.cobros).join(' · ')}</p>}
+                {modalDetalle.pagos.length > 0 && <p style={{ fontSize: 12, color: 'var(--os-text-2)', margin: '8px 0 0' }}>Por pagar: {totalesPorMoneda(modalDetalle.pagos).join(' · ')}</p>}
+                {[...modalDetalle.tareas, ...modalDetalle.pendientes].slice(0, 5).map((x) => <p key={`${x.id}-${x.titulo}`} style={{ fontSize: 12, color: 'var(--os-text-2)', margin: '6px 0 0' }}>· {x.titulo}</p>)}
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function coincideProyecto(valor: string | null | undefined, linea: Linea): boolean {
+  if (!valor) return false;
+  const target = valor.trim().toLocaleLowerCase();
+  return target === linea.id.toLocaleLowerCase() || target === linea.nombre.trim().toLocaleLowerCase();
+}
+
+function totalesPorMoneda(items: Array<{ monto?: number | null; moneda?: string | null }>): string[] {
+  const totals = new Map<string, number>();
+  for (const item of items) {
+    const moneda = (item.moneda || 'USD').toUpperCase();
+    totals.set(moneda, (totals.get(moneda) || 0) + Number(item.monto ?? 0));
+  }
+  return [...totals.entries()].map(([moneda, total]) => `${total.toFixed(2)} ${moneda}`);
 }
 
 export default function OSProyectos() {

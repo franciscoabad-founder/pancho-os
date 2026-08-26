@@ -16,7 +16,9 @@ interface KPI {
   valor_actual: number | null;
   fecha_actual: string | null;
   tendencia: 'up' | 'down' | 'flat' | null;
+  objetivo_id: string | null;
 }
+interface Objetivo { id: string; titulo: string; }
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--os-fill-subtle)',
@@ -66,6 +68,7 @@ function OSKpisInner() {
   const toast = useToast();
   const { confirm, sheet } = useConfirm();
   const [kpis, setKpis] = useState<KPI[]>([]);
+  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -77,14 +80,22 @@ function OSKpisInner() {
   const [nUnidad, setNUnidad] = useState('');
   const [nMeta, setNMeta] = useState('');
   const [nCategoria, setNCategoria] = useState('');
+  const [nObjetivo, setNObjetivo] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function load() {
     try {
-      const res = await fetch('/api/kpis', { cache: 'no-store' });
+      const [res, objetivosRes] = await Promise.all([
+        fetch('/api/kpis', { cache: 'no-store' }),
+        fetch('/api/objetivos', { cache: 'no-store' }),
+      ]);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
       setKpis(data.kpis ?? []);
+      if (objetivosRes.ok) {
+        const objetivosData = await objetivosRes.json();
+        setObjetivos(objetivosData.objetivos ?? []);
+      }
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -130,11 +141,12 @@ function OSKpisInner() {
           unidad: nUnidad.trim() || null,
           meta: nMeta.trim() ? Number(nMeta.trim()) : null,
           categoria: nCategoria.trim() || 'general',
+          objetivo_id: nObjetivo || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || String(res.status));
-      setNLabel(''); setNUnidad(''); setNMeta(''); setNCategoria('');
+      setNLabel(''); setNUnidad(''); setNMeta(''); setNCategoria(''); setNObjetivo('');
       setCreando(false);
       await load();
       toast.show('KPI creado.', 'ok');
@@ -201,6 +213,10 @@ function OSKpisInner() {
           <input value={nUnidad} onChange={(e) => setNUnidad(e.target.value)} placeholder="Unidad ($, %, personas...)" style={{ ...inputStyle, width: 150 }} />
           <input value={nMeta} onChange={(e) => setNMeta(e.target.value)} placeholder="Meta" type="number" style={{ ...inputStyle, width: 100 }} />
           <input value={nCategoria} onChange={(e) => setNCategoria(e.target.value)} placeholder="Categoria" style={{ ...inputStyle, width: 130 }} />
+          <select value={nObjetivo} onChange={(e) => setNObjetivo(e.target.value)} aria-label="Objetivo asociado" style={{ ...inputStyle, width: 190 }}>
+            <option value="">Sin objetivo asociado</option>
+            {objetivos.map((o) => <option key={o.id} value={o.id}>{o.titulo}</option>)}
+          </select>
           <Button type="submit" size="sm" disabled={busy}>{busy ? '...' : 'Crear'}</Button>
         </form>
       )}
@@ -220,6 +236,7 @@ function OSKpisInner() {
               {k.meta !== null ? `meta ${formatearValor(k.meta, k.unidad)}` : 'sin meta'}
               {k.fecha_actual ? ` · ${k.fecha_actual}` : ''}
             </p>
+            {k.objetivo_id && <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-accent-light)', margin: '3px 0 0' }}>↳ {objetivos.find((o) => o.id === k.objetivo_id)?.titulo ?? 'Objetivo'}</p>}
 
             {registrando === k.id ? (
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
