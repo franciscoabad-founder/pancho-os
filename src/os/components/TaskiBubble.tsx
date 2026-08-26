@@ -1,16 +1,43 @@
 // Taski — burbuja flotante de chat directo con Hermes (agente del VPS).
-// Visible en todo el OS (montada desde OSLayout). Una sola conversacion
-// continua (sesion "pancho-os" en el servidor). Historial del servidor al
+// Visible en todo el OS (montada desde OSLayout). Historial del servidor al
 // abrir + optimistic UI al enviar.
+//
+// Elegir sesion: ademas de la conversacion propia del OS ("pancho-os"), Taski
+// ya guarda una sesion real por cada conversacion de Telegram. El selector
+// del header cambia entre ellas sin salir de la burbuja; cambiar de sesion
+// recarga el historial de esa conversacion puntual.
 //
 // Z-index: bottom-nav movil = 150, drawer = 200, Sheet = 300.
 // Burbuja en 170 y panel en 190: encima del bottom-nav, debajo del drawer.
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 
 interface Turno {
   role: 'user' | 'assistant' | 'error';
   content: string;
+}
+
+interface SesionTaski {
+  id: string;
+  source: string;
+  title: string | null;
+  preview: string | null;
+  messageCount: number;
+  lastActive: number | null;
+}
+
+interface ModeloTaski {
+  id: string;
+  name: string;
+  provider?: string;
+}
+
+const SESION_OS_ID = 'pancho-os';
+
+function etiquetaSesion(s: SesionTaski): string {
+  if (s.id === SESION_OS_ID) return s.title || 'Taski (OS)';
+  return s.title || (s.source === 'telegram' ? 'Conversacion sin titulo' : s.source);
 }
 
 function useEsDesktop(): boolean {
@@ -34,8 +61,25 @@ export default function TaskiBubble() {
   const [historialListo, setHistorialListo] = useState(false);
   const [pensando, setPensando] = useState(false);
   const [texto, setTexto] = useState('');
+  // Arranca con la sesion del OS como unica opcion para que el selector nunca
+  // este vacio mientras /api/taski/sesiones todavia no responde.
+  const [sesiones, setSesiones] = useState<SesionTaski[]>([
+    { id: SESION_OS_ID, source: 'api_server', title: 'Taski (OS)', preview: null, messageCount: 0, lastActive: null },
+  ]);
+  const [sesionActual, setSesionActual] = useState(SESION_OS_ID);
+  const [modelos, setModelos] = useState<ModeloTaski[]>([]);
+  const [modeloActual, setModeloActual] = useState('deepseek/deepseek-v4-flash');
+  const [cambiandoModelo, setCambiandoModelo] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Dictado por voz
+  const { isListening, isSupported: voiceSupported, toggleListening } = useVoiceDictation({
+    lang: 'es-EC',
+    onResult: (transcripcion) => {
+      setTexto((prev) => (prev ? `${prev} ${transcripcion}` : transcripcion));
+    },
+  });
 
   // Autoscroll al fondo cuando cambian los turnos o el indicador.
   useEffect(() => {
@@ -53,28 +97,73 @@ export default function TaskiBubble() {
     return () => document.removeEventListener('keydown', onKey);
   }, [abierto]);
 
-  async function cargarHistorial() {
+  async function cargarHistorial(sessionId: string) {
     setCargandoHistorial(true);
+    setTurnos([]);
     try {
-      const res = await fetch('/api/taski');
+      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(sessionId)}`);
       const data: { mensajes?: { role: 'user' | 'assistant'; content: string }[]; error?: string } =
         await res.json();
       if (data.mensajes) {
         setTurnos(data.mensajes.map((m) => ({ role: m.role, content: m.content })));
         setHistorialListo(true);
       } else if (data.error) {
-        setTurnos((prev) => (prev.length ? prev : [{ role: 'error', content: 'No pude cargar el historial: ' + data.error }]));
+        setTurnos([{ role: 'error', content: 'No pude cargar el historial: ' + data.error }]);
       }
     } catch {
-      setTurnos((prev) => (prev.length ? prev : [{ role: 'error', content: 'No pude cargar el historial. Revisa tu conexion.' }]));
+      setTurnos([{ role: 'error', content: 'No pude cargar el historial. Revisa tu conexion.' }]);
     }
     setCargandoHistorial(false);
   }
 
+  async function cargarSesiones() {
+    try {
+      const res = await fetch('/api/taski/sesiones');
+      const data: { sesiones?: SesionTaski[]; error?: string } = await res.json();
+      if (data.sesiones?.length) setSesiones(data.sesiones);
+    } catch {
+      // Sin lista de sesiones queda igual la conversacion del OS por defecto.
+    }
+  }
+
+  async function cargarModelos() {
+    try {
+      const res = await fetch('/api/taski/modelos');
+      const data: { modelos?: ModeloTaski[] } = await res.json();
+      if (data.modelos?.length) setModelos(data.modelos);
+    } catch {
+      // ignore
+    }
+  }
+
   function abrir() {
     setAbierto(true);
-    if (!historialListo && !cargandoHistorial) void cargarHistorial();
+    if (sesiones.length <= 1) void cargarSesiones();
+    if (!modelos.length) void cargarModelos();
+    if (!historialListo && !cargandoHistorial) void cargarHistorial(sesionActual);
     setTimeout(() => inputRef.current?.focus(), 60);
+  }
+
+  function cambiarSesion(id: string) {
+    if (id === sesionActual || pensando) return;
+    setSesionActual(id);
+    void cargarHistorial(id);
+  }
+
+  async function cambiarModelo(nuevoModelo: string) {
+    setModeloActual(nuevoModelo);
+    setCambiandoModelo(true);
+    try {
+      await fetch('/api/taski/modelos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: nuevoModelo, session_id: sesionActual }),
+      });
+    } catch {
+      // ignore
+    } finally {
+      setCambiandoModelo(false);
+    }
   }
 
   async function enviar() {
@@ -88,7 +177,7 @@ export default function TaskiBubble() {
       const res = await fetch('/api/taski', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
+        body: JSON.stringify({ message: msg, session_id: sesionActual }),
       });
       const data: { reply?: string; error?: string } = await res.json();
       if (data.error || !res.ok) {
@@ -98,9 +187,10 @@ export default function TaskiBubble() {
       }
     } catch {
       setTurnos((prev) => [...prev, { role: 'error', content: 'Error de conexion. Intenta de nuevo.' }]);
+    } finally {
+      setPensando(false);
+      setTimeout(() => inputRef.current?.focus(), 60);
     }
-    setPensando(false);
-    setTimeout(() => inputRef.current?.focus(), 60);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -205,59 +295,128 @@ export default function TaskiBubble() {
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 10,
+              flexDirection: 'column',
+              gap: 6,
               padding: '0.625rem 0.875rem',
               borderBottom: '1px solid var(--os-line-soft)',
               background: 'var(--os-bg-sunken)',
               flexShrink: 0,
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <span
-                className="material-symbols-outlined"
-                aria-hidden="true"
-                style={{ fontSize: 18, color: 'var(--os-accent-light)' }}
-              >
-                smart_toy
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0, flexShrink: 0 }}>
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: 18, color: 'var(--os-accent-light)' }}
+                >
+                  smart_toy
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--os-font-display)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--os-text)',
+                  }}
+                >
+                  Taski
+                </span>
               </span>
-              <span
+
+              {/* Selector de conversacion */}
+              <select
+                value={sesionActual}
+                disabled={pensando}
+                onChange={(e) => cambiarSesion(e.target.value)}
+                aria-label="Elegir conversacion"
                 style={{
-                  fontFamily: 'var(--os-font-display)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
+                  flex: 1,
+                  minWidth: 0,
+                  background: 'var(--os-fill-subtle)',
+                  border: '1px solid var(--os-line-soft)',
+                  borderRadius: 'var(--os-r-md, 8px)',
                   color: 'var(--os-text)',
+                  fontSize: 11,
+                  padding: '4px 6px',
+                  fontFamily: 'var(--os-font-body)',
+                  cursor: pensando ? 'default' : 'pointer',
                 }}
               >
-                Taski
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--os-muted)' }}>Hermes en el VPS</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setAbierto(false)}
-              aria-label="Cerrar Taski"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: desktop ? 36 : 44,
-                height: desktop ? 36 : 44,
-                background: 'var(--os-fill-subtle)',
-                border: 'none',
-                borderRadius: 'var(--os-r-full, 999px)',
-                color: 'var(--os-muted)',
-                cursor: 'pointer',
-                fontSize: 17,
-                lineHeight: 1,
-                flexShrink: 0,
-              }}
-            >
-              ×
-            </button>
+                {sesiones.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {etiquetaSesion(s)}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setAbierto(false)}
+                aria-label="Cerrar Taski"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: desktop ? 28 : 36,
+                  height: desktop ? 28 : 36,
+                  background: 'var(--os-fill-subtle)',
+                  border: 'none',
+                  borderRadius: 'var(--os-r-full, 999px)',
+                  color: 'var(--os-muted)',
+                  cursor: 'pointer',
+                  fontSize: 16,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Selector de Modelo */}
+            {modelos.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--os-muted)',
+                    fontFamily: 'var(--os-font-display)',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    flexShrink: 0,
+                  }}
+                >
+                  Modelo:
+                </span>
+                <select
+                  value={modeloActual}
+                  disabled={pensando || cambiandoModelo}
+                  onChange={(e) => cambiarModelo(e.target.value)}
+                  aria-label="Elegir modelo de IA"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    background: 'transparent',
+                    border: '1px dashed var(--os-line-soft)',
+                    borderRadius: '4px',
+                    color: 'var(--os-text-2, var(--os-muted))',
+                    fontSize: 10,
+                    padding: '2px 4px',
+                    fontFamily: 'var(--os-font-body)',
+                    cursor: pensando || cambiandoModelo ? 'default' : 'pointer',
+                  }}
+                >
+                  {modelos.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Mensajes */}
@@ -281,7 +440,7 @@ export default function TaskiBubble() {
               <p style={{ margin: 'auto', color: 'var(--os-muted)', fontSize: 12, textAlign: 'center', lineHeight: 1.6 }}>
                 Este es tu canal directo con Hermes.
                 <br />
-                Una sola conversacion continua, desde cualquier pantalla del OS.
+                Elegi arriba que conversacion ver, o escribi para empezar una nueva.
               </p>
             )}
             {turnos.map((t, i) => (
@@ -358,6 +517,40 @@ export default function TaskiBubble() {
                 lineHeight: 1.5,
               }}
             />
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={toggleListening}
+                disabled={pensando}
+                aria-label={isListening ? 'Detener dictado' : 'Dictar por voz'}
+                title={isListening ? 'Detener dictado' : 'Dictar por voz'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: desktop ? 38 : 44,
+                  height: desktop ? 38 : 44,
+                  background: isListening ? 'rgba(239, 68, 68, 0.15)' : 'var(--os-fill-subtle)',
+                  color: isListening ? 'var(--os-error, #ef4444)' : 'var(--os-muted)',
+                  border: isListening ? '1px solid var(--os-error, #ef4444)' : 'none',
+                  borderRadius: 'var(--os-r-md, 8px)',
+                  cursor: pensando ? 'default' : 'pointer',
+                  flexShrink: 0,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{
+                    fontSize: 20,
+                    animation: isListening ? 'os-pulse 1.2s infinite' : 'none',
+                  }}
+                >
+                  {isListening ? 'mic' : 'mic_none'}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void enviar()}

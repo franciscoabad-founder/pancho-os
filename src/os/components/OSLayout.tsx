@@ -73,14 +73,14 @@ const ms: Record<string, string> = {
   '/diario': 'auto_stories',
   '/ikigai': 'self_improvement',
   '/red': 'diversity_3',
+  '/hermes': 'smart_toy',
 };
 
 const navGroups = [
   { label: 'Sistema', items: [
     { href: '/', label: 'Hoy' },
-    { href: '/sistema', label: 'Mi Sistema' },
+    { href: '/hermes', label: 'Hermes' },
     { href: '/aprobaciones', label: 'Aprobaciones' },
-    { href: '/revision', label: 'Revision' },
     { href: '/diario', label: 'Journal' },
     { href: '/ikigai', label: 'Ikigai' },
     { href: '/red', label: 'Networking Room' },
@@ -109,6 +109,13 @@ const navGroups = [
   ]},
   { label: 'Conocimiento', items: [
     { href: '/cerebro', label: 'Cerebro' },
+  ]},
+  // Configuracion queda al final a proposito: Accesos (ex "Mi Sistema", es el
+  // panel de pairing/tokens) y Week Review (ex "Revision", se confundia con
+  // Aprobaciones) no son de uso diario, son de mantenimiento.
+  { label: 'Configuracion', items: [
+    { href: '/revision', label: 'Week Review' },
+    { href: '/sistema', label: 'Accesos' },
   ]},
 ];
 

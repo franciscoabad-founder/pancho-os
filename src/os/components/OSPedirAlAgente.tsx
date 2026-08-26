@@ -9,6 +9,7 @@
 // kanban de pendientes de Hermes y cambiar de modelo van en el modulo aparte de
 // Hermes, no aca.
 import { useState } from 'react';
+import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 
 // Hermes puede tardar: el proxy corta a los 60s (CHAT_TIMEOUT_MS).
 const AVISO_LENTO_MS = 8000;
@@ -19,6 +20,14 @@ export default function OSPedirAlAgente() {
   const [lento, setLento] = useState(false);
   const [respuesta, setRespuesta] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Dictado por voz
+  const { isListening, isSupported: voiceSupported, toggleListening } = useVoiceDictation({
+    lang: 'es-EC',
+    onResult: (transcripcion) => {
+      setTexto((prev) => (prev ? `${prev} ${transcripcion}` : transcripcion));
+    },
+  });
 
   async function enviar() {
     const mensaje = texto.trim();
@@ -68,6 +77,34 @@ export default function OSPedirAlAgente() {
           onKeyDown={(e) => { if (e.key === 'Enter') enviar(); }}
           style={{ flex: 1 }}
         />
+        {voiceSupported && (
+          <button
+            type="button"
+            className="os-btn"
+            onClick={toggleListening}
+            disabled={enviando}
+            title={isListening ? 'Detener dictado' : 'Dictar por voz'}
+            style={{
+              padding: '0 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isListening ? 'var(--os-error, #ef4444)' : 'var(--os-muted)',
+              borderColor: isListening ? 'var(--os-error, #ef4444)' : undefined,
+              background: isListening ? 'rgba(239, 68, 68, 0.12)' : undefined,
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: 18,
+                animation: isListening ? 'os-pulse 1.2s infinite' : 'none',
+              }}
+            >
+              {isListening ? 'mic' : 'mic_none'}
+            </span>
+          </button>
+        )}
         <button className="os-btn" onClick={enviar} disabled={enviando || !texto.trim()}>
           {enviando ? 'Enviando...' : 'Enviar'}
         </button>

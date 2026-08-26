@@ -34,8 +34,9 @@ export const Route = createFileRoute('/api/taski')({
         if (!(await isOsAuthorized(request))) return noAutorizado();
         if (!taskiConfigurado()) return sinToken();
 
+        const sessionId = new URL(request.url).searchParams.get('session_id')?.trim() || SESSION_ID;
         try {
-          return json({ session_id: SESSION_ID, mensajes: await historialTaski() });
+          return json({ session_id: sessionId, mensajes: await historialTaski(sessionId) });
         } catch (err) {
           return errorHermes(err, 'Hermes tardo demasiado en responder');
         }
@@ -46,9 +47,11 @@ export const Route = createFileRoute('/api/taski')({
         if (!taskiConfigurado()) return sinToken();
 
         let message: string;
+        let sessionId: string;
         try {
           const body = (await request.json()) as Record<string, unknown>;
           message = (body.message ?? '').toString().trim();
+          sessionId = (body.session_id ?? '').toString().trim() || SESSION_ID;
         } catch {
           return json({ error: 'JSON invalido' }, 400);
         }
@@ -58,7 +61,7 @@ export const Route = createFileRoute('/api/taski')({
         }
 
         try {
-          return json({ reply: await enviarATaski(message), session_id: SESSION_ID });
+          return json({ reply: await enviarATaski(message, sessionId), session_id: sessionId });
         } catch (err) {
           return errorHermes(err, 'Hermes tardo demasiado en responder. Intenta de nuevo.');
         }
