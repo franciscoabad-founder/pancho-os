@@ -164,6 +164,8 @@ export default function OSIkigai() {
   const [textoPorCuadrante, setTextoPorCuadrante] = useState<Record<Cuadrante, string>>({ amas: '', bueno: '', pagan: '', mundo: '' });
 
   const [nombreZona, setNombreZona] = useState('');
+  const [iterando, setIterando] = useState(false);
+  const [sugerenciasAgente, setSugerenciasAgente] = useState('');
   const [cuadrantesZona, setCuadrantesZona] = useState<Cuadrante[]>([]);
 
   async function load() {
@@ -258,6 +260,19 @@ export default function OSIkigai() {
     );
     setNombreZona('');
     setCuadrantesZona([]);
+  }
+
+  async function iterarConAgente() {
+    setIterando(true);
+    setSugerenciasAgente('');
+    try {
+      const res = await fetch('/api/ikigai/iterar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || String(res.status));
+      setSugerenciasAgente(data.sugerencias || 'Hermes no devolvió sugerencias.');
+    } catch (err) {
+      setSugerenciasAgente(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setIterando(false); }
   }
 
   function toggleCuadranteZona(c: Cuadrante) {
@@ -459,6 +474,17 @@ export default function OSIkigai() {
           <input style={inputStyle} placeholder="Nombre de la zona (ej: BrainTech)" value={nombreZona} onChange={(e) => setNombreZona(e.target.value)} />
           <Button size="sm" onClick={crearZona} disabled={!nombreZona.trim() || cuadrantesZona.length === 0}>Crear zona</Button>
         </div>
+      </div>
+
+      <div className="os-card-2" style={{ marginTop: 12, borderColor: 'rgba(59,78,217,0.35)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div>
+            <p className="os-eyebrow" style={{ marginBottom: 4 }}>Iterar con Hermes</p>
+            <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-text-2)', margin: 0 }}>Recibe preguntas y sugerencias sobre tu mapa actual. Nada se guarda ni se modifica automáticamente.</p>
+          </div>
+          <Button size="sm" onClick={() => void iterarConAgente()} disabled={iterando}>{iterando ? 'Pensando…' : 'Iterar con el agente'}</Button>
+        </div>
+        {sugerenciasAgente && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--os-font-body)', fontSize: 13, lineHeight: 1.5, color: 'var(--os-text)', margin: '12px 0 0', borderTop: '1px solid var(--os-line-soft)', paddingTop: 10 }}>{sugerenciasAgente}</pre>}
       </div>
     </div>
   );
