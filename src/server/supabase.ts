@@ -21,5 +21,20 @@ export function getSupabaseServer(): SupabaseClient {
   if (!url || !key) {
     throw new Error('SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no configurados');
   }
-  return createClient(url, key, { auth: { persistSession: false } });
+  // Las nuevas secret keys (`sb_secret_...`) son opacas, no JWT. supabase-js
+  // añade por defecto la key tanto en `apikey` como en `Authorization: Bearer`;
+  // Supabase intenta parsear este segundo header como JWT y rechaza la request.
+  // El backend ya usa la key solo para acceso admin, así que preservamos el
+  // `apikey` y retiramos únicamente ese Bearer inválido de cada request.
+  const fetchConSecretKey = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const headers = new Headers(init.headers);
+    headers.delete('authorization');
+    headers.set('apikey', key);
+    return fetch(input, { ...init, headers });
+  };
+
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchConSecretKey },
+  });
 }
