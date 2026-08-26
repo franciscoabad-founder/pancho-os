@@ -61,6 +61,7 @@ interface Aviso { nivel: string; funcion: string; mensaje: string }
 interface Data {
   semana_inicio: string; semana_fin: string; dias: Dia[]; balance: Balance[]; avisos: Aviso[];
 }
+interface Timeblock { fecha: string; hora_inicio: string; hora_fin: string; minutos: number; funcion: string; modo: string }
 
 const hhmm = (t: string | null) => (t ? t.slice(0, 5) : null);
 
@@ -68,6 +69,8 @@ export default function OSSemana() {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState('');
   const [abierto, setAbierto] = useState<string | null>(null);
+  const [sugerencias, setSugerencias] = useState<Timeblock[]>([]);
+  const [cargandoSugerencias, setCargandoSugerencias] = useState(false);
 
   async function cargar() {
     try {
@@ -81,6 +84,18 @@ export default function OSSemana() {
     }
   }
   useEffect(() => { cargar(); }, []);
+
+  async function cargarSugerencias() {
+    setCargandoSugerencias(true);
+    try {
+      const res = await fetch('/api/semana/timeblocks', { cache: 'no-store' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || String(res.status));
+      setSugerencias(d.slots ?? []);
+      setError('');
+    } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
+    finally { setCargandoSugerencias(false); }
+  }
 
   async function registrar(funcion: string, minutos: number) {
     try {
@@ -123,6 +138,18 @@ export default function OSSemana() {
           ))}
         </div>
       )}
+
+      <div style={card2}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1 }}>
+            <p className="os-eyebrow" style={{ marginBottom: 3 }}>Huecos libres</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--os-muted)' }}>Sugerencias calculadas sobre reuniones y presupuesto. No se guardan hasta que decidas aceptarlas.</p>
+          </div>
+          <button type="button" style={btnGhost} onClick={() => void cargarSugerencias()} disabled={cargandoSugerencias}>{cargandoSugerencias ? 'Calculando…' : 'Calcular huecos'}</button>
+        </div>
+        {sugerencias.length > 0 && <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>{sugerencias.slice(0, 12).map((s, i) => <div key={`${s.fecha}-${s.hora_inicio}-${i}`} style={{ fontSize: 12, color: 'var(--os-text-2)' }}>· {s.fecha} {s.hora_inicio}–{s.hora_fin} · {FUNCION_LABEL[s.funcion] || s.funcion} ({s.modo})</div>)}</div>}
+        {sugerencias.length === 0 && !cargandoSugerencias && <p style={{ margin: '9px 0 0', fontSize: 12, color: 'var(--os-muted)' }}>Aún no hay sugerencias calculadas.</p>}
+      </div>
 
       {/* Balance semanal: objetivo vs planificado vs real. */}
       <div style={card}>
