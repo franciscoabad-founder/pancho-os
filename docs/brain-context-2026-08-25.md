@@ -45,15 +45,19 @@ La conexión O↔D está implementada y validada: el trimestral persiste `objeti
 - J Proyectos: el detalle filtra KPIs, gastos, por cobrar, por pagar, tareas y pendientes por proyecto. Brain es contexto opcional; fallos parciales de APIs se muestran como aviso. Cobros/pagos se agregan por moneda. Supabase tiene links `proyecto` e índices para `gastos`, `por_cobrar` y `por_pagar`; se creó la tabla `por_pagar` en producción porque no existía.
 - Gate triple E/F/J: PASS. `npm run test:journal`, `npm run test:auth` (154/154) y `npm run build` pasan. Observación menor: Google limita la consulta a 2500 eventos y todavía no pagina `nextPageToken`.
 
+## Fases G, H e I completadas (commits `e25eb88`, `9844f49`)
+
+- G Semana: motor puro de timeblocking y `GET /api/semana/timeblocks` protegido. Calcula huecos reales a partir de reuniones, modo Maker/Manager/Off y presupuesto por función; Semana los muestra como sugerencias read-only. No persiste automáticamente.
+- H Ikigai: `POST /api/ikigai/iterar` envía a Hermes un contexto acotado y no destructivo; la UI deja claro que las sugerencias no mutan el mapa. Requiere `TASKI_TOKEN` y perfil allowlisted.
+- I Networking: wizard guiado en `/red` basado en los materiales recuperables de +Acumen (diagnóstico, scorecard y plan). Reutiliza `/api/red`; generación de tareas requiere acción explícita. Se aplica máximo de 16 personas activas. El PDF principal `Francisco_Abad_Networking_Leadership_101-_Building_Your_Core_Professional_Network.pdf` está truncado/corrupto en OneDrive y no se usó como fuente.
+- Gates G/H/I: PASS con observaciones menores no bloqueantes (timeblocking no acepta automáticamente; límite de 16 no es transaccional ante altas simultáneas; Google aún pagina sólo 2500 eventos).
+
 ## Roadmap pendiente
 
 1. B: aprobaciones como notificación en topbar, decisión con timestamp, expiración y respuesta desde Telegram.
 2. C: triage conversacional de Bandeja/Notas/Pendientes/Recordatorios y deadline/prioridad.
 3. D: KPIs relacionados con objetivos (implementado, migrado y commiteado en `dbba247`).
-4. G: timeblocking real sobre la Agenda ya sincronizable.
-5. H: iteración de Ikigai con Hermes.
-6. I: wizard de Networking basado en PDFs reales de +Acumen.
-7. K: Finanzas agéntica.
+4. K: Finanzas agéntica.
 9. L–M: Health Connect Android y brief visual de 42 pantallas.
 10. N: nudges/journeys RPG basados en el research, después de decidir dramatización y colateral.
 11. P: scaffolding de integraciones de redes y métricas.
