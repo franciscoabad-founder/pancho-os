@@ -58,10 +58,11 @@ La conexión O↔D está implementada y validada: el trimestral persiste `objeti
 2. C: triage conversacional de Bandeja/Notas/Pendientes/Recordatorios y deadline/prioridad.
 3. D: KPIs relacionados con objetivos (implementado, migrado y commiteado en `dbba247`).
 4. K: Finanzas agéntica.
-9. L–M: Health Connect Android y brief visual de 42 pantallas.
-10. N: nudges/journeys RPG basados en el research, después de decidir dramatización y colateral.
-11. P: scaffolding de integraciones de redes y métricas.
-12. Q: grafo de interconexión entre Journal, Networking, proyectos y tareas.
+9. M: implementada la primera vertical visual de salud (dashboard y estiramiento) con hero contextual, KPI cards responsive, estados de error, rutinas vacías seguras, accesibilidad del cronómetro y reduced-motion. Brief visual en `docs/health/health-design-brief.md`; PR #5 mergeada en `master` (`f07051e`).
+10. L: Health Connect Android.
+11. N: nudges/journeys RPG basados en el research, después de decidir dramatización y colateral.
+12. P: scaffolding de integraciones de redes y métricas.
+13. Q: grafo de interconexión entre Journal, Networking, proyectos y tareas.
 
 Contenido (Radar/Planner) y Hermes Cockpit ya no deben tratarse como trabajo pendiente de branches antiguas: verificar siempre `git log` y las rutas TanStack actuales antes de portar algo.
 
