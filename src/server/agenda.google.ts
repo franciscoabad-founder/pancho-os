@@ -65,12 +65,20 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
   const timeMin = `${desde}T00:00:00Z`;
   const timeMax = `${hasta}T23:59:59Z`;
   const params = new URLSearchParams({ timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '2500' });
-  const remote = await googleRequest(config, `/events?${params}`) as { items?: Array<Record<string, unknown>> };
+  const eventosRemotos: Array<Record<string, unknown>> = [];
+  let pageToken: string | undefined;
+  for (let pagina = 0; pagina < 50; pagina++) {
+    if (pageToken) params.set('pageToken', pageToken); else params.delete('pageToken');
+    const remote = await googleRequest(config, `/events?${params}`) as { items?: Array<Record<string, unknown>>; nextPageToken?: string };
+    eventosRemotos.push(...(remote.items ?? []));
+    if (!remote.nextPageToken) break;
+    pageToken = remote.nextPageToken;
+  }
   let importados = 0;
   let exportados = 0;
   let omitidos = 0;
 
-  for (const event of remote.items ?? []) {
+  for (const event of eventosRemotos) {
     if (!event.id) continue;
     if (event.status === 'cancelled') {
       const { error } = await sb.from('reuniones').delete().eq('google_event_id', String(event.id));
