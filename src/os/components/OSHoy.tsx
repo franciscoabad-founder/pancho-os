@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { datosDaily } from '../data/daily';
 import OSChecklistHoy from './OSChecklistHoy';
-import { Spinner } from './ui';
+import { Celebracion, Spinner } from './ui';
 
 // Isla que reemplaza los datos demo del dashboard "Hoy" por los endpoints reales
 // (os_dia, os_wins, os_priority_stack, os_semana, os_objetivos). Fetch en el cliente
@@ -34,6 +34,9 @@ const MODO_COLOR: Record<string, string> = { maker: 'var(--os-accent-light)', ma
 const MODO_BG: Record<string, string> = { maker: 'rgba(59,78,217,0.15)', manager: 'var(--os-fill-subtle)', off: 'var(--os-fill-subtle)' };
 const MODO_LABEL: Record<string, string> = { maker: 'Maker', manager: 'Manager', off: 'Off' };
 
+// Se rota el titulo del festejo para que no canse viendo siempre el mismo.
+const FESTEJOS = ['Eso suma', 'Win anotado', 'Otro mas', 'Asi se hace'];
+
 async function safeJson(url: string) {
   try {
     const res = await fetch(url);
@@ -59,6 +62,9 @@ export default function OSHoy() {
   const [formDiscomfort, setFormDiscomfort] = useState('');
   const [nuevoWin, setNuevoWin] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // El titulo se sortea al disparar, no al renderizar: si no, cada re-render
+  // durante los 2.4s del festejo cambiaria el mensaje en pantalla.
+  const [festejo, setFestejo] = useState<{ titulo: string; texto: string } | null>(null);
 
   async function cargar() {
     // Sin ?maker=1: el domino del dia puede caer en cualquier linea viva, no solo
@@ -154,7 +160,14 @@ export default function OSHoy() {
         body: JSON.stringify({ win: { texto } }),
       });
       const data = await res.json();
-      if (data.win) setWins((cur) => [...cur, data.win]);
+      if (data.win) {
+        setWins((cur) => [...cur, data.win]);
+        // Solo se festeja lo que de verdad quedo guardado en os_wins.
+        setFestejo({
+          titulo: FESTEJOS[Math.floor(Math.random() * FESTEJOS.length)] ?? 'Win anotado',
+          texto: data.win.texto ?? texto,
+        });
+      }
     } catch {
       /* si falla, el usuario ve que no aparecio y puede reintentar */
     }
@@ -188,6 +201,14 @@ export default function OSHoy() {
 
   return (
     <>
+      {festejo && (
+        <Celebracion
+          mensaje={festejo.titulo}
+          detalle={festejo.texto}
+          onCerrar={() => setFestejo(null)}
+        />
+      )}
+
       {/* One Domino */}
       <div className="os-domino" style={{ marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -289,34 +310,8 @@ export default function OSHoy() {
       {/* 2-col: priorities/wins + discomfort/principios (checklist va aparte en el .astro) */}
       <div className="os-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="os-card" style={{ flex: 1 }}>
-            <p className="os-section-title">Priority Stack</p>
-            {prioridades.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--os-muted)', margin: 0 }}>
-                Sin prioridades definidas esta semana.
-              </p>
-            ) : (
-              <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {prioridades.map((p) => (
-                  <li key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <button onClick={() => togglePrioridad(p)} style={{ background: 'transparent', border: 'none', padding: '1px 0 0', cursor: 'pointer' }}>
-                      {check(p.hecho)}
-                    </button>
-                    <span
-                      style={{
-                        fontSize: 13, color: 'var(--os-text)',
-                        textDecoration: p.hecho ? 'line-through' : 'none',
-                        opacity: p.hecho ? 0.6 : 1,
-                      }}
-                    >
-                      {p.titulo}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-
+          {/* Los wins van arriba del Priority Stack: lo que ya se logro pesa mas
+              que la lista de pendientes al abrir el dia. */}
           <div className="os-card">
             <p className="os-section-title">Wins recientes</p>
             {wins.length === 0 ? (
@@ -344,6 +339,34 @@ export default function OSHoy() {
                 Agregar
               </button>
             </div>
+          </div>
+
+          <div className="os-card" style={{ flex: 1 }}>
+            <p className="os-section-title">Priority Stack</p>
+            {prioridades.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--os-muted)', margin: 0 }}>
+                Sin prioridades definidas esta semana.
+              </p>
+            ) : (
+              <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {prioridades.map((p) => (
+                  <li key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <button onClick={() => togglePrioridad(p)} style={{ background: 'transparent', border: 'none', padding: '1px 0 0', cursor: 'pointer' }}>
+                      {check(p.hecho)}
+                    </button>
+                    <span
+                      style={{
+                        fontSize: 13, color: 'var(--os-text)',
+                        textDecoration: p.hecho ? 'line-through' : 'none',
+                        opacity: p.hecho ? 0.6 : 1,
+                      }}
+                    >
+                      {p.titulo}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </div>
 

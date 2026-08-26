@@ -46,3 +46,6 @@ export type { ConfirmSheetProps, ConfirmOptions } from './ConfirmSheet';
 export { ToastProvider, useToast } from './Toast';
 export type { ToastKind } from './Toast';
 
+export { default as Celebracion } from './Celebracion';
+export type { CelebracionProps } from './Celebracion';
+
