@@ -6,6 +6,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
 import { hoyGuayaquil } from './helpers.ts';
+import { readEnv } from '../lib/env.ts';
+import { createGbrainClient } from '../os/lib/gbrain.ts';
 
 // Seam para tests: en produccion siempre resuelve a getSupabaseServer; los
 // tests inyectan un doble en memoria y no tocan Supabase real.
@@ -45,10 +47,6 @@ export interface Win {
 export interface DiaResultado {
   dia: Dia | null;
   wins: Win[];
-}
-
-function pgCode(err: unknown): string | undefined {
-  return (err as { code?: string })?.code;
 }
 
 export async function obtenerDia(fecha?: string | null): Promise<DiaResultado> {
@@ -116,4 +114,44 @@ export async function eliminarWin(winId: string | null | undefined): Promise<voi
   const sb = clienteActual();
   const { error } = await sb.from('os_wins').delete().eq('id', winId);
   if (error) throw error;
+}
+
+// --- Sugerencia de domino ---------------------------------------------------
+//
+// Lee lo mas reciente del brain para proponer sobre que podria ir el domino de
+// hoy. NO escribe nada en os_dia: son candidatos para prellenar el formulario,
+// y Pancho sigue teniendo que confirmar con Guardar.
+//
+// Son temas, no dominos ya redactados: el titulo de una pagina del brain es una
+// señal de sobre que se viene hablando, no una accion concreta. La UI los
+// presenta como tal y el texto queda editable.
+
+const SUGERENCIAS_MAX = 3;
+const PAGINAS_A_MIRAR = 12;
+
+export interface SugerenciaDomino {
+  texto: string;
+  slug: string;
+}
+
+export async function sugerirDomino(): Promise<SugerenciaDomino[]> {
+  // Sin token no es un error: el OS funciona igual, solo que sin sugerencia.
+  const token = readEnv('GBRAIN_TOKEN');
+  if (!token) return [];
+
+  const paginas = await createGbrainClient(token)
+    .listPages({ sort: 'updated_desc', limit: PAGINAS_A_MIRAR });
+
+  const vistos = new Set<string>();
+  const sugerencias: SugerenciaDomino[] = [];
+  for (const p of paginas) {
+    const texto = (p.title ?? '').trim();
+    if (!texto) continue;
+    const clave = texto.toLowerCase();
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    sugerencias.push({ texto, slug: p.slug });
+    if (sugerencias.length >= SUGERENCIAS_MAX) break;
+  }
+  return sugerencias;
 }

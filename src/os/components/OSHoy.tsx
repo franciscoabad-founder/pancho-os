@@ -29,6 +29,7 @@ interface Prioridad { id: string; orden: number; titulo: string; objetivo_id: st
 interface Objetivo { id: string; orden: number; titulo: string; descripcion: string | null; punto_partida: string | null; }
 interface DiaSemana { dia: number; modo: 'maker' | 'manager' | 'off'; sale: string | null; etiqueta: string | null; }
 interface Linea { id: string; nombre: string; estado: string; }
+interface SugerenciaDomino { texto: string; slug: string; }
 
 const DIA_LABEL = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const MODO_COLOR: Record<string, string> = { maker: 'var(--os-accent-light)', manager: 'var(--os-muted)', off: 'var(--os-muted)' };
@@ -55,6 +56,7 @@ export default function OSHoy() {
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [semana, setSemana] = useState<DiaSemana[]>([]);
   const [lineas, setLineas] = useState<Linea[]>([]);
+  const [sugerencias, setSugerencias] = useState<SugerenciaDomino[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editDomino, setEditDomino] = useState(false);
@@ -91,6 +93,18 @@ export default function OSHoy() {
   useEffect(() => {
     cargar();
   }, []);
+
+  // La sugerencia va aparte del resto de la carga: es una llamada al brain (red
+  // externa y lenta) y no tiene por que retrasar el dia. Solo se pide si todavia
+  // no hay domino, que es cuando sirve de algo.
+  useEffect(() => {
+    if (loading || dia?.domino_titulo) return;
+    let cancelado = false;
+    safeJson('/api/dia/sugerencia').then((res) => {
+      if (!cancelado && res) setSugerencias(res.sugerencias ?? []);
+    });
+    return () => { cancelado = true; };
+  }, [loading, dia?.domino_titulo]);
 
   async function guardarDia(patch: Record<string, unknown>) {
     setGuardando(true);
@@ -233,6 +247,33 @@ export default function OSHoy() {
 
         {editDomino || !dia?.domino_titulo ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Temas recientes del brain. Son señales de sobre que se viene
+                hablando, no dominos ya redactados: al tocarlos se prellena el
+                campo y queda editable, sin guardar nada todavia. */}
+            {!dia?.domino_titulo && sugerencias.length > 0 && (
+              <div>
+                <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 6px' }}>
+                  Del brain, lo mas reciente:
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {sugerencias.map((s) => (
+                    <button
+                      key={s.slug}
+                      type="button"
+                      onClick={() => setFormDomino((f) => ({ ...f, titulo: s.texto }))}
+                      style={{
+                        background: 'var(--os-fill-subtle)', border: '1px solid var(--os-line-accent)',
+                        borderRadius: 999, padding: '4px 10px', cursor: 'pointer',
+                        fontSize: 12, color: 'var(--os-accent-light)', textAlign: 'left',
+                      }}
+                    >
+                      {s.texto}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <input
               className="os-input"
               placeholder="Cual es tu domino de hoy"
