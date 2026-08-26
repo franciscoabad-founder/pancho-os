@@ -31,6 +31,7 @@ pnpm-debug.log*
 # Local agent workspaces and verification artifacts (kept on disk, never shipped).
 .claude/
 Android/.gradle/
+Android/.kotlin/
 Android/build/
 Android/*.png
 Android/window.xml

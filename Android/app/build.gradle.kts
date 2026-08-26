@@ -9,7 +9,8 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.franciscoabad.panchoos"
-        minSdk = 24
+        // Health Connect SDK requires API 26; Health Connect itself is available on API 28+.
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -74,6 +75,7 @@ dependencies {
   // Image Loading & WorkManager
   implementation(libs.coil.compose)
   implementation(libs.androidx.work.runtime.ktx)
+  implementation(libs.androidx.health.connect.client)
 
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)

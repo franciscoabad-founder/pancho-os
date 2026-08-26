@@ -275,6 +275,17 @@ class PanchoApiClient(private val preferences: OsPreferences) {
         }
     }
 
+    /** Envía un snapshot validado por el lector de Health Connect. */
+    suspend fun syncBiometrics(payload: JsonObject): OsResult<Boolean> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${preferences.getServerUrl()}/api/biometricas")
+            .header("X-OS-Token", preferences.getApiToken())
+            .header("Authorization", "Bearer ${preferences.getApiToken()}")
+            .post(payload.toString().toRequestBody(jsonMediaType))
+            .build()
+        executeHttpRequest(request) { true }
+    }
+
     /**
      * Envoltorio seguro de ejecución HTTP que traduce todas las excepciones a OsError
      */

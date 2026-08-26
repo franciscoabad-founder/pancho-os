@@ -4,7 +4,7 @@ Fecha de consolidación: 2026-08-25. Este documento reúne el estado de las sesi
 
 ## Estado confirmado del repositorio
 
-- Rama activa: `hermes-cockpit`.
+- Rama activa y única: `master` (también única rama remota). No crear ramas de trabajo paralelas sin necesidad.
 - `6d58bde` contiene la Fase A: quick wins, navegación compartida de Contenido, campos CRM, proyectos en CRM/Tareas, edición inline de Finanzas, archivado de recordatorios, tile de sueño, Ikigai y hábitos base.
 - `a824ccf` contiene Hermes Cockpit: ruta `/hermes`, perfiles VPS/HomeLab/Laptop, selector de modelos, sesiones de Telegram y OS, dictado Web Speech API, kanban operativo y navegación.
 - El build de producción pasó después de integrar el cockpit.
@@ -59,14 +59,16 @@ La conexión O↔D está implementada y validada: el trimestral persiste `objeti
 3. D: KPIs relacionados con objetivos (implementado, migrado y commiteado en `dbba247`).
 4. K: implementada primera capa agéntica. `/api/finanzas/asesor` detecta cobros vencidos, pagos próximos y cobertura de liquidez; solo crea propuestas en `os_aprobaciones` tras acción explícita, nunca mueve dinero ni cambia estados financieros. Probada y desplegada en `d82104b`.
 9. M: implementada la primera vertical visual de salud (dashboard y estiramiento) con hero contextual, KPI cards responsive, estados de error, rutinas vacías seguras, accesibilidad del cronómetro y reduced-motion. Brief visual en `docs/health/health-design-brief.md`; PR #5 mergeada en `master` (`f07051e`).
-10. L: Health Connect Android.
+10. L: Health Connect Android implementado en modo manual y de mínimo privilegio. Ajustes solicita únicamente lectura de pasos, sueño y peso, lee el día actual tras una acción explícita y envía el snapshot validado a `/api/biometricas` con fuente `health_connect_android`. No lee historial, no ejecuta jobs de fondo y no solicita sesiones de ejercicio. El SDK estable `connect-client:1.1.0` exige minSdk 26; Health Connect requiere en la práctica Android 9/API 28+ y un dispositivo físico para validar permisos y datos.
 11. N: implementado nudge contextual en Hábitos a partir de `/api/habitos/brief`: siguiente acción, progreso del journey y tono de reinicio amable. No envía notificaciones ni aplica penalizaciones automáticas.
-12. P: scaffolding de integraciones de redes y métricas.
+12. P: métricas de redes reactivadas en `/redes`: `RedesMetricas.tsx` consume el endpoint TanStack existente `/api/redes-metricas?dias=30`, muestra tarjetas por plataforma, evolución y top posts sin el `innerHTML` del legacy Astro. Las conexiones reales a APIs de cada red siguen siendo configuración externa pendiente.
 13. Q: implementada la primera vista `/conexiones`, de solo lectura. Une proyectos con tareas y Journal por el campo estructurado `proyecto`, y planes de Networking con personas por objetivos de red; no infiere relaciones desde texto libre. Queda pendiente una visualización interactiva si aporta más que la vista operacional actual.
 
 ## Producción: credenciales Supabase (actualizado por Codex)
 
 El VPS tenía una service role legacy y el proceso activo (`pancho-os-next`) atendía el dominio. Se migró a secret key moderna y se ajustó `src/server/supabase.ts` para enviar claves opacas `sb_secret_...` exclusivamente como header `apikey`, no como `Authorization: Bearer`. `GET /api/kpis`, `/api/finanzas/asesor` y `/api/conexiones` respondieron 200 localmente en el proceso activo después del deploy de `d82104b`.
+
+El proceso que sirve el dominio está en `/opt/pancho-os-next`, PM2 `pancho-os-next`, puerto 4323. Existe un proceso viejo `pancho-os`/puerto 4322 con un arranque roto; no eliminarlo hasta confirmar explícitamente la configuración de Caddy y completar una limpieza de infraestructura separada.
 
 Contenido (Radar/Planner) y Hermes Cockpit ya no deben tratarse como trabajo pendiente de branches antiguas: verificar siempre `git log` y las rutas TanStack actuales antes de portar algo.
 

@@ -39,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.health.connect.client.PermissionController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +60,9 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showToken by remember { mutableStateOf(false) }
+    val healthPermissionsLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { viewModel.onHealthPermissionsResult() }
 
     Column(
         modifier = modifier
@@ -78,6 +83,33 @@ fun SettingsScreen(
             fontSize = 14.sp,
             color = Slate400
         )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Slate900),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Health Connect", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Slate100)
+                Text(
+                    "Lee pasos, sueño y peso de hoy solo cuando tú pulsas sincronizar. No lee historial ni ejecuta sincronización en segundo plano.",
+                    fontSize = 13.sp,
+                    color = Slate400
+                )
+                when (val health = uiState.healthSyncState) {
+                    HealthSyncState.Checking -> Row(verticalAlignment = Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Cyan400); Spacer(Modifier.width(8.dp)); Text("Comprobando Health Connect…", color = Slate400, fontSize = 13.sp) }
+                    HealthSyncState.Unavailable -> Text("Health Connect no está disponible en este dispositivo. Requiere Android 9 o superior y el proveedor actualizado.", color = Slate400, fontSize = 13.sp)
+                    HealthSyncState.NeedsPermission -> Button(onClick = { healthPermissionsLauncher.launch(viewModel.healthPermissions()) }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Cyan500, contentColor = Color.Black)) { Text("Conceder acceso a salud", fontWeight = FontWeight.Bold) }
+                    HealthSyncState.Ready -> Button(onClick = viewModel::syncHealthToday, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Cyan500, contentColor = Color.Black)) { Text("Sincronizar datos de hoy", fontWeight = FontWeight.Bold) }
+                    HealthSyncState.Syncing -> Row(verticalAlignment = Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Cyan400); Spacer(Modifier.width(8.dp)); Text("Leyendo y enviando datos…", color = Slate400, fontSize = 13.sp) }
+                    is HealthSyncState.Success -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(health.message, color = Emerald400, fontSize = 13.sp); OutlinedButton(onClick = viewModel::syncHealthToday, colors = ButtonDefaults.outlinedButtonColors(contentColor = Cyan400)) { Text("Sincronizar otra vez") } }
+                    is HealthSyncState.Error -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(health.message, color = Rose400, fontSize = 13.sp); OutlinedButton(onClick = viewModel::refreshHealthStatus, colors = ButtonDefaults.outlinedButtonColors(contentColor = Cyan400)) { Text("Revisar permisos") } }
+                }
+            }
+        }
 
         // URL del servidor
         Card(

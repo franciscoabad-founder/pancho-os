@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.franciscoabad.panchoos.data.PanchoRepository
+import com.franciscoabad.panchoos.data.health.HealthConnectSync
 import com.franciscoabad.panchoos.data.model.OsResult
 import com.franciscoabad.panchoos.data.model.PairingStatusResponse
 import kotlinx.coroutines.Job
@@ -32,6 +33,16 @@ sealed interface PairingState {
     data class Error(val message: String) : PairingState
 }
 
+sealed interface HealthSyncState {
+    data object Checking : HealthSyncState
+    data object Unavailable : HealthSyncState
+    data object NeedsPermission : HealthSyncState
+    data object Ready : HealthSyncState
+    data object Syncing : HealthSyncState
+    data class Success(val message: String) : HealthSyncState
+    data class Error(val message: String) : HealthSyncState
+}
+
 data class SettingsUiState(
     val serverUrl: String = "",
     val apiToken: String = "",
@@ -39,11 +50,13 @@ data class SettingsUiState(
     val pairingState: PairingState = PairingState.Idle,
     val isTesting: Boolean = false,
     val testResult: TestConnectionResult? = null,
-    val isSaved: Boolean = false
+    val isSaved: Boolean = false,
+    val healthSyncState: HealthSyncState = HealthSyncState.Checking
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = PanchoRepository.getInstance(application)
+    private val healthConnect = HealthConnectSync(application)
 
     private val _uiState = MutableStateFlow(
         SettingsUiState(
@@ -56,12 +69,51 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var pairingJob: Job? = null
 
     init {
+        refreshHealthStatus()
         // Si la app se cerro durante un pairing, reanudamos el polling.
         repository.preferences.getPairingDeviceId()?.let { deviceId ->
             // No tenemos el codigo guardado, pero podemos seguir polleando.
             // El usuario vera "reanudando" y si el pairing ya fue confirmado,
             // recibira el token; si vencio, recibira un error.
             startPolling(deviceId, code = "")
+        }
+    }
+
+    fun refreshHealthStatus() {
+        if (!healthConnect.isAvailable()) {
+            _uiState.update { it.copy(healthSyncState = HealthSyncState.Unavailable) }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val state = if (healthConnect.hasPermissions()) HealthSyncState.Ready else HealthSyncState.NeedsPermission
+                _uiState.update { it.copy(healthSyncState = state) }
+            } catch (error: Exception) {
+                _uiState.update { it.copy(healthSyncState = HealthSyncState.Error(error.message ?: "No se pudo comprobar Health Connect.")) }
+            }
+        }
+    }
+
+    fun healthPermissions() = healthConnect.permissions
+
+    fun onHealthPermissionsResult() = refreshHealthStatus()
+
+    fun syncHealthToday() {
+        _uiState.update { it.copy(healthSyncState = HealthSyncState.Syncing) }
+        viewModelScope.launch {
+            try {
+                val snapshot = healthConnect.readToday()
+                if (!snapshot.hasMetrics()) {
+                    _uiState.update { it.copy(healthSyncState = HealthSyncState.Error("Health Connect no tiene pasos, sueño ni peso para hoy.")) }
+                    return@launch
+                }
+                when (val result = repository.syncBiometrics(healthConnect.payload(snapshot))) {
+                    is OsResult.Success -> _uiState.update { it.copy(healthSyncState = HealthSyncState.Success("Sincronizado: ${snapshot.pasos ?: 0} pasos${snapshot.suenoMin?.let { ", $it min de sueño" } ?: ""}${snapshot.pesoKg?.let { ", ${"%.1f".format(it)} kg" } ?: ""}.")) }
+                    is OsResult.Failure -> _uiState.update { it.copy(healthSyncState = HealthSyncState.Error(result.error.userMessage())) }
+                }
+            } catch (error: Exception) {
+                _uiState.update { it.copy(healthSyncState = HealthSyncState.Error(error.message ?: "No se pudo leer Health Connect.")) }
+            }
         }
     }
 

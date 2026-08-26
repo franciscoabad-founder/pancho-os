@@ -9,6 +9,7 @@ import com.franciscoabad.panchoos.data.model.PairingStatusResponse
 import com.franciscoabad.panchoos.data.network.PanchoApiClient
 import com.franciscoabad.panchoos.data.storage.OsPreferences
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.json.JsonObject
 
 class PanchoRepository(
     val preferences: OsPreferences,
@@ -62,6 +63,8 @@ class PanchoRepository(
     suspend fun pollPairingStatus(deviceId: String): OsResult<PairingStatusResponse> {
         return apiClient.pollPairingStatus(deviceId)
     }
+
+    suspend fun syncBiometrics(payload: JsonObject): OsResult<Boolean> = apiClient.syncBiometrics(payload)
 
     companion object {
         @Volatile
