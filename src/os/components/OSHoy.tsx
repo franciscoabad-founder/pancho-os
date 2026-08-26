@@ -27,6 +27,7 @@ interface Prioridad { id: string; orden: number; titulo: string; objetivo_id: st
 // onboarding (aplicarOs en onboarding.handlers.ts) y hasta ahora no se pintaba en
 // ningun lado, asi que llenar el onboarding parecia no cambiar nada.
 interface Objetivo { id: string; orden: number; titulo: string; descripcion: string | null; punto_partida: string | null; }
+interface KPIHoy { id: string; label: string; unidad: string | null; meta: number | null; valor_actual: number | null; objetivo_id: string | null; }
 interface DiaSemana { dia: number; modo: 'maker' | 'manager' | 'off'; sale: string | null; etiqueta: string | null; }
 interface Linea { id: string; nombre: string; estado: string; }
 interface SugerenciaDomino { texto: string; slug: string; }
@@ -54,6 +55,7 @@ export default function OSHoy() {
   const [wins, setWins] = useState<Win[]>([]);
   const [prioridades, setPrioridades] = useState<Prioridad[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
+  const [kpis, setKpis] = useState<KPIHoy[]>([]);
   const [semana, setSemana] = useState<DiaSemana[]>([]);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [sugerencias, setSugerencias] = useState<SugerenciaDomino[]>([]);
@@ -72,12 +74,13 @@ export default function OSHoy() {
   async function cargar() {
     // Sin ?maker=1: el domino del dia puede caer en cualquier linea viva, no solo
     // en las de foco maker de esta semana.
-    const [diaRes, stackRes, objRes, semRes, lineasRes] = await Promise.all([
+    const [diaRes, stackRes, objRes, semRes, lineasRes, kpisRes] = await Promise.all([
       safeJson('/api/dia'),
       safeJson('/api/priority-stack'),
       safeJson('/api/objetivos'),
       safeJson('/api/semana'),
       safeJson('/api/lineas'),
+      safeJson('/api/kpis'),
     ]);
     if (diaRes) {
       setDia(diaRes.dia ?? null);
@@ -85,6 +88,7 @@ export default function OSHoy() {
     }
     if (stackRes) setPrioridades((stackRes.prioridades ?? []).sort((a: Prioridad, b: Prioridad) => a.orden - b.orden));
     if (objRes) setObjetivos((objRes.objetivos ?? []).sort((a: Objetivo, b: Objetivo) => a.orden - b.orden));
+    if (kpisRes) setKpis(kpisRes.kpis ?? []);
     if (semRes) setSemana(semRes.dias ?? []);
     if (lineasRes) setLineas((lineasRes.lineas ?? []).filter((l: Linea) => l.estado !== 'pausado'));
     setLoading(false);
@@ -588,6 +592,11 @@ export default function OSHoy() {
                         {o.punto_partida}
                       </p>
                     )}
+                    {kpis.filter((k) => k.objetivo_id === o.id).map((k) => (
+                      <p key={k.id} style={{ fontSize: 11, color: 'var(--os-accent-light)', margin: '4px 0 0' }}>
+                        {k.label}: {k.valor_actual === null ? '—' : `${k.valor_actual}${k.unidad ? ` ${k.unidad}` : ''}`}{k.meta === null ? '' : ` / meta ${k.meta}${k.unidad ? ` ${k.unidad}` : ''}`}
+                      </p>
+                    ))}
                   </div>
                 </div>
               ))}

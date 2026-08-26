@@ -22,6 +22,7 @@ const query = (request: Request) => new URL(request.url).searchParams;
 // El unique de os_kpis.label se traduce a 400 con el mismo texto que la version
 // Astro, para no cambiar el mensaje que ve el UI de OSKpis.
 function respuestaEscritura(err: unknown): Response {
+  if (err instanceof Error && err.message === 'objetivo_id invalido') return json({ error: err.message }, 400);
   if (pgCode(err) === '23505') return json({ error: 'Ya existe un KPI con ese label' }, 400);
   return respuestaError(err);
 }
@@ -48,7 +49,7 @@ export const Route = createFileRoute('/api/kpis')({
           if (body.kpi_id) return json({ valor: await registrarValorKpi(body) }, 201);
           return json({ kpi: await crearKpi(body) }, 201);
         } catch (err) {
-          if (err instanceof Error && (err.message === 'valor numerico requerido' || err.message === 'label requerido')) {
+          if (err instanceof Error && (err.message === 'valor numerico requerido' || err.message === 'label requerido' || err.message === 'objetivo_id invalido')) {
             return json({ error: err.message }, 400);
           }
           return respuestaEscritura(err);

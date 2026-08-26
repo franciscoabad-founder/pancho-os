@@ -30,17 +30,19 @@ El research recomienda journeys graduales, microacciones ancladas, cartas diaria
 
 Hormozi separa la forma del día (Maker/Manager, bloques protegidos) de la función estratégica (Build/Promote/Deliver/Sell). La distribución se debe medir semanalmente, no imponer como tres cuotas rígidas cada día. La conversación sobre Maker/Manager/Seller/Builder sigue abierta.
 
-## Trabajo de Fase O en curso
+## Fase D y O en curso (actualizado por Codex)
+
+Fase D ya tiene implementación local: `os_kpis.objetivo_id` opcional con FK a `os_objetivos` (`supabase/migrations/20260826000001_kpis_objetivos.sql`), selector de objetivo al crear KPI, objetivo visible en KPIs, avance visible en Hoy y selección de objetivos/KPIs relacionados en el check-in trimestral. La migración aún debe aplicarse en Supabase antes de desplegar.
 
 Codex amplió `os_revisiones` para aceptar `anual` y `trimestral`, y añadió formularios de ocho dominios y check-in OKR en Week Review. Se reutiliza el JSONB existente, sin tabla paralela. El legacy Astro también acepta los nuevos tipos.
 
-La Fase O todavía no está cerrada: debe conectarse explícitamente a objetivos y KPIs cuando se ejecute la Fase D, y necesita gate final 3/3 antes de commit. Se corrigió un riesgo de sobrescritura: si falla la lectura anual/trimestral, la pantalla ya no permite guardar formularios vacíos.
+La conexión O↔D está implementada y validada: el trimestral persiste `objetivoIds`, muestra KPIs asociados y filtra IDs inexistentes en el guardado del cliente. Se corrigió un riesgo de sobrescritura: si falla la lectura anual/trimestral, la pantalla ya no permite guardar formularios vacíos. Build y tests existentes pasan; falta aplicar la migración en Supabase y hacer commit selectivo de D/O.
 
 ## Roadmap pendiente
 
 1. B: aprobaciones como notificación en topbar, decisión con timestamp, expiración y respuesta desde Telegram.
 2. C: triage conversacional de Bandeja/Notas/Pendientes/Recordatorios y deadline/prioridad.
-3. D: KPIs relacionados con objetivos y KPIs derivados documentados.
+3. D: KPIs relacionados con objetivos (implementado localmente; migración pendiente de aplicar y commit).
 4. E: Journal con sync automático a Brain, mood y sugerencias de tareas/personas.
 5. F–G: Google Calendar two-way sync y timeblocking real.
 6. H: iteración de Ikigai con Hermes.
