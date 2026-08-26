@@ -16,17 +16,17 @@ const css = `
 `;
 
 export const Route = createFileRoute('/revision')({
-  head: () => ({ meta: [{ title: tituloOs('Revision') }] }),
+  head: () => ({ meta: [{ title: tituloOs('Week Review') }] }),
   component: RevisionPage,
 });
 
 function RevisionPage() {
   return (
-    <OSLayout title="Revision">
+    <OSLayout title="Week Review">
       <div className="os-fade-up">
         <PageHeader
           eyebrow="Retrospectiva"
-          title="Revision"
+          title="Week Review"
           subtitle="Weekly y monthly review, con el norte de 90 dias siempre a la vista."
         />
         <OSRevision />
