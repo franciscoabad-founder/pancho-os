@@ -74,6 +74,7 @@ const ms: Record<string, string> = {
   '/diario': 'auto_stories',
   '/ikigai': 'self_improvement',
   '/red': 'diversity_3',
+  '/conexiones': 'hub',
   '/hermes': 'smart_toy',
 };
 
@@ -110,6 +111,7 @@ const navGroups = [
   ]},
   { label: 'Conocimiento', items: [
     { href: '/cerebro', label: 'Cerebro' },
+    { href: '/conexiones', label: 'Conexiones' },
   ]},
   // Configuracion queda al final a proposito: Accesos (ex "Mi Sistema", es el
   // panel de pairing/tokens) y Week Review (ex "Revision", se confundia con

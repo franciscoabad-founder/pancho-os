@@ -26,6 +26,10 @@ interface CheckResponse {
   ok?: boolean; xp?: number; oro?: number; valor?: number;
   racha?: Racha; nivel?: Nivel; subioNivel?: boolean; error?: string;
 }
+interface BriefHabitos {
+  diarias_hoy?: Array<{ nombre: string; intencion: string | null; hecho: boolean; es_core: boolean }>;
+  journey?: { nombre: string; etapa_nombre: string; progreso: { hechos: number; meta: number } } | null;
+}
 
 const TZ = 'America/Guayaquil';
 function hoyISO(): string {
@@ -65,16 +69,21 @@ export default function OSHabitos() {
   const [feedback, setFeedback] = useState<Record<string, { texto: string; ts: number }>>({});
   const [nivelUp, setNivelUp] = useState<number | null>(null);
   const [enviando, setEnviando] = useState<Set<string>>(new Set());
+  const [brief, setBrief] = useState<BriefHabitos | null>(null);
 
   async function cargar(mostrarLoading = true) {
     if (mostrarLoading) setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/habitos');
+      const [res, briefRes] = await Promise.all([fetch('/api/habitos'), fetch('/api/habitos/brief').catch(() => null)]);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setHabitos(data.habitos ?? []);
       setPerfil(data.perfil ?? null);
+      if (briefRes?.ok) {
+        const briefData = await briefRes.json() as BriefHabitos & { error?: string };
+        if (!briefData.error) setBrief(briefData);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
@@ -182,9 +191,10 @@ export default function OSHabitos() {
     const fallados = habitos.filter((h) => h.falloAyer);
     if (!fallados.length) return null;
     const extra = fallados.length > 1 ? ` y ${fallados.length - 1} más` : '';
-    return `Ayer fallaste ${fallados[0].nombre}${extra}. Hoy no se falla dos veces.`;
+    return `Ayer no se registró ${fallados[0].nombre}${extra}.`;
   }, [habitos]);
   const hayRiesgo = useMemo(() => habitos.some((h) => h.falloAyer), [habitos]);
+  const siguienteAccion = brief?.diarias_hoy?.find((h) => !h.hecho) ?? null;
 
   // HUD de racha: la mejor racha activa entre los hábitos activos (loss aversion:
   // esto es lo primero que se ve, es lo que se pierde si se falla hoy).
@@ -237,8 +247,17 @@ export default function OSHabitos() {
 
       {alertaFalloAyer && (
         <div className="m-banda-alerta">
-          <p>No se falla dos veces: {alertaFalloAyer}</p>
+          <p>Reinicio amable: {alertaFalloAyer} Elige hoy una versión pequeña.</p>
         </div>
+      )}
+
+      {siguienteAccion && (
+        <section className="m-journey-card" aria-label="Siguiente acción sugerida">
+          <p className="m-section-title" style={{ marginTop: 0 }}>Siguiente acción</p>
+          <strong style={{ color: 'var(--m-fg)' }}>{siguienteAccion.nombre}</strong>
+          <p style={{ margin: '5px 0 0', color: 'var(--m-muted)', fontSize: 13 }}>{siguienteAccion.intencion || 'Haz la versión más pequeña que cuente hoy.'}</p>
+          {brief?.journey && <p className="m-terminal-line" style={{ marginBottom: 0 }}>Journey · {brief.journey.nombre}: {brief.journey.etapa_nombre} ({brief.journey.progreso.hechos}/{brief.journey.progreso.meta})</p>}
+        </section>
       )}
 
       {loading ? (

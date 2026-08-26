@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MONEDAS_COMUNES, MONEDA_BASE } from '../../lib/finanzas/monedas.ts';
 import { gastoEnUsd, resumenMensual } from '../../lib/finanzas/contabilidad.ts';
+import OSFinanzasAsesor from './OSFinanzasAsesor.tsx';
 
 interface Cuenta {
   id: string; nombre: string; tipo?: string | null; saldo?: number | null; moneda?: string | null;
@@ -393,6 +394,8 @@ export default function OSFinanzas() {
           </button>
         </div>
       )}
+
+      <OSFinanzasAsesor />
 
       {/* Hero: Neto */}
       <div className="os-domino" style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
