@@ -38,16 +38,22 @@ Codex amplió `os_revisiones` para aceptar `anual` y `trimestral`, y añadió fo
 
 La conexión O↔D está implementada y validada: el trimestral persiste `objetivoIds`, muestra KPIs asociados y filtra IDs inexistentes en el guardado del cliente. Se corrigió un riesgo de sobrescritura: si falla la lectura anual/trimestral, la pantalla ya no permite guardar formularios vacíos. Build y tests existentes pasan; D/O está commiteada en `dbba247`.
 
+## Fases E, F y J completadas (commit `527f9a8`)
+
+- E Journal: `/api/journal` guarda mood, sincroniza POST y PATCH con Brain de forma degradable, y devuelve sugerencias explícitas de tareas/personas sin ejecutar acciones automáticamente. Tests dedicados: 14/14.
+- F Agenda: `/api/agenda/sync` protegido con OAuth refresh-token opcional, importación y exportación opt-in, cancelaciones remotas y fechas RFC3339. La UI muestra el botón Google Calendar y devuelve 503 claro si faltan `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` o `GOOGLE_CALENDAR_REFRESH_TOKEN`. La sincronización real queda pendiente de completar OAuth; no se deben inventar credenciales.
+- J Proyectos: el detalle filtra KPIs, gastos, por cobrar, por pagar, tareas y pendientes por proyecto. Brain es contexto opcional; fallos parciales de APIs se muestran como aviso. Cobros/pagos se agregan por moneda. Supabase tiene links `proyecto` e índices para `gastos`, `por_cobrar` y `por_pagar`; se creó la tabla `por_pagar` en producción porque no existía.
+- Gate triple E/F/J: PASS. `npm run test:journal`, `npm run test:auth` (154/154) y `npm run build` pasan. Observación menor: Google limita la consulta a 2500 eventos y todavía no pagina `nextPageToken`.
+
 ## Roadmap pendiente
 
 1. B: aprobaciones como notificación en topbar, decisión con timestamp, expiración y respuesta desde Telegram.
 2. C: triage conversacional de Bandeja/Notas/Pendientes/Recordatorios y deadline/prioridad.
 3. D: KPIs relacionados con objetivos (implementado, migrado y commiteado en `dbba247`).
-4. E: Journal con sync automático a Brain, mood y sugerencias de tareas/personas.
-5. F–G: Google Calendar two-way sync y timeblocking real.
-6. H: iteración de Ikigai con Hermes.
-7. I: wizard de Networking basado en PDFs reales de +Acumen.
-8. J–K: dashboard por proyecto y Finanzas agentica.
+4. G: timeblocking real sobre la Agenda ya sincronizable.
+5. H: iteración de Ikigai con Hermes.
+6. I: wizard de Networking basado en PDFs reales de +Acumen.
+7. K: Finanzas agéntica.
 9. L–M: Health Connect Android y brief visual de 42 pantallas.
 10. N: nudges/journeys RPG basados en el research, después de decidir dramatización y colateral.
 11. P: scaffolding de integraciones de redes y métricas.
