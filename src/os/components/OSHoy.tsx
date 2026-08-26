@@ -22,8 +22,12 @@ interface DiaOS {
 }
 interface Win { id: string; fecha: string; texto: string; categoria: string | null; }
 interface Prioridad { id: string; orden: number; titulo: string; objetivo_id: string | null; hecho: boolean; }
-interface Objetivo { id: string; orden: number; titulo: string; descripcion: string | null; }
+// punto_partida es el numero honesto de donde arranca el objetivo. Lo escribe el
+// onboarding (aplicarOs en onboarding.handlers.ts) y hasta ahora no se pintaba en
+// ningun lado, asi que llenar el onboarding parecia no cambiar nada.
+interface Objetivo { id: string; orden: number; titulo: string; descripcion: string | null; punto_partida: string | null; }
 interface DiaSemana { dia: number; modo: 'maker' | 'manager' | 'off'; sale: string | null; etiqueta: string | null; }
+interface Linea { id: string; nombre: string; estado: string; }
 
 const DIA_LABEL = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const MODO_COLOR: Record<string, string> = { maker: 'var(--os-accent-light)', manager: 'var(--os-muted)', off: 'var(--os-muted)' };
@@ -46,6 +50,7 @@ export default function OSHoy() {
   const [prioridades, setPrioridades] = useState<Prioridad[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [semana, setSemana] = useState<DiaSemana[]>([]);
+  const [lineas, setLineas] = useState<Linea[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editDomino, setEditDomino] = useState(false);
@@ -56,11 +61,14 @@ export default function OSHoy() {
   const [guardando, setGuardando] = useState(false);
 
   async function cargar() {
-    const [diaRes, stackRes, objRes, semRes] = await Promise.all([
+    // Sin ?maker=1: el domino del dia puede caer en cualquier linea viva, no solo
+    // en las de foco maker de esta semana.
+    const [diaRes, stackRes, objRes, semRes, lineasRes] = await Promise.all([
       safeJson('/api/dia'),
       safeJson('/api/priority-stack'),
       safeJson('/api/objetivos'),
       safeJson('/api/semana'),
+      safeJson('/api/lineas'),
     ]);
     if (diaRes) {
       setDia(diaRes.dia ?? null);
@@ -69,6 +77,7 @@ export default function OSHoy() {
     if (stackRes) setPrioridades((stackRes.prioridades ?? []).sort((a: Prioridad, b: Prioridad) => a.orden - b.orden));
     if (objRes) setObjetivos((objRes.objetivos ?? []).sort((a: Objetivo, b: Objetivo) => a.orden - b.orden));
     if (semRes) setSemana(semRes.dias ?? []);
+    if (lineasRes) setLineas((lineasRes.lineas ?? []).filter((l: Linea) => l.estado !== 'pausado'));
     setLoading(false);
   }
 
@@ -209,13 +218,24 @@ export default function OSHoy() {
               onChange={(e) => setFormDomino((f) => ({ ...f, titulo: e.target.value }))}
               style={{ width: '100%' }}
             />
-            <input
+            {/* Antes era texto libre y nada garantizaba que lo escrito coincidiera
+                con una linea real de os_lineas. */}
+            <select
               className="os-input"
-              placeholder="Proyecto o linea (opcional)"
               value={formDomino.linea}
               onChange={(e) => setFormDomino((f) => ({ ...f, linea: e.target.value }))}
               style={{ width: '100%' }}
-            />
+            >
+              <option value="">Sin proyecto o linea</option>
+              {/* Un domino viejo pudo guardar texto que ya no existe en os_lineas.
+                  Se ofrece igual para no borrarlo sin querer al editar. */}
+              {formDomino.linea && !lineas.some((l) => l.nombre === formDomino.linea) && (
+                <option value={formDomino.linea}>{formDomino.linea}</option>
+              )}
+              {lineas.map((l) => (
+                <option key={l.id} value={l.nombre}>{l.nombre}</option>
+              ))}
+            </select>
             <input
               className="os-input"
               placeholder="Por que importa (opcional)"
@@ -443,6 +463,12 @@ export default function OSHoy() {
                   <div>
                     <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--os-text)' }}>{o.titulo}.</span>
                     {o.descripcion && <span style={{ fontSize: 12, color: 'var(--os-muted)', marginLeft: 5 }}>{o.descripcion}</span>}
+                    {o.punto_partida && (
+                      <p style={{ fontSize: 11, color: 'var(--os-text-2)', margin: '3px 0 0', lineHeight: 1.4 }}>
+                        <span style={{ color: 'var(--os-muted)' }}>Punto de partida: </span>
+                        {o.punto_partida}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
