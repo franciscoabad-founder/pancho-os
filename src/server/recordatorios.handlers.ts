@@ -14,7 +14,7 @@ export function setClienteSupabaseRecordatorios(fn: (() => SupabaseClient) | nul
   clienteActual = fn ?? getSupabaseServer;
 }
 
-export const ESTADOS = ['pendiente', 'enviado', 'hecho', 'cancelado'];
+export const ESTADOS = ['pendiente', 'enviado', 'hecho', 'cancelado', 'archivado'];
 
 export class ErrorRecordatorios extends Error {
   status: number;

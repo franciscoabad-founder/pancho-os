@@ -19,6 +19,8 @@ export function setClienteSupabaseLeads(fn: (() => SupabaseClient) | null): void
 export interface LeadInput {
   nombre?: string;
   empresa?: string;
+  cargo?: string;
+  producto?: string;
   proyecto?: string;
   etapa?: string;
   probabilidad?: unknown;
@@ -26,6 +28,8 @@ export interface LeadInput {
   valor?: unknown;
   etiquetas?: unknown;
   notas?: unknown;
+  ultimo_contacto?: unknown;
+  proximo_contacto?: unknown;
 }
 
 export async function listarLeads(): Promise<unknown[]> {
@@ -43,6 +47,8 @@ export async function crearLead(body: LeadInput): Promise<unknown> {
     .insert([{
       nombre: body.nombre.trim(),
       empresa: body.empresa?.trim() || null,
+      cargo: body.cargo?.trim() || null,
+      producto: body.producto?.trim() || null,
       proyecto: body.proyecto?.trim() || null,
       etapa: body.etapa ?? 'nuevo',
       probabilidad: Number(body.probabilidad) || 0,
@@ -50,6 +56,8 @@ export async function crearLead(body: LeadInput): Promise<unknown> {
       valor: Number(body.valor) || 0,
       etiquetas: body.etiquetas ?? [],
       notas: body.notas ?? null,
+      ultimo_contacto: typeof body.ultimo_contacto === 'string' && body.ultimo_contacto ? body.ultimo_contacto : null,
+      proximo_contacto: typeof body.proximo_contacto === 'string' && body.proximo_contacto ? body.proximo_contacto : null,
     }])
     .select()
     .single();

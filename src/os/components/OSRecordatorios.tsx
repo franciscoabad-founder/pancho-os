@@ -6,7 +6,7 @@ interface Recordatorio {
   mensaje: string;
   recordar_at: string;
   canal: string;
-  estado: 'pendiente' | 'enviado' | 'hecho' | 'cancelado';
+  estado: 'pendiente' | 'enviado' | 'hecho' | 'cancelado' | 'archivado';
   enviado_at: string | null;
   created_at: string;
 }
@@ -16,6 +16,7 @@ const ESTADO_META: Record<string, { label: string; color: string; bg: string }> 
   enviado:   { label: 'Enviado',   color: 'var(--os-champagne)', bg: 'rgba(181,152,90,0.14)' },
   hecho:     { label: 'Hecho',     color: 'var(--os-champagne)', bg: 'rgba(181,152,90,0.12)' },
   cancelado: { label: 'Cancelado', color: 'var(--os-muted)', bg: 'rgba(107,114,128,0.14)' },
+  archivado: { label: 'Archivado', color: 'var(--os-muted)', bg: 'rgba(107,114,128,0.14)' },
 };
 
 const inputStyle: React.CSSProperties = {
@@ -127,7 +128,7 @@ export default function OSRecordatorios() {
   }
 
   const activos = items.filter((r) => r.estado === 'pendiente' || r.estado === 'enviado');
-  const cerrados = items.filter((r) => r.estado === 'hecho' || r.estado === 'cancelado');
+  const cerrados = items.filter((r) => r.estado === 'hecho' || r.estado === 'cancelado' || r.estado === 'archivado');
 
   return (
     <div>
@@ -200,6 +201,10 @@ export default function OSRecordatorios() {
                         <button onClick={() => marcar(r.id, 'cancelado')}
                           style={{ ...accionStyle, background: 'none', border: '1px solid var(--os-line)', color: 'var(--os-muted)' }}>
                           Cancelar
+                        </button>
+                        <button onClick={() => marcar(r.id, 'archivado')}
+                          style={{ ...accionStyle, background: 'none', border: '1px solid var(--os-line)', color: 'var(--os-muted)' }}>
+                          Archivar
                         </button>
                       </div>
                     )}

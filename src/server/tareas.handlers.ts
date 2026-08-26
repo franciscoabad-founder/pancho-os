@@ -150,6 +150,7 @@ export async function actualizarTarea(
     patch.titulo = titulo;
   }
   if ('proyecto' in body) patch.proyecto = textoOpcional(body.proyecto);
+  if ('notas' in body) patch.notas = textoOpcional(body.notas);
   if ('urgente' in body) patch.urgente = body.urgente === true || body.urgente === 'true';
   if ('estado' in body) {
     const estado = body.estado === null || body.estado === undefined ? undefined : String(body.estado);

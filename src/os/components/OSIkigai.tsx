@@ -432,11 +432,12 @@ export default function OSIkigai() {
 
       {/* Zonas de vida */}
       <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <p className="os-eyebrow" style={{ marginBottom: 0 }}>Zonas de vida</p>
+        <div style={{ padding: '0.75rem', borderRadius: 8, background: 'rgba(59,78,217,0.10)', border: '1px solid rgba(59,78,217,0.22)' }}>
+          <p className="os-eyebrow" style={{ marginBottom: 4 }}>Zonas de vida</p>
+          <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-text-2)', margin: 0 }}>Una zona es un área real de tu vida o proyecto, marcada por los cuadrantes que satisface. Con ellas el OS detecta qué parte de tu Ikigai aún no estás viviendo.</p>
+        </div>
         {estado.zonas.length === 0 && (
-          <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: 0 }}>
-            Una zona es un proyecto o área real (ej: BrainTech, Familia) marcado con los cuadrantes que satisface.
-          </p>
+          <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', margin: 0 }}>Ejemplos: BrainTech, Familia, Salud o Comunidad.</p>
         )}
         {estado.zonas.map((z) => (
           <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--os-line-soft)' }}>
