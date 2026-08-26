@@ -83,7 +83,7 @@ const navGroups = [
     { href: '/aprobaciones', label: 'Aprobaciones' },
     { href: '/daily', label: 'Daily OS' },
     { href: '/revision', label: 'Revision' },
-    { href: '/diario', label: 'Diario' },
+    { href: '/diario', label: 'Journal' },
     { href: '/ikigai', label: 'Ikigai' },
     { href: '/red', label: 'Networking Room' },
   ]},

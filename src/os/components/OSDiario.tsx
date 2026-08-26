@@ -79,9 +79,12 @@ const chipActivo: React.CSSProperties = {
 function fechaLarga(fecha: string): string {
   // fecha viene como YYYY-MM-DD: se construye local para no correr un dia por UTC.
   const [y, m, d] = fecha.split('-').map(Number);
-  return new Date(y, (m ?? 1) - 1, d).toLocaleDateString('es', {
+  const texto = new Date(y, (m ?? 1) - 1, d).toLocaleDateString('es', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+  // Solo la primera letra: `text-transform: capitalize` subia tambien las de
+  // "de" y "agosto".
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 export default function OSDiario() {
@@ -248,7 +251,7 @@ export default function OSDiario() {
         <div className="os-card-2">
           <EmptyState
             icon="auto_stories"
-            title="Diario vacio"
+            title="Journal vacio"
             text="Documenta el dia. Cada entrada es materia prima para tu contenido y para la pagina del dia en el brain."
           />
         </div>
@@ -260,7 +263,7 @@ export default function OSDiario() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <h3 style={{
                 fontFamily: 'var(--os-font-display)', fontSize: 'var(--os-text-sm)', fontWeight: 700,
-                textTransform: 'capitalize', color: 'var(--os-text)', margin: 0,
+                color: 'var(--os-text)', margin: 0,
               }}>
                 {fechaLarga(dia.fecha)}
               </h3>
