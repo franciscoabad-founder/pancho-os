@@ -9,7 +9,9 @@ import { isOsAuthorized, json } from '../../os/lib/osAuth';
 import { errMsg } from '../../lib/salud/apiHelpers';
 
 const ESTADOS = ['pendiente', 'aprobado', 'rechazado'];
-const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado'];
+const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado', 'expira_at'];
+const ACTORES = new Set(['web', 'hermes', 'api']);
+const actor = (value: unknown) => typeof value === 'string' && ACTORES.has(value.trim().toLowerCase()) ? value.trim().toLowerCase() : 'web';
 
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
@@ -40,7 +42,10 @@ export const POST: APIRoute = async (context) => {
         contexto: body.contexto ?? null,
         opciones: Array.isArray(body.opciones) ? body.opciones : [],
         recomendacion: body.recomendacion ?? null,
-        estado: ESTADOS.includes(body.estado) ? body.estado : 'pendiente',
+        estado: 'pendiente',
+        decidido_at: null,
+        decidido_por: null,
+        expira_at: body.expira_at ?? null,
       }])
       .select()
       .single();
@@ -61,10 +66,26 @@ export const PATCH: APIRoute = async (context) => {
       return json({ error: `estado debe ser uno de: ${ESTADOS.join(', ')}` }, 400);
     }
     const sb = getSupabaseServer();
+    const { data: actual, error: lecturaError } = await sb.from('os_aprobaciones').select('estado, expira_at').eq('id', id).maybeSingle();
+    if (lecturaError) throw lecturaError;
+    if (!actual) return json({ error: 'aprobacion no encontrada' }, 404);
+    if (body.estado && body.estado !== 'pendiente' && actual.estado === 'pendiente' && actual.expira_at && new Date(actual.expira_at).getTime() <= Date.now()) {
+      return json({ error: 'la aprobacion ya expiro' }, 409);
+    }
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if ('estado' in body && body.estado !== 'pendiente') {
+      patch.decidido_at = new Date().toISOString();
+      patch.decidido_por = actor(body.decidido_por);
+    } else if (body.estado === 'pendiente') {
+      patch.decidido_at = null;
+      patch.decidido_por = null;
+    }
     for (const c of CAMPOS) if (c in body) patch[c] = body[c];
-    const { data, error } = await sb.from('os_aprobaciones').update(patch).eq('id', id).select().single();
+    let updateQuery = sb.from('os_aprobaciones').update(patch).eq('id', id);
+    if (body.estado && body.estado !== 'pendiente') updateQuery = updateQuery.eq('estado', 'pendiente');
+    const { data, error } = await updateQuery.select().maybeSingle();
     if (error) throw error;
+    if (!data) return json({ error: 'la aprobacion ya fue decidida o no existe' }, 409);
     return json({ aprobacion: data });
   } catch (err) {
     return json({ error: errMsg(err) }, 502);

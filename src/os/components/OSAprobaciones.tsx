@@ -9,20 +9,18 @@ interface Aprobacion {
   opciones: unknown[];
   recomendacion: string | null;
   estado: 'pendiente' | 'aprobado' | 'rechazado' | 'ejecutado';
+  decidido_at?: string | null;
+  decidido_por?: string | null;
+  expira_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
-const labels: Record<string, string> = {
-  approve: 'Aprobar',
-  reject: 'Rechazar',
-  execute: 'Ejecutar',
-};
+const labels: Record<string, string> = { approve: 'Aprobar', reject: 'Rechazar' };
 
 const ESTADO_POR_ACCION: Record<string, string> = {
   approve: 'aprobado',
   reject: 'rechazado',
-  execute: 'ejecutado',
 };
 
 export default function OSAprobaciones() {
@@ -111,11 +109,13 @@ export default function OSAprobaciones() {
                 </div>
                 <h2 style={{ fontFamily: 'var(--os-font-display)', fontSize: 15, color: 'var(--os-text)', margin: '0 0 5px' }}>{item.titulo}</h2>
                 <p style={{ color: 'var(--os-text-2)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>{item.contexto}</p>
+                {item.recomendacion && <p style={{ color: 'var(--os-muted)', fontSize: 12, margin: '6px 0 0' }}>Recomendación: {item.recomendacion}</p>}
+                {item.expira_at && <p style={{ color: new Date(item.expira_at).getTime() <= Date.now() && item.estado === 'pendiente' ? 'var(--os-danger, #c44)' : 'var(--os-muted)', fontSize: 11, margin: '6px 0 0' }}>{new Date(item.expira_at).getTime() <= Date.now() && item.estado === 'pendiente' ? 'Expirada' : `Expira ${new Date(item.expira_at).toLocaleString()}`}</p>}
+                {item.decidido_at && <p style={{ color: 'var(--os-muted)', fontSize: 11, margin: '6px 0 0' }}>Decidida {new Date(item.decidido_at).toLocaleString()} · {item.decidido_por || 'web'}</p>}
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <button className="os-btn" type="button" disabled={item.estado !== 'pendiente'} onClick={() => act(item.id, 'approve')}>Aprobar</button>
-                <button className="os-btn os-btn-ghost" type="button" disabled={item.estado !== 'pendiente'} onClick={() => act(item.id, 'execute')}>Ejecutar</button>
-                <button className="os-btn os-btn-ghost" type="button" disabled={item.estado !== 'pendiente'} onClick={() => act(item.id, 'reject')}>Rechazar</button>
+                <button className="os-btn" type="button" disabled={item.estado !== 'pendiente' || Boolean(item.expira_at && new Date(item.expira_at).getTime() <= Date.now())} onClick={() => act(item.id, 'approve')}>Aprobar</button>
+                <button className="os-btn os-btn-ghost" type="button" disabled={item.estado !== 'pendiente' || Boolean(item.expira_at && new Date(item.expira_at).getTime() <= Date.now())} onClick={() => act(item.id, 'reject')}>Rechazar</button>
               </div>
             </div>
           ))}

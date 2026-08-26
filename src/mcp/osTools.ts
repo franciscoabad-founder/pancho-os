@@ -147,7 +147,13 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       return { path: `/api/aprobaciones${query.size ? `?${query}` : ''}`, method: 'GET' };
     }
     case 'aprobaciones_solicitar':
-      return { path: '/api/aprobaciones', method: 'POST', body: { titulo: args.titulo, contexto: args.contexto, opciones: args.opciones, recomendacion: args.recomendacion } };
+      return { path: '/api/aprobaciones', method: 'POST', body: { titulo: args.titulo, contexto: args.contexto, opciones: args.opciones, recomendacion: args.recomendacion, expira_at: args.expira_at } };
+    case 'aprobaciones_responder':
+      return {
+        path: `/api/aprobaciones?id=${encodeURIComponent(String(args.aprobacion_id ?? ''))}`,
+        method: 'PATCH',
+        body: { estado: args.estado, decidido_por: 'hermes', ...(args.nota ? { contexto: args.nota } : {}) },
+      };
     case 'contenido_listar': {
       const query = new URLSearchParams();
       if (typeof args.estado === 'string') query.set('status', args.estado);

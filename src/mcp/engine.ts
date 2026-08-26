@@ -279,8 +279,21 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     description: 'Crea una solicitud de aprobacion cuando Hermes propone una accion por iniciativa propia.',
     inputSchema: {
       type: 'object',
-      properties: { titulo: { type: 'string' }, contexto: { type: 'string' }, opciones: { type: 'array', items: { type: 'string' } }, recomendacion: { type: 'string' } },
+      properties: { titulo: { type: 'string' }, contexto: { type: 'string' }, opciones: { type: 'array', items: { type: 'string' } }, recomendacion: { type: 'string' }, expira_at: { type: 'string', description: 'Fecha ISO opcional de expiracion' } },
       required: ['titulo'],
+    },
+  },
+  {
+    name: 'aprobaciones_responder',
+    description: 'Resuelve una solicitud de aprobacion existente cuando el usuario ya dijo aprobado o rechazado en Hermes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        aprobacion_id: { type: 'string' },
+        estado: { type: 'string', enum: ['aprobado', 'rechazado'] },
+        nota: { type: 'string' },
+      },
+      required: ['aprobacion_id', 'estado'],
     },
   },
   {
@@ -516,6 +529,7 @@ export async function handleMcpStatelessRequest(
       case 'inbox_capturar':
       case 'aprobaciones_listar':
       case 'aprobaciones_solicitar':
+      case 'aprobaciones_responder':
       case 'contenido_listar':
       case 'contenido_capturar':
       case 'journal_log':

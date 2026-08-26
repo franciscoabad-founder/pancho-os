@@ -22,9 +22,11 @@ export const Route = createFileRoute('/api/taski/sesiones')({
       GET: async ({ request }) => {
         if (!(await isOsAuthorized(request))) return noAutorizado();
         if (!taskiConfigurado()) return sinToken();
+        const perfil = new URL(request.url).searchParams.get('profile_id')?.trim() || 'vps-default';
+        if (!['vps-default', 'homelab-local', 'laptop-local'].includes(perfil)) return json({ error: 'profile_id invalido' }, 400);
 
         try {
-          return json({ sesiones: await listarSesionesTaski() });
+          return json({ profile_id: perfil, sesiones: await listarSesionesTaski(perfil) });
         } catch (err) {
           return errorHermes(err);
         }

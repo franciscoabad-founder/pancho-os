@@ -14,6 +14,18 @@ import { readEnv } from '../lib/env.ts';
 
 const TASKI_BASE = 'https://brain.franciscoabad.com/taski';
 export const SESSION_ID = 'pancho-os';
+export type PerfilId = 'vps-default' | 'homelab-local' | 'laptop-local';
+
+function basePerfil(perfil: PerfilId): string | undefined {
+  if (perfil === 'vps-default') return readEnv('TASKI_BASE_URL') || TASKI_BASE;
+  if (perfil === 'homelab-local') return readEnv('TASKI_BASE_HOMELAB');
+  return readEnv('TASKI_BASE_LAPTOP');
+}
+
+export function validarPerfil(perfil: string | undefined): PerfilId {
+  if (perfil === 'homelab-local' || perfil === 'laptop-local') return perfil;
+  return 'vps-default';
+}
 // Hermes piensa: timeout generoso.
 const CHAT_TIMEOUT_MS = 60_000;
 const HISTORY_TIMEOUT_MS = 15_000;
@@ -29,17 +41,19 @@ function taskiHeaders(): Record<string, string> {
   };
 }
 
-async function taskiFetch(path: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+async function taskiFetch(path: string, init: RequestInit, timeoutMs: number, perfil: PerfilId = 'vps-default'): Promise<Response> {
+  const base = basePerfil(perfil);
+  if (!base) throw new Error(`Perfil Hermes no configurado: ${perfil}`);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(`${TASKI_BASE}${path}`, { ...init, headers: taskiHeaders(), signal: ctrl.signal });
+    return await fetch(`${base}${path}`, { ...init, headers: taskiHeaders(), signal: ctrl.signal });
   } finally {
     clearTimeout(t);
   }
 }
 
-async function asegurarSesion(sessionId: string): Promise<void> {
+async function asegurarSesion(sessionId: string, perfil: PerfilId = 'vps-default'): Promise<void> {
   // Solo la sesion propia del OS se autocrea. Las sesiones de Telegram son de
   // Hermes: si una ya no existe (borrada, etc.) no hay que resucitarla aca.
   if (sessionId !== SESSION_ID) return;
@@ -48,6 +62,7 @@ async function asegurarSesion(sessionId: string): Promise<void> {
     '/api/sessions',
     { method: 'POST', body: JSON.stringify({ id: sessionId, title: 'Taski OS' }) },
     HISTORY_TIMEOUT_MS,
+    perfil,
   ).catch(() => undefined);
 }
 
@@ -69,11 +84,12 @@ export function taskiConfigurado(): boolean {
   return Boolean(readEnv('TASKI_TOKEN'));
 }
 
-export async function historialTaski(sessionId: string = SESSION_ID): Promise<MensajeTaski[]> {
-  let res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS);
+export async function historialTaski(sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default'): Promise<MensajeTaski[]> {
+  const perfil = validarPerfil(perfilRaw);
+  let res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
   if (res.status === 404) {
-    await asegurarSesion(sessionId);
-    res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS);
+    await asegurarSesion(sessionId, perfil);
+    res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
   }
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
 
@@ -90,17 +106,19 @@ export async function historialTaski(sessionId: string = SESSION_ID): Promise<Me
     .slice(-MAX_MENSAJES);
 }
 
-export async function enviarATaski(message: string, sessionId: string = SESSION_ID): Promise<string> {
+export async function enviarATaski(message: string, sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default'): Promise<string> {
+  const perfil = validarPerfil(perfilRaw);
   const enviar = () =>
     taskiFetch(
       `/api/sessions/${sessionId}/chat`,
       { method: 'POST', body: JSON.stringify({ message }) },
       CHAT_TIMEOUT_MS,
+      perfil,
     );
 
   let res = await enviar();
   if (res.status === 404) {
-    await asegurarSesion(sessionId);
+    await asegurarSesion(sessionId, perfil);
     res = await enviar();
   }
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
@@ -133,7 +151,7 @@ function mapearSesion(cruda: Record<string, unknown>): SesionTaski {
 // margen sin pedirle a Hermes que pagine.
 const LIMITE_SESIONES_TELEGRAM = 50;
 
-async function obtenerSesionGeneral(): Promise<SesionTaski> {
+async function obtenerSesionGeneral(perfil: PerfilId = 'vps-default'): Promise<SesionTaski> {
   const vacia: SesionTaski = {
     id: SESSION_ID,
     source: 'api_server',
@@ -142,7 +160,7 @@ async function obtenerSesionGeneral(): Promise<SesionTaski> {
     messageCount: 0,
     lastActive: null,
   };
-  const res = await taskiFetch(`/api/sessions/${SESSION_ID}`, { method: 'GET' }, HISTORY_TIMEOUT_MS).catch(() => null);
+  const res = await taskiFetch(`/api/sessions/${SESSION_ID}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil).catch(() => null);
   if (!res || !res.ok) return vacia; // 404 = primer uso, todavia no se creo sola
   const data = await res.json();
   return data?.session ? mapearSesion(data.session) : vacia;
@@ -152,10 +170,11 @@ async function obtenerSesionGeneral(): Promise<SesionTaski> {
 // despues cada conversacion de Telegram (una por chat/topic, ya separadas por
 // Hermes). No se listan sesiones de cron/cli/desktop/a2a: son ejecuciones
 // internas de Hermes, no conversaciones que Pancho tenga que revisar aca.
-export async function listarSesionesTaski(): Promise<SesionTaski[]> {
+export async function listarSesionesTaski(perfilRaw: string = 'vps-default'): Promise<SesionTaski[]> {
+  const perfil = validarPerfil(perfilRaw);
   const [general, res] = await Promise.all([
-    obtenerSesionGeneral(),
-    taskiFetch(`/api/sessions?limit=${LIMITE_SESIONES_TELEGRAM}&source=telegram`, { method: 'GET' }, HISTORY_TIMEOUT_MS),
+    obtenerSesionGeneral(perfil),
+    taskiFetch(`/api/sessions?limit=${LIMITE_SESIONES_TELEGRAM}&source=telegram`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil),
   ]);
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
 
@@ -186,9 +205,10 @@ const MODELOS_DEFAULT: ModeloHermes[] = [
   { id: 'custom/gemma-4-uncensored:latest', name: 'Gemma 4 (HomeLab Local)', provider: 'ollama' },
 ];
 
-export async function listarModelosHermes(): Promise<ModeloHermes[]> {
+export async function listarModelosHermes(perfilRaw: string = 'vps-default'): Promise<ModeloHermes[]> {
+  const perfil = validarPerfil(perfilRaw);
   try {
-    const res = await taskiFetch('/v1/models', { method: 'GET' }, HISTORY_TIMEOUT_MS);
+    const res = await taskiFetch('/v1/models', { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
     if (res.ok) {
       const data = await res.json();
       const items = Array.isArray(data?.data) ? data.data : [];
@@ -206,14 +226,16 @@ export async function listarModelosHermes(): Promise<ModeloHermes[]> {
   return MODELOS_DEFAULT;
 }
 
-export async function cambiarModeloHermes(model: string, sessionId: string = SESSION_ID): Promise<{ ok: boolean; model: string }> {
+export async function cambiarModeloHermes(model: string, sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default'): Promise<{ ok: boolean; model: string }> {
+  const perfil = validarPerfil(perfilRaw);
   const res = await taskiFetch(
     `/api/sessions/${sessionId}/model`,
     { method: 'POST', body: JSON.stringify({ model }) },
     HISTORY_TIMEOUT_MS,
+    perfil,
   ).catch(async () => {
     // Si la sesion no soporta lock individual, intenta configurar a nivel global
-    return taskiFetch('/api/model', { method: 'POST', body: JSON.stringify({ model }) }, HISTORY_TIMEOUT_MS);
+    return taskiFetch('/api/model', { method: 'POST', body: JSON.stringify({ model }) }, HISTORY_TIMEOUT_MS, perfil);
   });
 
   if (!res.ok) {
@@ -238,14 +260,16 @@ export interface PerfilHermes {
 }
 
 export async function listarPerfilesHermes(): Promise<PerfilHermes[]> {
-  // Verificamos conectividad con el VPS activo
-  let vpsOnline = false;
-  try {
-    const res = await taskiFetch('/api/sessions?limit=1', { method: 'GET' }, 5000);
-    vpsOnline = res.ok;
-  } catch {
-    vpsOnline = false;
-  }
+  const health = async (perfil: PerfilId): Promise<boolean> => {
+    if (!basePerfil(perfil)) return false;
+    try {
+      const res = await taskiFetch('/api/sessions?limit=1', { method: 'GET' }, 5000, perfil);
+      return res.ok;
+    } catch { return false; }
+  };
+  const [vpsOnline, homelabOnline, laptopOnline] = await Promise.all([
+    health('vps-default'), health('homelab-local'), health('laptop-local'),
+  ]);
 
   return [
     {
@@ -263,7 +287,7 @@ export async function listarPerfilesHermes(): Promise<PerfilHermes[]> {
       nombre: 'HomeLab (Windows Pro / GPU)',
       tipo: 'homelab',
       ubicacion: 'HomeLab (Tailscale 100.127.201.2)',
-      online: true,
+      online: homelabOnline,
       activo: false,
       modeloPrincipal: 'gemma-4-uncensored',
       puerto: 9120,
@@ -273,7 +297,7 @@ export async function listarPerfilesHermes(): Promise<PerfilHermes[]> {
       nombre: 'Laptop (Desarrollo)',
       tipo: 'laptop',
       ubicacion: 'Local (127.0.0.1 / Tailscale)',
-      online: false,
+      online: laptopOnline,
       activo: false,
       modeloPrincipal: 'gemma-4-uncensored',
       puerto: 9120,
@@ -294,9 +318,10 @@ export interface TareaHermes {
   detalle?: string;
 }
 
-export async function listarJobsHermes(): Promise<TareaHermes[]> {
+export async function listarJobsHermes(perfilRaw: string = 'vps-default'): Promise<TareaHermes[]> {
+  const perfil = validarPerfil(perfilRaw);
   try {
-    const res = await taskiFetch('/api/jobs', { method: 'GET' }, HISTORY_TIMEOUT_MS);
+    const res = await taskiFetch('/api/jobs', { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
     if (res.ok) {
       const data = await res.json();
       const jobs = Array.isArray(data?.jobs ?? data?.data) ? (data.jobs ?? data.data) : [];
@@ -304,7 +329,7 @@ export async function listarJobsHermes(): Promise<TareaHermes[]> {
         id: String(j.id ?? ''),
         titulo: String(j.title ?? j.name ?? j.command ?? 'Tarea sin titulo'),
         estado: (j.status === 'running' ? 'en_progreso' : j.status === 'completed' ? 'completada' : j.status === 'failed' ? 'fallida' : 'pendiente') as TareaHermes['estado'],
-        perfil: 'VPS',
+        perfil: perfil,
         creadaEn: typeof j.created_at === 'number' ? j.created_at : null,
         detalle: typeof j.description === 'string' ? j.description : undefined,
       }));

@@ -6,6 +6,8 @@ import { isOsAuthorized, json } from '../../os/lib/osAuth';
 import { registrarEvento } from '../../lib/juego/motor';
 
 const ESTADOS = ['abierto', 'convertido', 'descartado', 'hecho'];
+const PRIORIDADES = ['low', 'medium', 'high', 'critical'];
+const fechaValida = (value: unknown) => value == null || value === '' || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime()));
 
 export const GET: APIRoute = async (context) => {
   if (!isOsAuthorized(context)) return json({ error: 'Unauthorized' }, 401);
@@ -28,6 +30,8 @@ export const POST: APIRoute = async (context) => {
   try {
     const body = await context.request.json();
     if (!body.titulo?.trim()) return json({ error: 'titulo requerido' }, 400);
+    if (!fechaValida(body.deadline)) return json({ error: 'deadline debe tener formato YYYY-MM-DD' }, 400);
+    if (body.prioridad != null && !PRIORIDADES.includes(body.prioridad)) return json({ error: 'prioridad invalida' }, 400);
     const sb = getSupabaseServer();
     const { data, error } = await sb
       .from('pendientes')
@@ -37,6 +41,8 @@ export const POST: APIRoute = async (context) => {
         proyecto: body.proyecto?.trim() || null,
         estado: ESTADOS.includes(body.estado) ? body.estado : 'abierto',
         origen_nota_id: body.origen_nota_id || null,
+        deadline: body.deadline || null,
+        prioridad: body.prioridad || 'medium',
       }])
       .select()
       .single();
@@ -71,6 +77,14 @@ export const PATCH: APIRoute = async (context) => {
     }
     if ('convertido_a' in body) patch.convertido_a = body.convertido_a || null;
     if ('convertido_id' in body) patch.convertido_id = body.convertido_id || null;
+    if ('deadline' in body) {
+      if (!fechaValida(body.deadline)) return json({ error: 'deadline debe tener formato YYYY-MM-DD' }, 400);
+      patch.deadline = body.deadline || null;
+    }
+    if ('prioridad' in body) {
+      if (!PRIORIDADES.includes(body.prioridad)) return json({ error: 'prioridad invalida' }, 400);
+      patch.prioridad = body.prioridad;
+    }
     if (!Object.keys(patch).length) return json({ error: 'sin campos para actualizar' }, 400);
     patch.updated_at = new Date().toISOString();
 

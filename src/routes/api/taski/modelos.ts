@@ -19,9 +19,11 @@ export const Route = createFileRoute('/api/taski/modelos')({
       GET: async ({ request }) => {
         if (!(await isOsAuthorized(request))) return noAutorizado();
         if (!taskiConfigurado()) return sinToken();
+        const perfil = new URL(request.url).searchParams.get('profile_id')?.trim() || 'vps-default';
+        if (!['vps-default', 'homelab-local', 'laptop-local'].includes(perfil)) return json({ error: 'profile_id invalido' }, 400);
 
         try {
-          return json({ modelos: await listarModelosHermes() });
+          return json({ profile_id: perfil, modelos: await listarModelosHermes(perfil) });
         } catch (err) {
           return errorHermes(err);
         }
@@ -32,10 +34,13 @@ export const Route = createFileRoute('/api/taski/modelos')({
 
         let model: string;
         let sessionId: string;
+        let perfil: string;
         try {
           const body = (await request.json()) as Record<string, unknown>;
           model = (body.model ?? '').toString().trim();
           sessionId = (body.session_id ?? '').toString().trim() || SESSION_ID;
+          perfil = (body.profile_id ?? '').toString().trim() || 'vps-default';
+          if (!['vps-default', 'homelab-local', 'laptop-local'].includes(perfil)) return json({ error: 'profile_id invalido' }, 400);
         } catch {
           return json({ error: 'JSON invalido' }, 400);
         }
@@ -45,7 +50,7 @@ export const Route = createFileRoute('/api/taski/modelos')({
         }
 
         try {
-          const result = await cambiarModeloHermes(model, sessionId);
+          const result = await cambiarModeloHermes(model, sessionId, perfil);
           return json(result);
         } catch (err) {
           return errorHermes(err);

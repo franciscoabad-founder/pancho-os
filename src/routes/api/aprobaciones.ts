@@ -15,6 +15,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { isOsAuthorized, json } from '../../server/osAuth.ts';
 import { errMsg } from '../../server/helpers.ts';
+import { readEnv } from '../../lib/env.ts';
 import {
   ErrorAprobaciones,
   actualizarAprobacion,
@@ -28,6 +29,21 @@ const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
 function respuestaError(err: unknown): Response {
   if (err instanceof ErrorAprobaciones) return json({ error: err.message }, err.status);
   return json({ error: errMsg(err) }, 502);
+}
+
+async function notificarWebhook(aprobacion: unknown): Promise<void> {
+  const url = readEnv('APPROVAL_WEBHOOK_URL');
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ evento: 'aprobacion_resuelta', aprobacion }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // La decisión ya quedó persistida; un webhook caído no debe hacerla fallar.
+  }
 }
 
 export const Route = createFileRoute('/api/aprobaciones')({
@@ -59,7 +75,9 @@ export const Route = createFileRoute('/api/aprobaciones')({
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
           const body = (await request.json()) as Record<string, unknown>;
-          return json({ aprobacion: await actualizarAprobacion(id, body ?? {}) });
+          const aprobacion = await actualizarAprobacion(id, body ?? {});
+          if (body?.estado && body.estado !== 'pendiente') void notificarWebhook(aprobacion);
+          return json({ aprobacion });
         } catch (err) {
           return respuestaError(err);
         }

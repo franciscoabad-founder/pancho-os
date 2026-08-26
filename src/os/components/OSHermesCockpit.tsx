@@ -115,6 +115,8 @@ export default function OSHermesCockpit() {
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const perfilActivoRef = useRef(perfilActivo);
+  perfilActivoRef.current = perfilActivo;
 
   // Hook de Dictado por Voz
   const { isListening, isSupported: voiceSupported, toggleListening } = useVoiceDictation({
@@ -132,6 +134,16 @@ export default function OSHermesCockpit() {
     void cargarTareas();
     void cargarHistorial(sesionActual);
   }, []);
+
+  useEffect(() => {
+    const perfil = perfiles.find((p) => p.id === perfilActivo);
+    setModeloActual(perfil?.modeloPrincipal || 'deepseek/deepseek-v4-flash');
+    if (perfilActivo === 'vps-default') return;
+    void cargarModelos();
+    void cargarSesiones();
+    void cargarTareas();
+    void cargarHistorial(sesionActual);
+  }, [perfilActivo]);
 
   // Autoscroll en el chat
   useEffect(() => {
@@ -152,9 +164,14 @@ export default function OSHermesCockpit() {
 
   async function cargarModelos() {
     try {
-      const res = await fetch('/api/taski/modelos');
+      const res = await fetch(`/api/taski/modelos?profile_id=${encodeURIComponent(perfilActivo)}`);
       const data = await res.json();
-      if (data.modelos?.length) setModelos(data.modelos);
+      if (data.modelos?.length) {
+        setModelos(data.modelos);
+        const principal = perfiles.find((p) => p.id === perfilActivo)?.modeloPrincipal;
+        const match = principal && data.modelos.find((m: ModeloHermes) => m.id === principal || m.id.includes(principal) || m.name === principal);
+        if (match) setModeloActual(match.id);
+      }
     } catch {
       // ignore
     }
@@ -162,7 +179,7 @@ export default function OSHermesCockpit() {
 
   async function cargarSesiones() {
     try {
-      const res = await fetch('/api/taski/sesiones');
+      const res = await fetch(`/api/taski/sesiones?profile_id=${encodeURIComponent(perfilActivo)}`);
       const data = await res.json();
       if (data.sesiones?.length) setSesiones(data.sesiones);
     } catch {
@@ -173,7 +190,7 @@ export default function OSHermesCockpit() {
   async function cargarTareas() {
     setCargandoTareas(true);
     try {
-      const res = await fetch('/api/taski/kanban');
+      const res = await fetch(`/api/taski/kanban?profile_id=${encodeURIComponent(perfilActivo)}`);
       const data = await res.json();
       if (data.tareas) setTareas(data.tareas);
     } catch {
@@ -184,20 +201,22 @@ export default function OSHermesCockpit() {
   }
 
   async function cargarHistorial(sessionId: string) {
+    const perfilDeCarga = perfilActivo;
     setCargandoHistorial(true);
     setTurnos([]);
     try {
-      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(sessionId)}&profile_id=${encodeURIComponent(perfilActivo)}`);
       const data = await res.json();
+      if (perfilActivoRef.current !== perfilDeCarga) return;
       if (data.mensajes) {
         setTurnos(data.mensajes);
       } else if (data.error) {
         setTurnos([{ role: 'error', content: `Error: ${data.error}` }]);
       }
     } catch {
-      setTurnos([{ role: 'error', content: 'No se pudo cargar el historial.' }]);
+      if (perfilActivoRef.current === perfilDeCarga) setTurnos([{ role: 'error', content: 'No se pudo cargar el historial.' }]);
     } finally {
-      setCargandoHistorial(false);
+      if (perfilActivoRef.current === perfilDeCarga) setCargandoHistorial(false);
     }
   }
 
@@ -215,7 +234,7 @@ export default function OSHermesCockpit() {
       await fetch('/api/taski/modelos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: nuevoModelo, session_id: sesionActual }),
+        body: JSON.stringify({ model: nuevoModelo, session_id: sesionActual, profile_id: perfilActivo }),
       });
     } catch {
       // ignore
@@ -234,7 +253,7 @@ export default function OSHermesCockpit() {
       const res = await fetch('/api/taski', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, session_id: sesionActual }),
+        body: JSON.stringify({ message: msg, session_id: sesionActual, profile_id: perfilActivo }),
       });
       const data = await res.json();
       if (data.error || !res.ok) {

@@ -25,6 +25,13 @@ export function useVoiceDictation(options: UseVoiceDictationOptions = {}) {
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const onResultRef = useRef(onResult);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+    onErrorRef.current = onError;
+  }, [onResult, onError]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -51,7 +58,7 @@ export function useVoiceDictation(options: UseVoiceDictationOptions = {}) {
           }
         }
         if (finalTranscript.trim()) {
-          onResult?.(finalTranscript.trim());
+          onResultRef.current?.(finalTranscript.trim());
         }
       };
 
@@ -63,7 +70,7 @@ export function useVoiceDictation(options: UseVoiceDictationOptions = {}) {
           : `Error de audio: ${event.error}`;
         setError(errorMsg);
         setIsListening(false);
-        onError?.(errorMsg);
+        onErrorRef.current?.(errorMsg);
       };
 
       recognition.onend = () => {
@@ -82,7 +89,7 @@ export function useVoiceDictation(options: UseVoiceDictationOptions = {}) {
         }
       }
     };
-  }, [lang, continuous, onResult, onError]);
+  }, [lang, continuous]);
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current) return;
