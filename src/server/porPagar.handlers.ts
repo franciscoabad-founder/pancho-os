@@ -30,6 +30,7 @@ export const ESTADOS_POR_PAGAR = ['pendiente', 'comprometido', 'pagado'];
 export interface PorPagarInput {
   beneficiario?: string;
   concepto?: string;
+  proyecto?: string;
   monto?: unknown;
   moneda?: string;
   estado?: string;
@@ -53,6 +54,7 @@ export async function crearPorPagar(body: PorPagarInput): Promise<unknown> {
     .insert([{
       beneficiario: body.beneficiario.trim(),
       concepto: body.concepto?.trim() || null,
+      proyecto: body.proyecto?.trim() || null,
       monto: Number(body.monto) || 0,
       moneda: normalizarMoneda(body.moneda),
       estado,

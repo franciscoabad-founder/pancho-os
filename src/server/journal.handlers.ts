@@ -40,6 +40,7 @@ export interface EntradaJournal {
   proyecto: string | null;
   publicable: boolean;
   brain_slug: string | null;
+  mood: string | null;
 }
 
 export interface EntradaInput {
@@ -51,6 +52,7 @@ export interface EntradaInput {
   fuente?: unknown;
   proyecto?: unknown;
   publicable?: unknown;
+  mood?: unknown;
 }
 
 export interface FiltrosJournal {
@@ -110,6 +112,7 @@ export async function crearEntrada(input: EntradaInput): Promise<EntradaJournal>
     titulo: textoOpcional(input.titulo),
     proyecto: textoOpcional(input.proyecto),
     publicable: input.publicable === true,
+    mood: textoOpcional(input.mood),
   };
 
   if (input.tipo !== undefined && input.tipo !== null && input.tipo !== '') {
@@ -147,6 +150,7 @@ export async function actualizarEntrada(id: string | null, input: EntradaInput):
   if ('proyecto' in input) patch.proyecto = textoOpcional(input.proyecto);
   if ('tags' in input) patch.tags = normalizarTags(input.tags);
   if ('publicable' in input) patch.publicable = input.publicable === true;
+  if ('mood' in input) patch.mood = textoOpcional(input.mood);
   if ('tipo' in input) {
     const tipo = String(input.tipo ?? '').trim();
     if (!TIPOS.includes(tipo as TipoEntrada)) throw new Error('tipo invalido');
@@ -164,6 +168,25 @@ export async function actualizarEntrada(id: string | null, input: EntradaInput):
   const { data, error } = await sb.from('os_journal').update(patch).eq('id', id).select().single();
   if (error) throw error;
   return data as EntradaJournal;
+}
+
+export interface SugerenciasJournal {
+  tareas: string[];
+  personas: string[];
+}
+
+/** Heuristica conservadora: solo ofrece, nunca crea registros automaticamente. */
+export function detectarSugerencias(contenido: string): SugerenciasJournal {
+  const texto = contenido.trim();
+  const tareas = [...texto.matchAll(/\b(?:debo|tengo que|pendiente(?:s)?|recordar|hacer)\s+([^.!?\n]{3,100})/gi)]
+    .map((m) => m[1].trim().replace(/[,:;]+$/, ''))
+    .filter((v, i, a) => v.length >= 3 && a.indexOf(v) === i)
+    .slice(0, 5);
+  const personas = [...texto.matchAll(/(?:^|[\s,(])@([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ-]{2,40})/g)]
+    .map((m) => m[1].trim())
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .slice(0, 5);
+  return { tareas, personas };
 }
 
 export async function eliminarEntrada(id: string | null): Promise<void> {
@@ -265,6 +288,7 @@ export function componerMarkdownDia(fecha: string, entradas: EntradaJournal[]): 
       const meta = [
         e.tags.length ? `tags: ${e.tags.join(', ')}` : null,
         e.publicable ? 'publicable' : null,
+        e.mood ? `mood: ${e.mood}` : null,
         `fuente: ${e.fuente}`,
       ].filter(Boolean).join(' · ');
       lineas.push('');

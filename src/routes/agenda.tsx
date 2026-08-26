@@ -81,6 +81,7 @@ function AgendaPage() {
   });
   const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
 
   async function recargar() {
     const res = await fetch('/api/agenda');
@@ -115,6 +116,22 @@ function AgendaPage() {
     }
   }
 
+  async function sincronizarGoogle() {
+    setSincronizando(true);
+    setMensaje('');
+    try {
+      const res = await fetch('/api/agenda/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || String(res.status));
+      await recargar();
+      setMensaje(`Google sincronizado: ${data.importados ?? 0} importados, ${data.exportados ?? 0} exportados.`);
+    } catch (err) {
+      setMensaje(err instanceof Error ? err.message : 'No se pudo sincronizar Google');
+    } finally {
+      setSincronizando(false);
+    }
+  }
+
   const groups = groupByDate(eventos);
 
   return (
@@ -125,9 +142,13 @@ function AgendaPage() {
           title="Agenda"
           subtitle="Eventos y recordatorios por dia."
           actions={
-            <span className="os-mono" style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>
-              {eventos.length} evento{eventos.length === 1 ? '' : 's'} · {serverMs} ms en el servidor
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button type="button" className="os-btn os-btn-secondary" onClick={() => void sincronizarGoogle()} disabled={sincronizando} style={{ padding: '5px 10px', fontSize: 11 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>sync</span>
+                {sincronizando ? 'Sincronizando…' : 'Google Calendar'}
+              </button>
+              <span className="os-mono" style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>{eventos.length} evento{eventos.length === 1 ? '' : 's'} · {serverMs} ms</span>
+            </div>
           }
         />
 

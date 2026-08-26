@@ -10,6 +10,7 @@ import {
   actualizarEntrada,
   componerMarkdownDia,
   crearEntrada,
+  detectarSugerencias,
   eliminarEntrada,
   listarEntradas,
   promoverAContenido,
@@ -18,6 +19,13 @@ import {
   type EntradaJournal,
 } from './journal.handlers.ts';
 import { setEscritorBrain, sincronizarDiaAlBrain } from './journal.brain.handlers.ts';
+
+test('detectarSugerencias ofrece tareas y personas sin ejecutar acciones', () => {
+  assert.deepEqual(detectarSugerencias('Debo llamar a Ana. Coordinar con @Carlos mañana.'), {
+    tareas: ['llamar a Ana'],
+    personas: ['Carlos'],
+  });
+});
 
 type Fila = Record<string, unknown>;
 interface Estado { journal: Fila[]; ideas: Fila[] }

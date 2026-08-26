@@ -12,8 +12,10 @@ import {
   eliminarEntrada,
   listarEntradas,
   promoverAContenido,
+  detectarSugerencias,
   type EntradaInput,
 } from '../../server/journal.handlers.ts';
+import { sincronizarDiaAlBrain } from '../../server/journal.brain.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
 
@@ -56,7 +58,9 @@ export const Route = createFileRoute('/api/journal')({
             return json({ ok: true, entrada: resultado.entrada, idea: resultado.idea }, 201);
           }
           const entrada = await crearEntrada(body as EntradaInput);
-          return json({ ok: true, entrada }, 201);
+          let brain_sync: unknown = null;
+          try { brain_sync = await sincronizarDiaAlBrain(entrada.fecha); } catch (err) { brain_sync = { error: err instanceof Error ? err.message : String(err) }; }
+          return json({ ok: true, entrada, brain_sync, sugerencias: detectarSugerencias(entrada.contenido) }, 201);
         } catch (err) {
           return respuestaError(err);
         }
@@ -68,7 +72,10 @@ export const Route = createFileRoute('/api/journal')({
         if (!id) return json({ error: 'id requerido' }, 400);
         try {
           const body = (await request.json().catch(() => ({}))) as EntradaInput;
-          return json({ ok: true, entrada: await actualizarEntrada(id, body) });
+          const entrada = await actualizarEntrada(id, body);
+          let brain_sync: unknown = null;
+          try { brain_sync = await sincronizarDiaAlBrain(entrada.fecha); } catch (err) { brain_sync = { error: err instanceof Error ? err.message : String(err) }; }
+          return json({ ok: true, entrada, brain_sync });
         } catch (err) {
           return respuestaError(err);
         }

@@ -23,6 +23,7 @@ interface PorCobrar { id: string; cliente: string; proyecto?: string | null; mon
 interface PorPagar { id: string; beneficiario: string; concepto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_limite?: string | null }
 interface Gasto {
   id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null;
+  proyecto?: string | null;
   monto?: number | null; moneda?: string | null; monto_usd?: number | null; conversion_aproximada?: boolean | null;
 }
 interface Presupuesto { id: string; categoria: string; limite_mensual?: number | null }
@@ -786,6 +787,7 @@ export default function OSFinanzas() {
           <input name="fecha" type="date" className="os-input os-date" />
           <input name="categoria" type="text" placeholder="Categoria" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="descripcion" type="text" placeholder="Descripcion" className="os-input" style={{ flex: 2, minWidth: 160 }} />
+          <input name="proyecto" type="text" placeholder="Proyecto" className="os-input" style={{ flex: 1, minWidth: 120 }} />
           <input name="monto" type="number" step="any" placeholder="Monto" className="os-input os-mono" style={{ width: 110 }} />
           <select name="moneda" className="os-input os-date" defaultValue={MONEDA_BASE} style={{ width: 100 }} aria-label="Moneda">
             {MONEDAS_COMUNES.map((m) => <option key={m.codigo} value={m.codigo} title={m.nombre}>{m.codigo}</option>)}

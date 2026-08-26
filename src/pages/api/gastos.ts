@@ -42,7 +42,8 @@ export const POST: APIRoute = async (context) => {
         categoria: body.categoria?.trim() || null,
         descripcion: body.descripcion?.trim() || null,
         monto: Number(body.monto) || 0,
-        cuenta: body.cuenta?.trim() || null,
+      cuenta: body.cuenta?.trim() || null,
+      proyecto: body.proyecto?.trim() || null,
       }])
       .select()
       .single();
