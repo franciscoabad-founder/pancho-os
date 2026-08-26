@@ -26,3 +26,21 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vercel
+.gstack/
+
+# Local agent workspaces and verification artifacts (kept on disk, never shipped).
+.claude/
+Android/.gradle/
+Android/build/
+Android/*.png
+Android/window.xml
+alimentos_macros_ecuador.csv
+alimentos_macros_ecuador.xlsx
+auditoria-sistema-habitos.md
+docs/brain-context-2026-08-22.md
+docs/en-US-YearCompass-booklet-US-letter-fillable.pdf
+docs/health/WhatsApp Image *.jpeg
+docs/qa-runthrough-*.md
+docs/qa-runthrough-*.pdf
+stitch_pancho_os_operational_cockpit*.zip
+supabase/.temp/

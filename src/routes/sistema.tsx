@@ -3,8 +3,9 @@
 //
 // Que se porta aca: "Mis dispositivos", la isla nueva del pairing (Fase 2.1).
 // Necesita una pagina alcanzable en la app nueva y /sistema es su casa: es la
-// pantalla de la que ya cuelga el nav ("Mi Sistema") y donde vive todo lo que
-// es configuracion del OS.
+// pantalla de la que ya cuelga el nav ("Accesos", antes "Mi Sistema" -- ese
+// nombre no decia nada de lo que hace) y donde vive todo lo que es
+// configuracion del OS.
 //
 // Que NO se porta todavia: el editor del estado Cortex (OSSistema.tsx, el bloque
 // de objetivos / priority stack / modulos / onboarding). Depende de /api/system,
@@ -22,17 +23,17 @@ import PageHeader from '../os/components/ui/PageHeader.tsx';
 import OSDispositivos from '../os/components/OSDispositivos.tsx';
 
 export const Route = createFileRoute('/sistema')({
-  head: () => ({ meta: [{ title: tituloOs('Mi Sistema') }] }),
+  head: () => ({ meta: [{ title: tituloOs('Accesos') }] }),
   component: SistemaPage,
 });
 
 function SistemaPage() {
   return (
-    <OSLayout title="Mi Sistema">
+    <OSLayout title="Accesos">
       <div className="os-fade-up">
         <PageHeader
           eyebrow="Growth OS"
-          title="Mi Sistema"
+          title="Accesos"
           subtitle="Quien puede hablarle al OS, con que credencial y desde cuando."
         />
         <OSDispositivos />
