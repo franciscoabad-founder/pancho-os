@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { datosDaily } from '../data/daily';
 import OSChecklistHoy from './OSChecklistHoy';
+import OSChecklist from './OSChecklist';
 import { Celebracion, Spinner } from './ui';
 
 // Isla que reemplaza los datos demo del dashboard "Hoy" por los endpoints reales
@@ -439,6 +440,60 @@ export default function OSHoy() {
                 <li key={i} style={{ display: 'flex', gap: 8 }}>
                   <span className="os-mono" style={{ fontSize: 11, fontWeight: 700, color: 'var(--os-accent)', minWidth: 16, paddingTop: 2 }}>{i + 1}</span>
                   <span style={{ fontSize: 12, color: 'var(--os-muted)', lineHeight: 1.35 }}>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Rutinas del dia, antes en /daily.
+          OJO: OSChecklist guarda el marcado solo en estado local de React, asi que
+          Ancla AM y Cierre PM se reinician al recargar. Persisten cuando exista una
+          tabla propia (no hay os_rutina en las migraciones todavia). El checklist
+          que si persiste es OSChecklistHoy, arriba, contra /api/habitos. */}
+      <div className="os-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="os-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.875rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--os-champagne)' }}>wb_sunny</span>
+              <p className="os-section-title" style={{ margin: 0 }}>Ancla AM</p>
+            </div>
+            <OSChecklist items={datosDaily.rutina_am} />
+          </div>
+
+          <div className="os-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--os-accent-light)' }}>timer</span>
+              <p className="os-section-title" style={{ margin: 0 }}>Check de 10 min</p>
+            </div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {datosDaily.check_10min.map((q) => (
+                <li key={q} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--os-accent-light)', flexShrink: 0, marginTop: 1 }}>help</span>
+                  <span style={{ fontSize: 13, color: 'var(--os-text)', lineHeight: 1.4 }}>{q}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="os-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.875rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--os-accent-light)' }}>bedtime</span>
+              <p className="os-section-title" style={{ margin: 0 }}>Cierre PM</p>
+            </div>
+            <OSChecklist items={datosDaily.pm_close} />
+          </div>
+
+          <div className="os-card os-card-accent">
+            <p className="os-eyebrow" style={{ margin: '0 0 0.625rem' }}>Reglas</p>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {datosDaily.reglas.map((r) => (
+                <li key={r} style={{ fontSize: 13, color: 'var(--os-text)', lineHeight: 1.4, paddingLeft: 14, position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 0, top: 7, width: 5, height: 1, background: 'var(--os-accent)', display: 'block' }} />
+                  {r}
                 </li>
               ))}
             </ul>

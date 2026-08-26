@@ -1,3 +1,13 @@
+// Datos estaticos del sistema diario. Ya no alimentan una pagina propia: la ruta
+// /daily se fusiono con Hoy.
+//
+// Quien consume que:
+// - OSHoy: principios, rutina_am, check_10min, pm_close, reglas.
+// - OSLayout: solo `semana`, para pintar el modo del dia en la topbar.
+//
+// `semana` aca es el diseno de referencia; la semana real y editable vive en
+// os_semana y se lee por /api/semana. El resto sigue estatico porque todavia no
+// tiene tabla propia.
 import type { DatosDaily } from './types';
 
 export const datosDaily: DatosDaily = {
