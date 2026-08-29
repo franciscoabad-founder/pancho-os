@@ -33,6 +33,11 @@ export class ErrorAgenda extends Error {
 const CAMPOS = ['titulo', 'fecha', 'fin', 'ubicacion', 'resumen', 'brain_slug'] as const;
 const TZ = 'America/Guayaquil';
 
+function columnaAgendaNuevaAusente(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  return e?.code === '42703' || /column .* does not exist/i.test(String(e?.message || error));
+}
+
 function textoOpcional(valor: unknown): string | null {
   if (valor === null || valor === undefined) return null;
   const limpio = String(valor).trim();
@@ -94,15 +99,20 @@ export async function listarEventos(
   sb: SupabaseClient = getSupabaseServer(),
 ): Promise<Evento[]> {
   const { desde: d, hasta: h } = defaultRango(desde, hasta);
-  const { data, error } = await sb
+  const consulta = sb
     .from('reuniones')
     .select('*')
     .gte('fecha', `${d}T00:00:00-05:00`)
     .lt('fecha', `${sumarDias(h, 1)}T00:00:00-05:00`)
     .is('google_deleted_at', null)
     .order('fecha', { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map((r) => toEvento(r as Record<string, unknown>));
+  let resultado = await consulta;
+  // Permite desplegar la pantalla de dias antes de aplicar la migracion.
+  if (resultado.error && columnaAgendaNuevaAusente(resultado.error)) {
+    resultado = await sb.from('reuniones').select('*').gte('fecha', `${d}T00:00:00-05:00`).lt('fecha', `${sumarDias(h, 1)}T00:00:00-05:00`).order('fecha', { ascending: true });
+  }
+  if (resultado.error) throw resultado.error;
+  return (resultado.data ?? []).map((r) => toEvento(r as Record<string, unknown>));
 }
 
 export async function crearEvento(
@@ -117,21 +127,26 @@ export async function crearEvento(
   const fin = normalizarFechaAgenda(body.fin);
   if (fin && new Date(fin) < new Date(fecha)) throw new ErrorAgenda('fin no puede ser anterior al inicio', 400);
 
-  const { data, error } = await sb
+  const payload = {
+    titulo,
+    fecha,
+    fin,
+    ubicacion: textoOpcional(body.ubicacion),
+    resumen: textoOpcional(body.resumen ?? body.descripcion),
+    brain_slug: textoOpcional(body.brain_slug),
+    etiquetas: etiquetasAgenda(body.etiquetas ?? body.tags),
+  };
+  let resultado = await sb
     .from('reuniones')
-    .insert([{
-      titulo,
-      fecha,
-      fin,
-      ubicacion: textoOpcional(body.ubicacion),
-      resumen: textoOpcional(body.resumen ?? body.descripcion),
-      brain_slug: textoOpcional(body.brain_slug),
-      etiquetas: etiquetasAgenda(body.etiquetas ?? body.tags),
-    }])
+    .insert([payload])
     .select()
     .single();
-  if (error) throw error;
-  return toEvento(data as Record<string, unknown>);
+  if (resultado.error && columnaAgendaNuevaAusente(resultado.error)) {
+    const { etiquetas: _etiquetas, ...legacyPayload } = payload;
+    resultado = await sb.from('reuniones').insert([legacyPayload]).select().single();
+  }
+  if (resultado.error) throw resultado.error;
+  return toEvento(resultado.data as Record<string, unknown>);
 }
 
 export async function actualizarEvento(
@@ -158,9 +173,13 @@ export async function actualizarEvento(
   // siguiente sync manual propague el cambio sin que una importacion lo pise.
   patch.google_dirty_at = new Date().toISOString();
 
-  const { data, error } = await sb.from('reuniones').update(patch).eq('id', id).select().single();
-  if (error) throw error;
-  return toEvento(data as Record<string, unknown>);
+  let resultado = await sb.from('reuniones').update(patch).eq('id', id).select().single();
+  if (resultado.error && columnaAgendaNuevaAusente(resultado.error)) {
+    const { etiquetas: _etiquetas, google_dirty_at: _dirty, ...legacyPatch } = patch;
+    resultado = await sb.from('reuniones').update(legacyPatch).eq('id', id).select().single();
+  }
+  if (resultado.error) throw resultado.error;
+  return toEvento(resultado.data as Record<string, unknown>);
 }
 
 export async function eliminarEvento(
@@ -169,6 +188,11 @@ export async function eliminarEvento(
 ): Promise<void> {
   if (!id) throw new ErrorAgenda('id requerido', 400);
   const { data: actual, error: lecturaError } = await sb.from('reuniones').select('google_event_id').eq('id', id).maybeSingle();
+  if (lecturaError && columnaAgendaNuevaAusente(lecturaError)) {
+    const { error } = await sb.from('reuniones').delete().eq('id', id);
+    if (error) throw error;
+    return;
+  }
   if (lecturaError) throw lecturaError;
   const query = actual?.google_event_id
     ? sb.from('reuniones').update({ google_deleted_at: new Date().toISOString() }).eq('id', id)
