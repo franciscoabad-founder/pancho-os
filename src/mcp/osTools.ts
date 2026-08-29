@@ -45,7 +45,7 @@ const MCP_OS_MODULES = new Set([
   // ni ejercicios.ts. Ojo: este allowlist lo comparten el endpoint MCP de
   // Astro (src/pages/api/mcp.ts) y el de Start (src/routes/api/mcp.ts), asi
   // que el retiro aplica a los dos.
-  'agenda', 'aprobaciones', 'bandeja', 'biometricas', 'contenido',
+  'agenda', 'agenda/sync', 'aprobaciones', 'bandeja', 'biometricas', 'contenido',
   'cuentas', 'deudas', 'dia', 'gastos', 'gfit/catalogo', 'gfit/config',
   'gfit/dia-ejercicios', 'gfit/dias', 'gfit/logros', 'gfit/progreso',
   'gfit/rutinas', 'gfit/series', 'gfit/sesion-series', 'habitos',
@@ -78,7 +78,26 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       const date = String(args.fecha ?? '');
       const start = typeof args.hora_inicio === 'string' ? `${date}T${args.hora_inicio}:00-05:00` : date;
       const end = typeof args.hora_fin === 'string' ? `${date}T${args.hora_fin}:00-05:00` : undefined;
-      return { path: '/api/agenda', method: 'POST', body: { titulo: args.titulo, fecha: start, fin: end, descripcion: args.descripcion } };
+      return { path: '/api/agenda', method: 'POST', body: { titulo: args.titulo, fecha: start, fin: end, descripcion: args.descripcion, etiquetas: args.etiquetas ?? args.tags } };
+    }
+    case 'agenda_actualizar_evento': {
+      const id = String(args.evento_id ?? '').trim();
+      if (!id) throw new Error('evento_id requerido: usa agenda_get_eventos para obtenerlo.');
+      const fecha = typeof args.fecha === 'string' ? args.fecha : undefined;
+      const inicio = fecha && typeof args.hora_inicio === 'string' ? `${fecha}T${args.hora_inicio}:00-05:00` : args.inicio;
+      const fin = fecha && typeof args.hora_fin === 'string' ? `${fecha}T${args.hora_fin}:00-05:00` : args.fin;
+      const body: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries({ titulo: args.titulo, inicio, fin, ubicacion: args.ubicacion, descripcion: args.descripcion, etiquetas: args.etiquetas ?? args.tags })) {
+        if (value !== undefined) body[key] = value;
+      }
+      if (!Object.keys(body).length) throw new Error('Nada que actualizar: pasa al menos un campo del evento.');
+      return { path: `/api/agenda?id=${encodeURIComponent(id)}`, method: 'PATCH', body };
+    }
+    case 'agenda_sincronizar_google': {
+      const query = new URLSearchParams();
+      if (typeof args.fecha_inicio === 'string') query.set('desde', args.fecha_inicio);
+      if (typeof args.fecha_fin === 'string') query.set('hasta', args.fecha_fin);
+      return { path: `/api/agenda/sync${query.size ? `?${query}` : ''}`, method: 'POST' };
     }
     case 'agenda_delete_evento':
       return { path: `/api/agenda?id=${encodeURIComponent(String(args.evento_id ?? ''))}`, method: 'DELETE' };

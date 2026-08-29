@@ -130,6 +130,31 @@ test('exige confirmacion para borrar mediante el puente universal del OS', async
   assert.equal((response.result as { resultType: string }).resultType, 'input_required');
 });
 
+test('exige confirmacion antes de sincronizar Google mediante cualquier ruta MCP', async () => {
+  const response = await handleMcpStatelessRequest(
+    {
+      jsonrpc: '2.0',
+      id: 'sync-google',
+      method: 'tools/call',
+      params: { name: 'os_api_request', arguments: { module: 'agenda/sync', method: 'POST' } },
+    },
+    new Headers(),
+    async () => ({ ok: true }),
+  );
+  assert.equal((response.result as { resultType: string }).resultType, 'input_required');
+});
+
+test('publica y enruta la edicion de agenda', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const response = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'agenda-edit', method: 'tools/call', params: { name: 'agenda_actualizar_evento', arguments: { evento_id: 'evt-1', titulo: 'Nuevo' } } },
+    new Headers(),
+    async (name, args) => { calls.push({ name, args }); return { ok: true }; },
+  );
+  assert.deepEqual(calls, [{ name: 'agenda_actualizar_evento', args: { evento_id: 'evt-1', titulo: 'Nuevo' } }]);
+  assert.equal('error' in response, false);
+});
+
 test('ejecuta una herramienta mediante el ejecutor real en vez de responder un mock', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const response = await handleMcpStatelessRequest(

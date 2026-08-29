@@ -33,6 +33,19 @@ test('agenda_create_evento fija offset de Guayaquil en los timestamps', () => {
   assert.equal(req.body?.fin, '2026-08-20T10:00:00-05:00');
 });
 
+test('agenda_actualizar_evento solo envia campos suministrados', () => {
+  const req = toToolRequest('agenda_actualizar_evento', { evento_id: 'evt-1', etiquetas: ['ventas'] });
+  assert.equal(req.path, '/api/agenda?id=evt-1');
+  assert.equal(req.method, 'PATCH');
+  assert.deepEqual(req.body, { etiquetas: ['ventas'] });
+});
+
+test('agenda_sincronizar_google conserva el rango solicitado', () => {
+  const req = toToolRequest('agenda_sincronizar_google', { fecha_inicio: '2026-08-29', fecha_fin: '2026-09-11' });
+  assert.equal(req.path, '/api/agenda/sync?desde=2026-08-29&hasta=2026-09-11');
+  assert.equal(req.method, 'POST');
+});
+
 test('semana_diseno apunta a /api/semana (no a /api/priority-stack) y pasa semana_inicio como query semana', () => {
   const sinFecha = toToolRequest('semana_diseno', {});
   assert.equal(sinFecha.method, 'GET');

@@ -70,6 +70,26 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
     },
   },
   {
+    name: 'agenda_actualizar_evento',
+    description: 'Actualiza un evento existente de la agenda. Usa el evento_id devuelto por agenda_get_eventos.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        evento_id: { type: 'string', description: 'ID del evento' },
+        titulo: { type: 'string' }, fecha: { type: 'string', description: 'YYYY-MM-DD' },
+        hora_inicio: { type: 'string', description: 'HH:mm' }, hora_fin: { type: 'string', description: 'HH:mm' },
+        descripcion: { type: 'string' }, ubicacion: { type: 'string' }, etiquetas: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['evento_id'],
+    },
+  },
+  {
+    name: 'agenda_sincronizar_google',
+    description: 'Sincroniza un rango de agenda con Google Calendar. Puede crear, modificar o cancelar eventos externos, por lo que requiere confirmación MRTR.',
+    requiresMRTR: true,
+    inputSchema: { type: 'object', properties: { fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' } } },
+  },
+  {
     name: 'tareas_list',
     description: 'Obtiene el listado de tareas pendientes o completadas.',
     inputSchema: {
@@ -488,7 +508,8 @@ export async function handleMcpStatelessRequest(
 
     // Verificación MRTR (Multi Round-Trip Request) para acciones sensibles
     const isGenericDelete = toolName === 'os_api_request' && String(toolArgs.method ?? '').toUpperCase() === 'DELETE';
-    if (toolDef?.requiresMRTR || isGenericDelete) {
+    const isGenericGoogleSync = toolName === 'os_api_request' && String(toolArgs.module ?? '') === 'agenda/sync' && String(toolArgs.method ?? '').toUpperCase() === 'POST';
+    if (toolDef?.requiresMRTR || isGenericDelete || isGenericGoogleSync) {
       const inputResponses = meta.inputResponses || toolArgs.inputResponses;
       if (!inputResponses || (inputResponses as Record<string, unknown>).confirm !== true) {
         return {
@@ -514,6 +535,8 @@ export async function handleMcpStatelessRequest(
       case 'agenda_get_eventos':
       case 'agenda_create_evento':
       case 'agenda_delete_evento':
+      case 'agenda_actualizar_evento':
+      case 'agenda_sincronizar_google':
       case 'tareas_list':
       case 'tareas_create':
       case 'finanzas_log_gasto':

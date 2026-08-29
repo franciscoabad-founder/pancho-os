@@ -4,12 +4,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
 import { readEnv } from '../lib/env.ts';
+import { etiquetasAgenda } from './agenda.handlers.ts';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CALENDAR_URL = 'https://www.googleapis.com/calendar/v3/calendars';
 const LOCAL_TIMEZONE = 'America/Guayaquil';
 
-function googleDateTime(value: string): string {
+export function googleDateTime(value: string): string {
   const raw = value.trim();
   if (!raw) return raw;
   if (/[zZ]|[+-]\d\d:\d\d$/.test(raw)) return raw;
@@ -47,24 +48,54 @@ async function googleRequest(config: GoogleAgendaConfig, path: string, init: Req
   return data;
 }
 
-function googleEventBody(event: Record<string, unknown>): Record<string, unknown> {
+function diaSiguiente(fecha: string): string {
+  const date = new Date(`${fecha}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+export function googleEventBody(event: Record<string, unknown>): Record<string, unknown> {
   const start = event.start as Record<string, unknown> | undefined;
   const end = event.end as Record<string, unknown> | undefined;
+  const inicio = start?.dateTime || (start?.date ? `${String(start.date)}T00:00:00-05:00` : '');
+  const fin = end?.dateTime || (end?.date ? `${String(end.date)}T00:00:00-05:00` : '');
+  const privateProperties = event.extendedProperties && typeof event.extendedProperties === 'object'
+    ? (event.extendedProperties as Record<string, unknown>).private
+    : undefined;
+  const rawTags = privateProperties && typeof privateProperties === 'object'
+    ? (privateProperties as Record<string, unknown>).pancho_os_tags
+    : undefined;
   return {
     titulo: String(event.summary || 'Sin título'),
-    fecha: String(start?.dateTime || start?.date || ''),
-    fin: String(end?.dateTime || end?.date || '') || null,
+    fecha: String(inicio),
+    fin: String(fin) || null,
     ubicacion: typeof event.location === 'string' ? event.location : null,
     resumen: typeof event.description === 'string' ? event.description : null,
+    etiquetas: etiquetasAgenda(rawTags),
+  };
+}
+
+export function googleEventPayload(local: Record<string, unknown>): Record<string, unknown> {
+  const inicio = googleDateTime(String(local.fecha));
+  const fin = local.fin ? googleDateTime(String(local.fin)) : new Date(new Date(inicio).getTime() + 30 * 60_000).toISOString();
+  const etiquetas = etiquetasAgenda(local.etiquetas);
+  return {
+    summary: local.titulo,
+    description: local.resumen || undefined,
+    location: local.ubicacion || undefined,
+    start: { dateTime: inicio, timeZone: LOCAL_TIMEZONE },
+    end: { dateTime: fin, timeZone: LOCAL_TIMEZONE },
+    extendedProperties: { private: { pancho_os_tags: etiquetas.join(',') } },
   };
 }
 
 export async function syncAgendaGoogle(desde: string, hasta: string, sb: SupabaseClient = getSupabaseServer()): Promise<{ importados: number; exportados: number; omitidos: number }> {
   const config = googleAgendaConfig();
   if (!config) throw new ErrorAgendaGoogle('Google Calendar no configurado: faltan GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET o GOOGLE_CALENDAR_REFRESH_TOKEN', 503);
-  const timeMin = `${desde}T00:00:00Z`;
-  const timeMax = `${hasta}T23:59:59Z`;
-  const params = new URLSearchParams({ timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '2500' });
+  const timeMin = `${desde}T00:00:00-05:00`;
+  // timeMax en Google Calendar es exclusivo, por eso se usa el inicio del dia siguiente.
+  const timeMax = `${diaSiguiente(hasta)}T00:00:00-05:00`;
+  const params = new URLSearchParams({ timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', showDeleted: 'true', maxResults: '2500' });
   const eventosRemotos: Array<Record<string, unknown>> = [];
   let pageToken: string | undefined;
   for (let pagina = 0; pagina < 50; pagina++) {
@@ -80,16 +111,31 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
 
   for (const event of eventosRemotos) {
     if (!event.id) continue;
+    const { data: local, error: localLookupError } = await sb.from('reuniones').select('*').eq('google_event_id', String(event.id)).maybeSingle();
+    if (localLookupError) throw localLookupError;
     if (event.status === 'cancelled') {
       const { error } = await sb.from('reuniones').delete().eq('google_event_id', String(event.id));
       if (error) throw error;
       continue;
     }
+    if (local?.google_deleted_at) {
+      await googleRequest(config, `/events/${encodeURIComponent(String(event.id))}`, { method: 'DELETE' });
+      const { error } = await sb.from('reuniones').delete().eq('id', local.id);
+      if (error) throw error;
+      exportados++;
+      continue;
+    }
     const body = googleEventBody(event);
     if (!body.fecha) { omitidos++; continue; }
-    const { data: local } = await sb.from('reuniones').select('id').eq('google_event_id', String(event.id)).maybeSingle();
     if (local) {
-      const { error } = await sb.from('reuniones').update({ ...body, fuente: 'google_calendar', google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }).eq('id', local.id);
+      if (local.google_dirty_at) {
+        const actualizado = await googleRequest(config, `/events/${encodeURIComponent(String(event.id))}`, { method: 'PATCH', body: JSON.stringify(googleEventPayload(local)) }) as Record<string, unknown>;
+        const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_etag: actualizado.etag ?? null, google_updated_at: actualizado.updated ?? null, google_dirty_at: null }).eq('id', local.id);
+        if (error) throw error;
+        exportados++;
+        continue;
+      }
+      const { error } = await sb.from('reuniones').update({ ...body, fuente: 'google_calendar', google_etag: event.etag ?? null, google_updated_at: event.updated ?? null, google_dirty_at: null, google_deleted_at: null }).eq('id', local.id);
       if (error) throw error;
     } else {
       const { error } = await sb.from('reuniones').insert([{ ...body, fuente: 'google_calendar', google_event_id: String(event.id), google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }]);
@@ -98,13 +144,10 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
     }
   }
 
-  const { data: locales, error: localError } = await sb.from('reuniones').select('*').gte('fecha', `${desde}T00:00:00`).lte('fecha', `${hasta}T23:59:59`).is('google_event_id', null);
+  const { data: locales, error: localError } = await sb.from('reuniones').select('*').gte('fecha', `${desde}T00:00:00-05:00`).lt('fecha', `${diaSiguiente(hasta)}T00:00:00-05:00`).is('google_event_id', null).is('google_deleted_at', null);
   if (localError) throw localError;
   for (const local of locales ?? []) {
-    const inicio = googleDateTime(String(local.fecha));
-    const fin = local.fin ? googleDateTime(String(local.fin)) : new Date(new Date(inicio).getTime() + 30 * 60_000).toISOString();
-    const body = { summary: local.titulo, description: local.resumen || undefined, location: local.ubicacion || undefined, start: { dateTime: inicio, timeZone: LOCAL_TIMEZONE }, end: { dateTime: fin, timeZone: LOCAL_TIMEZONE } };
-    const event = await googleRequest(config, '/events', { method: 'POST', body: JSON.stringify(body) }) as Record<string, unknown>;
+    const event = await googleRequest(config, '/events', { method: 'POST', body: JSON.stringify(googleEventPayload(local as Record<string, unknown>)) }) as Record<string, unknown>;
     const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: event.id, google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }).eq('id', local.id);
     if (error) throw error;
     exportados++;
