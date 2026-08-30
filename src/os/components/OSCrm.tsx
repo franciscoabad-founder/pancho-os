@@ -127,6 +127,16 @@ export default function OSCrm() {
     }
   }
 
+  async function registrarIngreso(lead: Lead) {
+    setMsg('');
+    try {
+      const res = await fetch('/api/leads/ingreso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: lead.id }) });
+      const data = await res.json() as { error?: string; creado?: boolean };
+      if (!res.ok) throw new Error(data.error || String(res.status));
+      setMsg(data.creado ? `Ingreso creado para ${lead.nombre}.` : `El ingreso de ${lead.nombre} ya existía.`);
+    } catch (e) { setMsg('Error al registrar ingreso: ' + (e instanceof Error ? e.message : 'error desconocido')); }
+  }
+
   async function enviarLead(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMsg('');
@@ -328,6 +338,7 @@ export default function OSCrm() {
                     {Boolean(lead.valor) && (
                       <p style={{ fontFamily: 'var(--os-font-mono)', fontSize: 'var(--os-text-sm)', fontWeight: 700, color: 'var(--os-champagne)', margin: '0 0 6px' }}>{fmtValor(lead.valor)}</p>
                     )}
+                    {lead.etapa === 'cerrado' && Boolean(lead.valor) && <button type="button" className="os-chip" onClick={() => void registrarIngreso(lead)}>Registrar ingreso</button>}
                     {lead.proyecto && <p style={{ fontSize: 11, color: 'var(--os-text)', margin: '0 0 6px' }}>{lead.proyecto}</p>}
                     {lead.notas && <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 6px', whiteSpace: 'pre-wrap' }}>{lead.notas}</p>}
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 999, fontFamily: 'var(--os-font-display)', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: ec.fg, background: ec.bg }}>
