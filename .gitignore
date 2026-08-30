@@ -33,6 +33,7 @@ pnpm-debug.log*
 Android/.gradle/
 Android/.kotlin/
 Android/build/
+Android/artifacts/
 Android/*.png
 Android/window.xml
 alimentos_macros_ecuador.csv
