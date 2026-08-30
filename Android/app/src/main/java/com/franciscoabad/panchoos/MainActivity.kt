@@ -160,7 +160,7 @@ class MainActivity : ComponentActivity() {
 
 private class NativeBridge(private val activity: MainActivity) {
     @JavascriptInterface fun isAndroidApp(): Boolean = true
-    @JavascriptInterface fun healthStatus() = activity.publishHealthState()
-    @JavascriptInterface fun requestHealthPermissions() = activity.requestHealthPermissions()
-    @JavascriptInterface fun syncHealth() = activity.syncHealth()
+    @JavascriptInterface fun healthStatus() = activity.runOnUiThread { activity.publishHealthState() }
+    @JavascriptInterface fun requestHealthPermissions() = activity.runOnUiThread { activity.requestHealthPermissions() }
+    @JavascriptInterface fun syncHealth() = activity.runOnUiThread { activity.syncHealth() }
 }
