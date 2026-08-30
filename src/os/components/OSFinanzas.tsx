@@ -21,6 +21,7 @@ interface Cuenta {
 }
 interface Deuda { id: string; acreedor: string; monto?: number | null; cuota?: number | null; fecha_limite?: string | null; estado?: string | null; moneda?: string | null }
 interface PorCobrar { id: string; cliente: string; proyecto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_esperada?: string | null }
+interface PagoPorCobrar { id: string; por_cobrar_id: string; monto: number; moneda?: string | null; fecha: string; notas?: string | null }
 interface PorPagar { id: string; beneficiario: string; concepto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_limite?: string | null }
 interface Gasto {
   id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null;
@@ -239,6 +240,9 @@ export default function OSFinanzas() {
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [porCobrar, setPorCobrar] = useState<PorCobrar[]>([]);
   const [porPagar, setPorPagar] = useState<PorPagar[]>([]);
+  const [pagosPorCobrar, setPagosPorCobrar] = useState<PagoPorCobrar[]>([]);
+  const [pagoDraft, setPagoDraft] = useState<{ id: string; monto: string; fecha: string }>({ id: '', monto: '', fecha: new Date().toISOString().slice(0, 10) });
+  const [pagoError, setPagoError] = useState('');
   const [finError, setFinError] = useState('');
   const [errorCarga, setErrorCarga] = useState('');
   const [pcFilter, setPcFilter] = useState('todos');
@@ -252,13 +256,14 @@ export default function OSFinanzas() {
 
   const cargarTodo = useCallback(async () => {
     try {
-      const [c, d, g, p, pc, pp] = await Promise.all([
+      const [c, d, g, p, pc, pp, pagos] = await Promise.all([
         fetch('/api/cuentas').then((r) => r.json()),
         fetch('/api/deudas').then((r) => r.json()),
         fetch('/api/gastos').then((r) => r.json()),
         fetch('/api/presupuestos').then((r) => r.json()),
         fetch('/api/por-cobrar').then((r) => r.json()),
         fetch('/api/por-pagar').then((r) => r.json()),
+        fetch('/api/por-cobrar/pagos').then((r) => r.json()),
       ]);
       setCuentas(c.cuentas || []);
       setDeudas(d.deudas || []);
@@ -266,6 +271,7 @@ export default function OSFinanzas() {
       setPresupuestos(p.presupuestos || []);
       setPorCobrar(pc.por_cobrar || []);
       setPorPagar(pp.por_pagar || []);
+      setPagosPorCobrar(pagos.pagos || []);
       setErrorCarga('');
     } catch (e) {
       setErrorCarga(e instanceof Error ? e.message : 'error desconocido');
@@ -288,6 +294,20 @@ export default function OSFinanzas() {
       setFinError('Error al guardar: ' + (e instanceof Error ? e.message : 'error desconocido'));
     }
   }, [cargarTodo]);
+
+  async function registrarPago(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPagoError('');
+    if (!pagoDraft.id || !pagoDraft.monto) return;
+    const cuenta = porCobrar.find((p) => p.id === pagoDraft.id);
+    try {
+      const res = await fetch('/api/por-cobrar/pagos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ por_cobrar_id: pagoDraft.id, monto: pagoDraft.monto, moneda: cuenta?.moneda || 'USD', fecha: pagoDraft.fecha }) });
+      const body = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(body.error || String(res.status));
+      setPagoDraft({ id: '', monto: '', fecha: new Date().toISOString().slice(0, 10) });
+      await cargarTodo();
+    } catch (err) { setPagoError(err instanceof Error ? err.message : 'No se pudo registrar el pago'); }
+  }
 
   const del = useCallback(async (tabla: string, id: string) => {
     try {
@@ -698,6 +718,8 @@ export default function OSFinanzas() {
                 <span style={{ fontSize: 14, color: 'var(--os-champagne)', fontFamily: 'var(--os-font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {money(p.monto, p.moneda)}
                 </span>
+                {(() => { const pagado = pagosPorCobrar.filter((x) => x.por_cobrar_id === p.id).reduce((s, x) => s + Number(x.monto || 0), 0); return pagado > 0 ? <span style={{ fontSize: 11, color: 'var(--os-accent-light)', whiteSpace: 'nowrap' }}>Pagado {money(pagado, p.moneda)}</span> : null; })()}
+                {p.estado !== 'cobrado' && <button type="button" className="os-chip" onClick={() => setPagoDraft({ id: p.id, monto: '', fecha: new Date().toISOString().slice(0, 10) })}>+ pago</button>}
                 <select
                   value={p.estado ?? 'aplicando'}
                   onChange={(e) => void patch('por-cobrar', p.id, { estado: e.target.value })}
@@ -710,6 +732,14 @@ export default function OSFinanzas() {
             );
           })}
         </div>
+        {pagoDraft.id && <form onSubmit={registrarPago} className="os-form" style={{ marginTop: 10 }}>
+          <span style={{ fontSize: 12, color: 'var(--os-muted)', alignSelf: 'center' }}>Registrar pago parcial para {porCobrar.find((p) => p.id === pagoDraft.id)?.cliente}</span>
+          <input className="os-input os-mono" type="number" min="0.01" step="any" required placeholder="Monto" value={pagoDraft.monto} onChange={(e) => setPagoDraft((d) => ({ ...d, monto: e.target.value }))} />
+          <input className="os-input os-date" type="date" required value={pagoDraft.fecha} onChange={(e) => setPagoDraft((d) => ({ ...d, fecha: e.target.value }))} />
+          <button type="submit" className="os-btn">Guardar pago</button>
+          <button type="button" className="os-chip" onClick={() => setPagoDraft({ id: '', monto: '', fecha: new Date().toISOString().slice(0, 10) })}>Cancelar</button>
+          {pagoError && <span style={{ color: 'var(--os-error)', fontSize: 12 }}>{pagoError}</span>}
+        </form>}
       </section>
 
       {/* ============ POR PAGAR ============ */}
