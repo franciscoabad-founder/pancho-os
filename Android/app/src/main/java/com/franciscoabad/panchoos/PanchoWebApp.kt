@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.webkit.WebResourceRequest
 import android.webkit.WebChromeClient
+import android.webkit.PermissionRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +39,15 @@ fun PanchoWebApp(activity: MainActivity) {
                 }
                 webChromeClient = object : WebChromeClient() {
                     override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
-                        activity.runOnUiThread { activity.requestMicrophonePermission(request) }
+                        activity.runOnUiThread {
+                            when {
+                                request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE) ->
+                                    activity.requestCameraPermission(request)
+                                request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE) ->
+                                    activity.requestMicrophonePermission(request)
+                                else -> request.deny()
+                            }
+                        }
                     }
                 }
                 activity.attachWebView(this)

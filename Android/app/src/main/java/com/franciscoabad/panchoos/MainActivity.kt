@@ -47,6 +47,15 @@ class MainActivity : ComponentActivity() {
         pendingWebPermission = null
     }
 
+    private val requestCameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        pendingWebPermission?.let { request ->
+            if (granted) request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) else request.deny()
+        }
+        pendingWebPermission = null
+    }
+
     private val requestHealthPermissionsLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { granted ->
@@ -99,6 +108,21 @@ class MainActivity : ComponentActivity() {
         pendingWebPermission?.deny()
         pendingWebPermission = request
         requestMicrophonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    /** Entrega la cámara al capturador web solo cuando una pantalla la solicita. */
+    fun requestCameraPermission(request: PermissionRequest) {
+        if (!request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+            request.deny()
+            return
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+            return
+        }
+        pendingWebPermission?.deny()
+        pendingWebPermission = request
+        requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
     fun syncHealth() {

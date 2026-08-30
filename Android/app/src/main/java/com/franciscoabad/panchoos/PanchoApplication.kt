@@ -8,6 +8,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.franciscoabad.panchoos.notifications.NotificationHelper
 import com.franciscoabad.panchoos.notifications.SyncTasksWorker
+import com.franciscoabad.panchoos.notifications.SyncHealthWorker
 import java.util.concurrent.TimeUnit
 
 class PanchoApplication : Application() {
@@ -35,6 +36,15 @@ class PanchoApplication : Application() {
             "pancho_os_sync",
             ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
+        )
+
+        val healthRequest = PeriodicWorkRequestBuilder<SyncHealthWorker>(6, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "pancho_os_health_sync",
+            ExistingPeriodicWorkPolicy.KEEP,
+            healthRequest
         )
     }
 }
