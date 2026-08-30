@@ -7,6 +7,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
@@ -18,7 +19,9 @@ private const val OS_URL = "https://next.os.franciscoabad.com"
 @Composable
 fun PanchoWebApp(activity: MainActivity) {
     AndroidView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .systemBarsPadding()
+            .fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(Color.rgb(8, 12, 22))
