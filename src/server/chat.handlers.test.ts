@@ -15,6 +15,7 @@ import {
   listarConversaciones,
   obtenerHilo,
   setClienteSupabaseChat,
+  setCrearSesionHermesChat,
   setEnviarAHermesChat,
   type Run,
 } from './chat.handlers.ts';
@@ -121,6 +122,7 @@ beforeEach(() => {
   estado = { conversaciones: [], mensajes: [], runs: [] };
   setClienteSupabaseChat(() => crearClienteFake(estado));
   setEnviarAHermesChat(async () => 'respuesta de hermes');
+  setCrearSesionHermesChat(async () => undefined);
 });
 
 test('crearConversacion asigna sesion de Hermes propia', async () => {

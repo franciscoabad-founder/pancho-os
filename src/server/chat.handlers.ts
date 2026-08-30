@@ -16,7 +16,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
-import { enviarATaski, validarPerfil, MAX_LARGO_MENSAJE } from './taski.handlers.ts';
+import { crearSesionTaski, enviarATaski, validarPerfil, MAX_LARGO_MENSAJE } from './taski.handlers.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -30,6 +30,13 @@ let enviarAHermesActual: EnviarAHermes = enviarATaski;
 
 export function setEnviarAHermesChat(fn: EnviarAHermes | null): void {
   enviarAHermesActual = fn ?? enviarATaski;
+}
+
+type CrearSesion = (sessionId: string, titulo: string, perfil: string) => Promise<void>;
+let crearSesionActual: CrearSesion = crearSesionTaski;
+
+export function setCrearSesionHermesChat(fn: CrearSesion | null): void {
+  crearSesionActual = fn ?? crearSesionTaski;
 }
 
 // Hermes puede tardar minutos; el run se declara muerto pasado esto.
@@ -220,6 +227,9 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
 
   try {
     const sessionId = conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
+    // Hermes solo acepta chat sobre sesiones existentes: crearla es idempotente
+    // (409 = ya estaba) y barato, asi que se asegura en cada run.
+    await crearSesionActual(sessionId, conv.titulo, conv.perfil);
     // 4 min de presupuesto: el run corre en background, no bloquea a nadie.
     const respuesta = await enviarAHermesActual(contenido, sessionId, conv.perfil, 240_000);
     const texto = respuesta.trim() || '(Hermes devolvio una respuesta vacia)';

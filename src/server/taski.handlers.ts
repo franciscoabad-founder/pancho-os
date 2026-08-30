@@ -57,10 +57,16 @@ async function asegurarSesion(sessionId: string, perfil: PerfilId = 'vps-default
   // Solo la sesion propia del OS se autocrea. Las sesiones de Telegram son de
   // Hermes: si una ya no existe (borrada, etc.) no hay que resucitarla aca.
   if (sessionId !== SESSION_ID) return;
-  // Crea la sesion estable si no existe (409 = ya existe, ok).
+  await crearSesionTaski(sessionId, 'Taski OS', perfil);
+}
+
+// Crea una sesion en Hermes si no existe (409 = ya existia, ok). La usa el
+// chat soberano para sus sesiones os-chat-* (una por conversacion del OS).
+export async function crearSesionTaski(sessionId: string, titulo: string, perfilRaw: string = 'vps-default'): Promise<void> {
+  const perfil = validarPerfil(perfilRaw);
   await taskiFetch(
     '/api/sessions',
-    { method: 'POST', body: JSON.stringify({ id: sessionId, title: 'Taski OS' }) },
+    { method: 'POST', body: JSON.stringify({ id: sessionId, title: titulo }) },
     HISTORY_TIMEOUT_MS,
     perfil,
   ).catch(() => undefined);
