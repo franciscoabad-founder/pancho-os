@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
             publishHealthEvent(JSONObject().put("type", "state").put("state", "unavailable"))
             return
         }
-        requestHealthPermissionsLauncher.launch(healthConnect.permissions)
+        requestHealthPermissionsLauncher.launch(healthConnect.permissionsForGrant)
     }
 
     /** Entrega el micrófono al grabador del OS solo después de que el usuario lo solicita. */

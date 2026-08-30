@@ -94,7 +94,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun healthPermissions() = healthConnect.permissions
+    fun healthPermissions() = healthConnect.permissionsForGrant
 
     fun onHealthPermissionsResult() = refreshHealthStatus()
 

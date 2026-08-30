@@ -95,7 +95,7 @@ fun SettingsScreen(
             ) {
                 Text("Health Connect", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Slate100)
                 Text(
-                    "Lee pasos, sueño y peso de hoy solo cuando tú pulsas sincronizar. No lee historial ni ejecuta sincronización en segundo plano.",
+                    "Lee pasos, sueño y peso de hoy y puede sincronizarlos cada seis horas. Health Connect te pedirá una autorización adicional para leer en segundo plano.",
                     fontSize = 13.sp,
                     color = Slate400
                 )

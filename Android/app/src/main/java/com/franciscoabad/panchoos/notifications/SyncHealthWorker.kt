@@ -18,7 +18,7 @@ class SyncHealthWorker(appContext: Context, workerParams: WorkerParameters) : Co
         if (!repository.isConfigured()) return Result.success()
         val health = HealthConnectSync(applicationContext)
         return try {
-            if (!health.isAvailable() || !health.hasPermissions()) return Result.success()
+            if (!health.isAvailable() || !health.hasPermissions() || !health.hasBackgroundPermission()) return Result.success()
             val snapshot = health.readToday()
             if (!snapshot.hasMetrics()) return Result.success()
             when (repository.syncBiometrics(health.payload(snapshot))) {

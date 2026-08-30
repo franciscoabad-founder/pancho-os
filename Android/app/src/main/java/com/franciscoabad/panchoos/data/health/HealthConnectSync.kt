@@ -21,7 +21,7 @@ data class HealthSnapshot(val fecha: String, val pasos: Long?, val suenoMin: Lon
     fun hasMetrics() = pasos != null || suenoMin != null || pesoKg != null
 }
 
-/** Usuario inicia cada lectura; no hay lectura de historial ni en segundo plano. */
+/** Lectura de Health Connect y snapshot diario para el OS. */
 class HealthConnectSync(private val context: Context) {
     val permissions = setOf(
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -29,10 +29,16 @@ class HealthConnectSync(private val context: Context) {
         HealthPermission.getReadPermission(WeightRecord::class),
     )
 
+    /** Permisos que el selector de Health Connect debe mostrar al usuario. */
+    val permissionsForGrant = permissions + HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+
     fun isAvailable(): Boolean = HealthConnectClient.getSdkStatus(context) == SDK_AVAILABLE
 
     suspend fun hasPermissions(): Boolean = isAvailable() && HealthConnectClient.getOrCreate(context)
         .permissionController.getGrantedPermissions().containsAll(permissions)
+
+    suspend fun hasBackgroundPermission(): Boolean = isAvailable() && HealthConnectClient.getOrCreate(context)
+        .permissionController.getGrantedPermissions().contains(HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND)
 
     suspend fun readToday(): HealthSnapshot {
         val zone = ZoneId.systemDefault()
