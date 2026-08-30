@@ -261,7 +261,7 @@ async function insightsSueno(sb: SB, hoy: string): Promise<Insight[]> {
   const [resSesiones, resBio, resConfig] = await Promise.all([
     sb.from('sueno_sesiones').select('fecha, minutos').gte('fecha', desde14).lte('fecha', hoy),
     sb.from('biometricas_dia').select('fecha, sueno_min').gte('fecha', desde14).lte('fecha', hoy),
-    sb.from('sueno_config').select('necesidad_h, deuda_objetivo_h').eq('id', 1).maybeSingle(),
+    sb.from('sueno_config').select('necesidad_h, deuda_objetivo_h, deuda_desde').eq('id', 1).maybeSingle(),
   ]);
   if (resSesiones.error) throw resSesiones.error;
 
@@ -278,7 +278,11 @@ async function insightsSueno(sb: SB, hoy: string): Promise<Insight[]> {
 
   const necesidad = Number(resConfig.data?.necesidad_h) || 8;
   const objetivo = Number(resConfig.data?.deuda_objetivo_h) || 2;
-  const deuda = calcularDeuda(noches, necesidad, hoy);
+  const deuda = calcularDeuda(
+    resConfig.data?.deuda_desde ? noches.filter((n) => n.fecha >= resConfig.data.deuda_desde) : noches,
+    necesidad,
+    hoy,
+  );
   const out: Insight[] = [];
 
   if (deuda.horas > objetivo) {

@@ -36,6 +36,8 @@ export interface ConfigSueno {
   siestas_ok: boolean;
   cafeina_vida_media_h: number | string;
   cafeina_umbral_mg: number | string;
+  /** Primer día incluido en el cálculo de deuda actual. El historial se conserva. */
+  deuda_desde?: string | null;
   [k: string]: unknown;
 }
 
@@ -141,7 +143,10 @@ export function construirEstado(e: EntradaEstado): EstadoSueno {
   const necesidadConfig = num(config.necesidad_h, 8);
   const estimada = config.necesidad_auto ? necesidadEstimada(noches) : null;
   const necesidadH = estimada ?? necesidadConfig;
-  const deuda = calcularDeuda(noches, necesidadH, hoy);
+  const nochesParaDeuda = config.deuda_desde
+    ? noches.filter((n) => n.fecha >= config.deuda_desde!)
+    : noches;
+  const deuda = calcularDeuda(nochesParaDeuda, necesidadH, hoy);
 
   // ── Anclas del dia ───────────────────────────────────────────────────────
   const horaDormirCfg = horaDecimal(config.hora_dormir, 23);

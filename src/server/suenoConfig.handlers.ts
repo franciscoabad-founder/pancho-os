@@ -59,6 +59,13 @@ export async function actualizarConfigSueno(body: Record<string, any>) {
     if (n === null || n < 0 || n > 10) throw error400('deuda_objetivo_h debe estar entre 0 y 10');
     patch.deuda_objetivo_h = n;
   }
+  if (body.deuda_desde !== undefined) {
+    const v = body.deuda_desde;
+    if (v !== null && (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v))) {
+      throw error400('deuda_desde debe tener formato YYYY-MM-DD o ser null');
+    }
+    patch.deuda_desde = v;
+  }
   if (body.cafeina_vida_media_h !== undefined) {
     const n = numOrNull(body.cafeina_vida_media_h);
     if (n === null || n < 1 || n > 12) throw error400('cafeina_vida_media_h debe estar entre 1 y 12');
