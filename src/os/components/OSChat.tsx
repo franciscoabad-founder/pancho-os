@@ -31,6 +31,19 @@ interface Run {
 
 const POLL_MS = 3000;
 
+// Cada conversacion elige que Hermes la atiende. El del VPS tiene Telegram,
+// memoria canonica y n8n; el de la laptop trabaja con el terminal y los
+// archivos de la laptop; el del HomeLab con la GPU local.
+const PERFILES: Array<{ id: string; etiqueta: string }> = [
+  { id: 'vps-default', etiqueta: 'Hermes VPS' },
+  { id: 'laptop-local', etiqueta: 'Hermes Laptop' },
+  { id: 'homelab-local', etiqueta: 'Hermes HomeLab' },
+];
+
+function etiquetaPerfil(id: string): string {
+  return PERFILES.find((p) => p.id === id)?.etiqueta ?? id;
+}
+
 function horaCorta(iso: string): string {
   try {
     return new Date(iso).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
@@ -109,10 +122,16 @@ export default function OSChat() {
     finRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes.length, runActivo?.estado]);
 
+  const [perfilNuevo, setPerfilNuevo] = useState('vps-default');
+
   async function nuevaConversacion() {
     setCargando(true);
     try {
-      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perfil: perfilNuevo }),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       await cargarConversaciones();
@@ -159,6 +178,17 @@ export default function OSChat() {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 260px) 1fr', gap: '1rem', minHeight: '70vh' }}>
       {/* Lista de conversaciones */}
       <div className="os-card-2" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <select
+          value={perfilNuevo}
+          onChange={(e) => setPerfilNuevo(e.target.value)}
+          className="os-input"
+          style={{ fontSize: 12 }}
+          title="Que Hermes atiende la conversacion nueva"
+        >
+          {PERFILES.map((p) => (
+            <option key={p.id} value={p.id}>{p.etiqueta}</option>
+          ))}
+        </select>
         <button type="button" className="os-btn os-btn-primary" onClick={() => void nuevaConversacion()} disabled={cargando}>
           Nueva conversacion
         </button>
@@ -186,6 +216,11 @@ export default function OSChat() {
 
       {/* Hilo */}
       <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+        {activaId && (
+          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)' }}>
+            {etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}
+          </div>
+        )}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {!activaId && (
             <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>

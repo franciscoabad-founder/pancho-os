@@ -34,9 +34,18 @@ const HISTORY_TIMEOUT_MS = 15_000;
 const MAX_MENSAJES = 60;
 export const MAX_LARGO_MENSAJE = 4000;
 
-function taskiHeaders(): Record<string, string> {
+// Token por perfil: cada gateway de Hermes tiene su propia API_SERVER_KEY.
+// Los perfiles nuevos usan TASKI_TOKEN_LAPTOP / TASKI_TOKEN_HOMELAB; si faltan
+// se cae al TASKI_TOKEN historico (que es el del VPS).
+function tokenPerfil(perfil: PerfilId): string | undefined {
+  if (perfil === 'laptop-local') return readEnv('TASKI_TOKEN_LAPTOP') || readEnv('TASKI_TOKEN');
+  if (perfil === 'homelab-local') return readEnv('TASKI_TOKEN_HOMELAB') || readEnv('TASKI_TOKEN');
+  return readEnv('TASKI_TOKEN');
+}
+
+function taskiHeaders(perfil: PerfilId = 'vps-default'): Record<string, string> {
   return {
-    Authorization: `Bearer ${readEnv('TASKI_TOKEN')}`,
+    Authorization: `Bearer ${tokenPerfil(perfil)}`,
     'Content-Type': 'application/json',
   };
 }
@@ -47,7 +56,7 @@ async function taskiFetch(path: string, init: RequestInit, timeoutMs: number, pe
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(`${base}${path}`, { ...init, headers: taskiHeaders(), signal: ctrl.signal });
+    return await fetch(`${base}${path}`, { ...init, headers: taskiHeaders(perfil), signal: ctrl.signal });
   } finally {
     clearTimeout(t);
   }
