@@ -1,191 +1,136 @@
 package com.franciscoabad.panchoos
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Parcelable
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.health.connect.client.permission.PermissionController
+import androidx.lifecycle.lifecycleScope
+import com.franciscoabad.panchoos.data.health.HealthConnectSync
 import com.franciscoabad.panchoos.theme.PanchoOSTheme
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
+/**
+ * La app Android es el mismo Pancho OS web dentro de un contenedor nativo.
+ * Android solo agrega permisos y datos que el navegador no puede ofrecer,
+ * especialmente Health Connect y notificaciones.
+ */
 class MainActivity : ComponentActivity() {
+    private val healthConnect by lazy { HealthConnectSync(applicationContext) }
+    private var webView: WebView? = null
 
-    companion object {
-        const val EXTRA_NAV_TAB = "extra_nav_tab"
-        const val ACTION_NEW_TASK = "com.franciscoabad.panchoos.ACTION_NEW_TASK"
-        const val ACTION_QUICK_CAPTURE = "com.franciscoabad.panchoos.ACTION_QUICK_CAPTURE"
-        const val ACTION_CAPTURE_PHOTO = "com.franciscoabad.panchoos.ACTION_CAPTURE_PHOTO"
-    }
-
-    private var initialDestinationState by mutableStateOf(AppDestination.TASKS)
-    private var sharedTitleState by mutableStateOf<String?>(null)
-    private var sharedUrlState by mutableStateOf<String?>(null)
-    private var sharedNotesState by mutableStateOf<String?>(null)
-    private var sharedImageUriState by mutableStateOf<Uri?>(null)
-    private var openNewTaskDialogState by mutableStateOf(false)
-
-    // Notification Permission Launcher (Android 13+)
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ ->
-        // Notification permission handled
+    ) { }
+
+    private val requestHealthPermissionsLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        val state = if (granted.containsAll(healthConnect.permissions)) "ready" else "needs_permission"
+        publishHealthEvent(JSONObject().put("type", "state").put("state", state))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Request notification permissions gracefully on Android 13+
-        checkAndRequestNotificationPermission()
-
-        // Handle initial intent
-        handleIncomingIntent(intent)
-
+        requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {
             PanchoOSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MainNavigation(
-                        initialDestination = initialDestinationState,
-                        sharedTitle = sharedTitleState,
-                        sharedUrl = sharedUrlState,
-                        sharedNotes = sharedNotesState,
-                        sharedImageUri = sharedImageUriState,
-                        shouldOpenNewTaskDialog = openNewTaskDialogState
-                    )
+                PanchoWebApp(this)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        publishHealthState()
+    }
+
+    fun attachWebView(view: WebView) {
+        webView = view
+        view.addJavascriptInterface(NativeBridge(this), "PanchoNative")
+        publishHealthState()
+    }
+
+    fun requestHealthPermissions() {
+        if (!healthConnect.isAvailable()) {
+            publishHealthEvent(JSONObject().put("type", "state").put("state", "unavailable"))
+            return
+        }
+        requestHealthPermissionsLauncher.launch(healthConnect.permissions)
+    }
+
+    fun syncHealth() {
+        lifecycleScope.launch {
+            try {
+                if (!healthConnect.isAvailable()) {
+                    publishHealthEvent(JSONObject().put("type", "state").put("state", "unavailable"))
+                    return@launch
                 }
-            }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleIncomingIntent(intent)
-    }
-
-    private fun checkAndRequestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
-
-    private fun handleIncomingIntent(intent: Intent?) {
-        if (intent == null) return
-
-        val action = intent.action
-        val type = intent.type
-
-        when (action) {
-            ACTION_NEW_TASK -> {
-                initialDestinationState = AppDestination.TASKS
-                openNewTaskDialogState = true
-            }
-            ACTION_QUICK_CAPTURE -> {
-                initialDestinationState = AppDestination.CAPTURE
-                openNewTaskDialogState = false
-            }
-            ACTION_CAPTURE_PHOTO -> {
-                initialDestinationState = AppDestination.CAPTURE
-                openNewTaskDialogState = false
-            }
-            Intent.ACTION_SEND -> {
-                if (type?.startsWith("text/") == true) {
-                    handleSendText(intent)
-                } else if (type?.startsWith("image/") == true) {
-                    handleSendImage(intent)
+                if (!healthConnect.hasPermissions()) {
+                    publishHealthEvent(JSONObject().put("type", "state").put("state", "needs_permission"))
+                    return@launch
                 }
-            }
-            Intent.ACTION_SEND_MULTIPLE -> {
-                if (type?.startsWith("image/") == true) {
-                    handleSendMultipleImages(intent)
+                val snapshot = healthConnect.readToday()
+                if (!snapshot.hasMetrics()) {
+                    publishHealthEvent(JSONObject().put("type", "error").put("message", "Health Connect no tiene pasos, sueño ni peso para hoy."))
+                    return@launch
                 }
+                publishHealthEvent(
+                    JSONObject()
+                        .put("type", "snapshot")
+                        .put("payload", healthConnect.payload(snapshot).toString())
+                )
+            } catch (error: Exception) {
+                publishHealthEvent(JSONObject().put("type", "error").put("message", error.message ?: "No se pudo leer Health Connect."))
             }
-            else -> {
-                val tab = intent.getStringExtra(EXTRA_NAV_TAB)
-                if (tab == "tasks") {
-                    initialDestinationState = AppDestination.TASKS
-                } else if (tab == "inbox") {
-                    initialDestinationState = AppDestination.CAPTURE
+        }
+    }
+
+    fun publishHealthState() {
+        lifecycleScope.launch {
+            val state = try {
+                when {
+                    !healthConnect.isAvailable() -> "unavailable"
+                    healthConnect.hasPermissions() -> "ready"
+                    else -> "needs_permission"
                 }
+            } catch (_: Exception) {
+                "error"
             }
+            publishHealthEvent(JSONObject().put("type", "state").put("state", state))
         }
     }
 
-    private fun handleSendText(intent: Intent) {
-        val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
-        val sharedSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT)
-
-        // Find URL in text
-        val urlRegex = "(https?://[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]+)".toRegex()
-        val match = urlRegex.find(sharedText)
-        val extractedUrl = match?.value
-
-        val cleanText = if (extractedUrl != null) {
-            sharedText.replace(extractedUrl, "").trim()
-        } else {
-            sharedText.trim()
+    private fun publishHealthEvent(event: JSONObject) {
+        runOnUiThread {
+            webView?.evaluateJavascript(
+                "window.dispatchEvent(new CustomEvent('pancho-native-health', { detail: ${event} }));",
+                null,
+            )
         }
-
-        val title = sharedSubject ?: cleanText.lines().firstOrNull()?.take(80) ?: "Enlace compartido"
-        val notes = if (cleanText.isNotBlank() && cleanText != title) cleanText else null
-
-        sharedTitleState = title
-        sharedUrlState = extractedUrl
-        sharedNotesState = notes
-        sharedImageUriState = null
-        initialDestinationState = AppDestination.CAPTURE
     }
 
-    private fun handleSendImage(intent: Intent) {
-        val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-
-        val extraText = intent.getStringExtra(Intent.EXTRA_TEXT)
-
-        sharedTitleState = extraText ?: "Foto compartida"
-        sharedUrlState = null
-        sharedNotesState = null
-        sharedImageUriState = imageUri
-        initialDestinationState = AppDestination.CAPTURE
     }
+}
 
-    private fun handleSendMultipleImages(intent: Intent) {
-        val imageUris = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM)?.filterIsInstance<Uri>()
-        }
-
-        val firstImage = imageUris?.firstOrNull()
-        sharedTitleState = "Fotos compartidas (${imageUris?.size ?: 1})"
-        sharedUrlState = null
-        sharedNotesState = null
-        sharedImageUriState = firstImage
-        initialDestinationState = AppDestination.CAPTURE
-    }
+private class NativeBridge(private val activity: MainActivity) {
+    @JavascriptInterface fun isAndroidApp(): Boolean = true
+    @JavascriptInterface fun healthStatus() = activity.publishHealthState()
+    @JavascriptInterface fun requestHealthPermissions() = activity.requestHealthPermissions()
+    @JavascriptInterface fun syncHealth() = activity.syncHealth()
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { duracionHoras, faseActual, formatearDuracion } from '../../../lib/salud/ayuno';
+import OSNativeHealthConnect from './OSNativeHealthConnect';
 
 const card: React.CSSProperties = {
   background: 'var(--os-surface-2)', border: '1px solid var(--os-line-soft)',
@@ -60,6 +61,7 @@ export default function OSSaludDashboard() {
         </a>
       </section>
       {dashboardError && <p role="status" style={{ margin: 0, color: 'var(--os-warn)', fontSize: 'var(--os-text-xs)' }}>Algunos datos no están disponibles ahora; los valores mostrados pueden estar incompletos.</p>}
+      <OSNativeHealthConnect />
       {/* Resumen del día */}
       <div className="salud-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
         <a href="/salud/nutricion" style={{ ...card, textDecoration: 'none' }}>
