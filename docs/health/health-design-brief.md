@@ -1,6 +1,6 @@
 # Pancho OS · brief visual de Salud
 
-Fuente: 41 capturas entregadas en `docs/health/` (25 de agosto de 2026), agrupadas por las familias visuales que aparecen en el material. El objetivo no es copiar marcas externas, sino traducir sus patrones a Pancho OS.
+Fuente: 42 capturas entregadas en `docs/health/` (25 de agosto de 2026), revisadas una por una y agrupadas por las familias visuales que aparecen en el material. El objetivo no es copiar marcas externas, sino traducir sus patrones a Pancho OS.
 
 ## Dirección visual común
 
