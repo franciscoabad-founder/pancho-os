@@ -1,5 +1,18 @@
 # Handover para Codex / GPT / Otros Agentes
 
+## Formato obligatorio de respuestas
+
+- Responder primero con la acción o el bloqueo exacto. Sin preámbulos.
+- Separar siempre: `Hecho`, `Bloqueado`, `Me falta`, `Tú debes hacer`.
+- Si hay varios pasos, numerarlos y limitar la lista a cinco elementos por bloque.
+- No enumerar trabajo ya terminado como si siguiera pendiente.
+- Dar rutas, comandos, archivos y valores exactos cuando existan.
+- Indicar el estado al inicio de cada turno y el tiempo estimado en minutos cuando sea útil.
+- Terminar con un solo siguiente paso concreto.
+- Si puedo ejecutar una acción autorizada, ejecutarla antes de pedir intervención humana.
+- Si algo requiere OAuth, dispositivo físico o secreto, nombrar el bloqueo exacto y no pedir acciones genéricas.
+- No usar cierres vacíos como “espero que ayude” o “avísame si quieres”.
+
 > Actualizado 29 ago 2026. Lee esto ANTES de tocar nada de base de datos.
 
 ## Base de datos: dónde vive la verdad (LEER PRIMERO)
