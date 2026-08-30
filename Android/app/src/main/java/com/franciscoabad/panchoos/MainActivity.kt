@@ -11,7 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.health.connect.client.permission.PermissionController
+import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.lifecycleScope
 import com.franciscoabad.panchoos.data.health.HealthConnectSync
 import com.franciscoabad.panchoos.theme.PanchoOSTheme
@@ -24,6 +24,10 @@ import org.json.JSONObject
  * especialmente Health Connect y notificaciones.
  */
 class MainActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_NAV_TAB = "extra_nav_tab"
+    }
+
     private val healthConnect by lazy { HealthConnectSync(applicationContext) }
     private var webView: WebView? = null
 
