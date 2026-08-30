@@ -34,6 +34,7 @@ Android/.gradle/
 Android/.kotlin/
 Android/build/
 Android/artifacts/
+Android/app/pancho-os-release.jks
 Android/*.png
 Android/window.xml
 alimentos_macros_ecuador.csv

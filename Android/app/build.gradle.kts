@@ -12,13 +12,26 @@ android {
         // Health Connect SDK requires API 26; Health Connect itself is available on API 28+.
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = "1.0.${System.getenv("ANDROID_VERSION_CODE") ?: "1"}"
+    }
+
+    signingConfigs {
+        create("panchoRelease") {
+            val storePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = "pancho-os"
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("panchoRelease")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
