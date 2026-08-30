@@ -22,6 +22,7 @@ interface Cuenta {
 interface Deuda { id: string; acreedor: string; monto?: number | null; cuota?: number | null; fecha_limite?: string | null; estado?: string | null; moneda?: string | null }
 interface PorCobrar { id: string; cliente: string; proyecto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_esperada?: string | null }
 interface PagoPorCobrar { id: string; por_cobrar_id: string; monto: number; moneda?: string | null; fecha: string; notas?: string | null }
+interface FinanzasInboxItem { id: string; remitente?: string | null; asunto?: string | null; contenido: string; estado: string; created_at: string }
 interface PorPagar { id: string; beneficiario: string; concepto?: string | null; monto?: number | null; moneda?: string | null; estado?: string | null; fecha_limite?: string | null }
 interface Gasto {
   id: string; fecha?: string | null; categoria?: string | null; descripcion?: string | null;
@@ -243,6 +244,7 @@ export default function OSFinanzas() {
   const [pagosPorCobrar, setPagosPorCobrar] = useState<PagoPorCobrar[]>([]);
   const [pagoDraft, setPagoDraft] = useState<{ id: string; monto: string; fecha: string }>({ id: '', monto: '', fecha: new Date().toISOString().slice(0, 10) });
   const [pagoError, setPagoError] = useState('');
+  const [inboxFinanzas, setInboxFinanzas] = useState<FinanzasInboxItem[]>([]);
   const [finError, setFinError] = useState('');
   const [errorCarga, setErrorCarga] = useState('');
   const [pcFilter, setPcFilter] = useState('todos');
@@ -256,7 +258,7 @@ export default function OSFinanzas() {
 
   const cargarTodo = useCallback(async () => {
     try {
-      const [c, d, g, p, pc, pp, pagos] = await Promise.all([
+      const [c, d, g, p, pc, pp, pagos, inbox] = await Promise.all([
         fetch('/api/cuentas').then((r) => r.json()),
         fetch('/api/deudas').then((r) => r.json()),
         fetch('/api/gastos').then((r) => r.json()),
@@ -264,6 +266,7 @@ export default function OSFinanzas() {
         fetch('/api/por-cobrar').then((r) => r.json()),
         fetch('/api/por-pagar').then((r) => r.json()),
         fetch('/api/por-cobrar/pagos').then((r) => r.json()),
+        fetch('/api/finanzas/inbox?estado=pendiente').then((r) => r.json()),
       ]);
       setCuentas(c.cuentas || []);
       setDeudas(d.deudas || []);
@@ -272,6 +275,7 @@ export default function OSFinanzas() {
       setPorCobrar(pc.por_cobrar || []);
       setPorPagar(pp.por_pagar || []);
       setPagosPorCobrar(pagos.pagos || []);
+      setInboxFinanzas(inbox.items || []);
       setErrorCarga('');
     } catch (e) {
       setErrorCarga(e instanceof Error ? e.message : 'error desconocido');
@@ -307,6 +311,11 @@ export default function OSFinanzas() {
       setPagoDraft({ id: '', monto: '', fecha: new Date().toISOString().slice(0, 10) });
       await cargarTodo();
     } catch (err) { setPagoError(err instanceof Error ? err.message : 'No se pudo registrar el pago'); }
+  }
+
+  async function resolverInbox(id: string, estado: 'procesado' | 'descartado') {
+    const res = await fetch('/api/finanzas/inbox?id=' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado }) });
+    if (res.ok) setInboxFinanzas((items) => items.filter((item) => item.id !== id));
   }
 
   const del = useCallback(async (tabla: string, id: string) => {
@@ -414,6 +423,19 @@ export default function OSFinanzas() {
           </button>
         </div>
       )}
+
+      {inboxFinanzas.length > 0 && <section style={{ marginBottom: '1.5rem' }}>
+        <p className="os-section-title">Bandeja financiera</p>
+        <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: '0 0 0.6rem' }}>Estados de cuenta recibidos, pendientes de revisión antes de cargarlos.</p>
+        <div className="os-card" style={{ padding: '0.25rem 1rem' }}>
+          {inboxFinanzas.map((item) => <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '0.65rem 0', borderBottom: '1px solid var(--os-line-soft)' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--os-accent-light)' }}>mail</span>
+            <div style={{ flex: 1, minWidth: 0 }}><p style={{ margin: 0, fontSize: 13, color: 'var(--os-text)' }}>{item.asunto || 'Estado de cuenta'}</p><p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--os-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.remitente || 'origen desconocido'} · {item.contenido.slice(0, 120)}</p></div>
+            <button type="button" className="os-chip" onClick={() => void resolverInbox(item.id, 'procesado')}>Procesar</button>
+            <button type="button" className="os-chip" onClick={() => void resolverInbox(item.id, 'descartado')}>Descartar</button>
+          </div>)}
+        </div>
+      </section>}
 
       <OSFinanzasAsesor />
 
