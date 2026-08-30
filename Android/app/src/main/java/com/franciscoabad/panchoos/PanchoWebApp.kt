@@ -3,6 +3,7 @@ package com.franciscoabad.panchoos
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.webkit.WebResourceRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,11 @@ fun PanchoWebApp(activity: MainActivity) {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val host = request.url.host ?: return true
                         return host != "next.os.franciscoabad.com"
+                    }
+                }
+                webChromeClient = object : WebChromeClient() {
+                    override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                        activity.runOnUiThread { activity.requestMicrophonePermission(request) }
                     }
                 }
                 activity.attachWebView(this)

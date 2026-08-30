@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,10 +31,20 @@ class MainActivity : ComponentActivity() {
 
     private val healthConnect by lazy { HealthConnectSync(applicationContext) }
     private var webView: WebView? = null
+    private var pendingWebPermission: PermissionRequest? = null
 
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+
+    private val requestMicrophonePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        pendingWebPermission?.let { request ->
+            if (granted) request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) else request.deny()
+        }
+        pendingWebPermission = null
+    }
 
     private val requestHealthPermissionsLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
@@ -70,6 +81,21 @@ class MainActivity : ComponentActivity() {
             return
         }
         requestHealthPermissionsLauncher.launch(healthConnect.permissions)
+    }
+
+    /** Entrega el micrófono al grabador del OS solo después de que el usuario lo solicita. */
+    fun requestMicrophonePermission(request: PermissionRequest) {
+        if (!request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+            request.deny()
+            return
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+            return
+        }
+        pendingWebPermission?.deny()
+        pendingWebPermission = request
+        requestMicrophonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     fun syncHealth() {

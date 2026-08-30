@@ -37,6 +37,10 @@ export default function OSNativeHealthConnect() {
       const detail = (event as CustomEvent<NativeHealthEvent>).detail;
       if (detail.type === 'state' && detail.state) {
         setState(detail.state);
+        if (detail.state === 'ready') {
+          setMessage('Actualizando tus datos de hoy…');
+          window.PanchoNative?.syncHealth();
+        }
         return;
       }
       if (detail.type === 'error') {
@@ -80,7 +84,7 @@ export default function OSNativeHealthConnect() {
         <p style={{ margin: '4px 0 0', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>
           {state === 'checking' && 'Comprobando permisos de Android…'}
           {state === 'needs_permission' && 'Conecta pasos, sueño y peso desde tu teléfono.'}
-          {state === 'ready' && (message || 'Conectado. Sincroniza tus datos de hoy cuando quieras.')}
+          {state === 'ready' && (message || 'Conectado. Los datos de hoy se sincronizan directamente con tu OS.')}
           {state === 'unavailable' && 'Health Connect no está disponible en este teléfono.'}
           {state === 'error' && message}
         </p>
