@@ -154,16 +154,21 @@ class MainActivity : ComponentActivity() {
 
     fun publishHealthState() {
         lifecycleScope.launch {
-            val state = try {
+            val result = try {
                 when {
-                    !healthConnect.isAvailable() -> "unavailable"
-                    healthConnect.hasPermissions() -> "ready"
-                    else -> "needs_permission"
+                    !healthConnect.isAvailable() -> "unavailable" to false
+                    !healthConnect.hasPermissions() -> "needs_permission" to false
+                    else -> "ready" to healthConnect.hasBackgroundPermission()
                 }
             } catch (_: Exception) {
-                "error"
+                "error" to false
             }
-            publishHealthEvent(JSONObject().put("type", "state").put("state", state))
+            publishHealthEvent(
+                JSONObject()
+                    .put("type", "state")
+                    .put("state", result.first)
+                    .put("background", result.second)
+            )
         }
     }
 

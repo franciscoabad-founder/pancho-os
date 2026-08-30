@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 type NativeHealthEvent = {
   type: 'state' | 'snapshot' | 'error';
   state?: 'ready' | 'needs_permission' | 'unavailable' | 'error';
+  background?: boolean;
   payload?: string;
   message?: string;
 };
@@ -29,6 +30,7 @@ const card: React.CSSProperties = {
 export default function OSNativeHealthConnect() {
   const [state, setState] = useState<'checking' | 'ready' | 'needs_permission' | 'unavailable' | 'error'>('checking');
   const [message, setMessage] = useState('');
+  const [backgroundEnabled, setBackgroundEnabled] = useState(false);
 
   useEffect(() => {
     if (!window.PanchoNative?.isAndroidApp()) return;
@@ -37,8 +39,9 @@ export default function OSNativeHealthConnect() {
       const detail = (event as CustomEvent<NativeHealthEvent>).detail;
       if (detail.type === 'state' && detail.state) {
         setState(detail.state);
+        setBackgroundEnabled(detail.background === true);
         if (detail.state === 'ready') {
-          setMessage('Actualizando tus datos de hoy…');
+          setMessage(detail.background === true ? 'Actualizando tus datos de hoy…' : 'Conectado. Activa la sincronización en segundo plano para actualizar automáticamente.');
           window.PanchoNative?.syncHealth();
         }
         return;
@@ -73,7 +76,7 @@ export default function OSNativeHealthConnect() {
 
   if (typeof window === 'undefined' || !window.PanchoNative?.isAndroidApp()) return null;
 
-  const action = state === 'needs_permission'
+  const action = state === 'needs_permission' || (state === 'ready' && !backgroundEnabled)
     ? { label: 'Dar acceso a Health Connect', run: () => window.PanchoNative?.requestHealthPermissions() }
     : { label: 'Sincronizar ahora', run: () => window.PanchoNative?.syncHealth() };
 
