@@ -106,13 +106,13 @@ export async function historialTaski(sessionId: string = SESSION_ID, perfilRaw: 
     .slice(-MAX_MENSAJES);
 }
 
-export async function enviarATaski(message: string, sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default'): Promise<string> {
+export async function enviarATaski(message: string, sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default', timeoutMs: number = CHAT_TIMEOUT_MS): Promise<string> {
   const perfil = validarPerfil(perfilRaw);
   const enviar = () =>
     taskiFetch(
       `/api/sessions/${sessionId}/chat`,
       { method: 'POST', body: JSON.stringify({ message }) },
-      CHAT_TIMEOUT_MS,
+      timeoutMs,
       perfil,
     );
 

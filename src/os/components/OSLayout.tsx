@@ -75,12 +75,14 @@ const ms: Record<string, string> = {
   '/ikigai': 'self_improvement',
   '/red': 'diversity_3',
   '/conexiones': 'hub',
+  '/chat': 'chat',
   '/hermes': 'smart_toy',
 };
 
 const navGroups = [
   { label: 'Sistema', items: [
     { href: '/', label: 'Hoy' },
+    { href: '/chat', label: 'Chat' },
     { href: '/hermes', label: 'Hermes' },
     { href: '/aprobaciones', label: 'Aprobaciones' },
     { href: '/diario', label: 'Journal' },

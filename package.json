@@ -28,6 +28,7 @@
     "test:journal": "node --experimental-strip-types --test src/server/journal.handlers.test.ts",
     "test:agenda": "node --experimental-strip-types --test src/server/agenda*.test.ts src/mcp/contrato.test.ts",
     "test:desktop": "node --experimental-strip-types --test src/lib/desktopBridge.test.ts",
+    "test:chat": "node --experimental-strip-types --test src/server/chat.handlers.test.ts",
     "tauri": "tauri",
     "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\""
   },
