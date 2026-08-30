@@ -52,6 +52,7 @@ function OSBandejaInner() {
   const [nDescripcion, setNDescripcion] = useState('');
   const [nCategoria, setNCategoria] = useState('articulo');
   const [busy, setBusy] = useState(false);
+  const [triageBusy, setTriageBusy] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -96,6 +97,33 @@ function OSBandejaInner() {
       await load();
     } catch (err) {
       toast.show('Error: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    }
+  }
+
+  async function triage(item: ItemBandeja, destino: 'nota' | 'tarea' | 'pendiente') {
+    if (triageBusy) return;
+    setTriageBusy(item.id);
+    try {
+      const contenido = [item.titulo, item.descripcion, item.url].filter(Boolean).join('\n');
+      const endpoint = destino === 'nota' ? '/api/notas' : destino === 'tarea' ? '/api/tareas' : '/api/pendientes';
+      const body = destino === 'nota'
+        ? { contenido }
+        : destino === 'tarea'
+          ? { titulo: item.titulo, notas: [item.descripcion, item.url].filter(Boolean).join('\n') || null, grupo: 'bandeja' }
+          : { titulo: item.titulo, detalle: [item.descripcion, item.url].filter(Boolean).join('\n') || null };
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || String(res.status));
+      const leido = await fetch(`/api/bandeja?id=${encodeURIComponent(item.id)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leido: true }),
+      });
+      if (!leido.ok) throw new Error('Se creó el destino, pero no se pudo marcar la captura como leída.');
+      await load();
+      toast.show(`Movido a ${destino}.`, 'ok');
+    } catch (err) {
+      toast.show('Error: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    } finally {
+      setTriageBusy(null);
     }
   }
 
@@ -203,6 +231,18 @@ function OSBandejaInner() {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                {!item.leido && <select
+                  value=""
+                  disabled={triageBusy === item.id}
+                  onChange={(e) => { const value = e.target.value as 'nota' | 'tarea' | 'pendiente'; if (value) void triage(item, value); }}
+                  aria-label={`Clasificar ${item.titulo}`}
+                  style={{ ...inputStyle, width: 116, minHeight: 36, padding: '4px 6px' }}
+                >
+                  <option value="">Clasificar...</option>
+                  <option value="nota">Nota</option>
+                  <option value="tarea">Tarea</option>
+                  <option value="pendiente">Pendiente</option>
+                </select>}
                 <button
                   onClick={() => toggleLeido(item)}
                   title={item.leido ? 'Marcar pendiente' : 'Marcar leido'}
