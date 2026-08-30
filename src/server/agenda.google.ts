@@ -89,6 +89,35 @@ export function googleEventPayload(local: Record<string, unknown>): Record<strin
   };
 }
 
+function tituloComparable(valor: unknown): string {
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Evita crear por segunda vez un evento que ya vino de Google antes de que
+ * tuviera google_event_id. Solo vincula coincidencias exactas de título e
+ * instante, de modo que dos bloques distintos no se fusionan por accidente.
+ */
+export function esMismoEventoAgenda(local: Record<string, unknown>, remoto: Record<string, unknown>): boolean {
+  const remotoNormalizado = googleEventBody(remoto);
+  const tituloLocal = tituloComparable(local.titulo);
+  const tituloRemoto = tituloComparable(remotoNormalizado.titulo);
+  if (!tituloLocal || tituloLocal !== tituloRemoto) return false;
+
+  const inicioLocal = new Date(String(local.fecha ?? '')).getTime();
+  const inicioRemoto = new Date(String(remotoNormalizado.fecha ?? '')).getTime();
+  if (!Number.isFinite(inicioLocal) || inicioLocal !== inicioRemoto) return false;
+
+  const finLocal = local.fin ? new Date(String(local.fin)).getTime() : null;
+  const finRemoto = remotoNormalizado.fin ? new Date(String(remotoNormalizado.fin)).getTime() : null;
+  return finLocal === finRemoto;
+}
+
 export async function syncAgendaGoogle(desde: string, hasta: string, sb: SupabaseClient = getSupabaseServer()): Promise<{ importados: number; exportados: number; omitidos: number }> {
   const config = googleAgendaConfig();
   if (!config) throw new ErrorAgendaGoogle('Google Calendar no configurado: faltan GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET o GOOGLE_CALENDAR_REFRESH_TOKEN', 503);
@@ -147,6 +176,13 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
   const { data: locales, error: localError } = await sb.from('reuniones').select('*').gte('fecha', `${desde}T00:00:00-05:00`).lt('fecha', `${diaSiguiente(hasta)}T00:00:00-05:00`).is('google_event_id', null).is('google_deleted_at', null);
   if (localError) throw localError;
   for (const local of locales ?? []) {
+    const existente = eventosRemotos.find((remoto) => remoto.id && remoto.status !== 'cancelled' && esMismoEventoAgenda(local as Record<string, unknown>, remoto));
+    if (existente) {
+      const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: String(existente.id), google_etag: existente.etag ?? null, google_updated_at: existente.updated ?? null, google_dirty_at: null }).eq('id', local.id);
+      if (error) throw error;
+      omitidos++;
+      continue;
+    }
     const event = await googleRequest(config, '/events', { method: 'POST', body: JSON.stringify(googleEventPayload(local as Record<string, unknown>)) }) as Record<string, unknown>;
     const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: event.id, google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }).eq('id', local.id);
     if (error) throw error;
