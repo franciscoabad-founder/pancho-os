@@ -70,6 +70,19 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- Health Connect exige este alias en Android 14+ para explicar el uso
+             de los datos antes de mostrar el selector de permisos. -->
+        <activity-alias
+            android:name=".ViewHealthPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
         <receiver
             android:name=".notifications.TaskActionReceiver"
             android:exported="false" />
