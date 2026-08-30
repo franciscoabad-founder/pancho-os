@@ -7,16 +7,7 @@
     "frontendDist": "../public"
   },
   "app": {
-    "windows": [
-      {
-        "title": "Pancho OS",
-        "width": 1280,
-        "height": 860,
-        "resizable": true,
-        "fullscreen": false,
-        "url": "https://next.os.franciscoabad.com"
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }

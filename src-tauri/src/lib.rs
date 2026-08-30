@@ -1,9 +1,22 @@
 use tauri::{
   menu::{Menu, MenuItem},
   tray::TrayIconBuilder,
-  Manager,
+  Manager, WebviewUrl, WebviewWindowBuilder,
 };
 use tauri_plugin_autostart::MacosLauncher;
+
+// El OS real. Desktop es un shell sobre esta app web, no una UI paralela.
+// next.os es el mismo servicio (ambos dominios proxean a pancho-os-next:4323
+// en el VPS); se acepta como alias para que un redirect entre ellos no expulse
+// la sesion al navegador.
+const OS_URL: &str = "https://os.franciscoabad.com";
+
+fn es_dominio_os(url: &tauri::Url) -> bool {
+  matches!(
+    url.host_str(),
+    Some("os.franciscoabad.com") | Some("next.os.franciscoabad.com")
+  )
+}
 
 // Cliente de Flow (app local de dictado y reuniones, otro repo). Ver flow.rs.
 mod flow;
@@ -35,6 +48,7 @@ pub fn run() {
   builder = builder
     .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
     .plugin(tauri_plugin_notification::init())
+    .plugin(tauri_plugin_opener::init())
     // Comandos propios de la app. Los comandos registrados aca quedan
     // disponibles para el frontend sin necesidad de permisos en
     // capabilities/default.json: el ACL de Tauri v2 aplica a comandos de
@@ -69,6 +83,33 @@ pub fn run() {
             .build(),
         )?;
       }
+
+      // La ventana se crea por codigo (no en tauri.conf.json) para poder
+      // interceptar la navegacion: el OS vive dentro de la app; cualquier
+      // enlace externo (docs, Google, links de notas) se abre en el navegador
+      // del sistema en vez de secuestrar la ventana del OS. La sesion (cookie
+      // de auth del OS) la persiste WebView2 en el data dir de la app, por lo
+      // que el login sobrevive reinicios igual que en un navegador.
+      let handle = app.handle().clone();
+      WebviewWindowBuilder::new(app, "main", WebviewUrl::External(OS_URL.parse().unwrap()))
+        .title("Pancho OS")
+        .inner_size(1280.0, 860.0)
+        .resizable(true)
+        .fullscreen(false)
+        .on_navigation(move |url| {
+          // about:blank y data: aparecen en navegaciones internas del webview.
+          let esquema = url.scheme();
+          if esquema == "about" || esquema == "data" || esquema == "blob" {
+            return true;
+          }
+          if es_dominio_os(&url) {
+            return true;
+          }
+          use tauri_plugin_opener::OpenerExt;
+          let _ = handle.opener().open_url(url.as_str(), None::<&str>);
+          false
+        })
+        .build()?;
 
       // Tray minimo: mostrar/ocultar la ventana y salir. El resto de
       // capacidades (dictado, estado de Ollama) se agregan en 2.1/2.2 como

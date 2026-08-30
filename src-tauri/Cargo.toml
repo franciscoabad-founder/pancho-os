@@ -1,10 +1,10 @@
 [package]
 name = "app"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Pancho OS Desktop: el OS real (os.franciscoabad.com) con capacidades nativas"
+authors = ["Francisco Abad"]
 license = ""
-repository = ""
+repository = "https://github.com/franciscoabad-founder/pancho-os"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -32,4 +32,6 @@ tauri-plugin-log = "2"
 tauri-plugin-single-instance = "2.4.3"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-notification = "2.3.3"
+# Abre enlaces externos en el navegador del sistema (ver on_navigation en lib.rs).
+tauri-plugin-opener = "2"
 tokio = { version = "1", features = ["rt", "macros", "process", "fs", "time"] }
