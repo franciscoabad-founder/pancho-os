@@ -1,6 +1,6 @@
 # Agenda y Google Calendar: cierre operativo
 
-Estado: código y pruebas listos. Antes de desplegar se requiere una migración manual de Supabase y, para sincronización real, una configuración OAuth hecha por Francisco.
+Estado: código y pruebas listos. La migración ya fue aplicada en producción y staging del Postgres propio del VPS. Para sincronización real sólo falta configurar OAuth con la cuenta de Google.
 
 ## Qué resuelve esta entrega
 
@@ -11,16 +11,13 @@ Estado: código y pruebas listos. Antes de desplegar se requiere una migración 
 - Al eliminar un evento vinculado, el OS lo oculta de inmediato y lo cancela en Google durante la próxima sincronización.
 - La herramienta MCP puede actualizar eventos y solicitar una sincronización. Toda sincronización que pueda alterar Google exige una confirmación explícita MRTR.
 
-## Parte 1: migración de Supabase
+## Parte 1: verificación de la migración en Postgres propio
 
-Esta parte debe hacerse antes de subir el commit a `master`, porque el despliegue automático compila y reinicia el proceso que atiende `os.franciscoabad.com`.
+No ejecutes esta migración en Supabase Cloud. Producción usa `pancho-os-postgres` en `178.105.163.120`, bases `pancho_os` y `pancho_os_staging`.
 
-1. Entra a [Supabase Dashboard](https://supabase.com/dashboard) y abre el proyecto `yfrrfmankgodpepbgyvu` de Pancho OS.
-2. Abre **SQL Editor** y crea una consulta nueva.
-3. Abre el archivo local `C:\DEV\Pancho-OS\supabase\migrations\20260829000000_agenda_editable_sync.sql`.
-4. Copia todo su contenido en el editor y presiona **Run**.
-5. La consulta es aditiva e idempotente. Es correcto ejecutarla una sola vez. No borra reuniones ni modifica RLS.
-6. Verifica que la respuesta sea exitosa y corre esta consulta de comprobación:
+1. Si alguna vez falta aplicar la migración, cópiala al VPS con `scp` y ejecútala en ambas bases siguiendo el procedimiento de `AGENTS.md`.
+2. La consulta es aditiva e idempotente. No borra reuniones ni modifica RLS.
+3. Verifica que la respuesta sea exitosa y corre esta consulta de comprobación:
 
 ```sql
 select column_name, data_type
@@ -34,7 +31,7 @@ where table_schema = 'public'
 order by column_name;
 ```
 
-Debe devolver seis filas. Si no devuelve seis, no hacer deploy todavía.
+Debe devolver seis filas en cada base. Si no devuelve seis, no hacer deploy todavía.
 
 ## Parte 2: OAuth de Google Calendar
 
