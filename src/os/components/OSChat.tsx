@@ -17,6 +17,7 @@ import {
   flowErrorTexto,
   type OllamaStatus,
 } from '../../lib/desktopBridge.ts';
+import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 
 interface Conversacion {
   id: string;
@@ -108,6 +109,15 @@ export default function OSChat() {
   const [meetingId, setMeetingId] = useState<number | null>(null);
   const [flowMensaje, setFlowMensaje] = useState<string | null>(null);
   const [flowBusy, setFlowBusy] = useState(false);
+
+  // Dictado por voz: mismo hook que usa la burbuja flotante (TaskiBubble),
+  // el texto reconocido se agrega al input del chat soberano.
+  const { isListening, isSupported: voiceSupported, toggleListening } = useVoiceDictation({
+    lang: 'es-EC',
+    onResult: (transcripcion) => {
+      setTexto((prev) => (prev ? `${prev} ${transcripcion}` : transcripcion));
+    },
+  });
 
   useEffect(() => {
     if (!desktop) return;
@@ -565,6 +575,17 @@ export default function OSChat() {
               className="os-input"
               style={{ flex: 1 }}
             />
+            {voiceSupported && (
+              <button
+                type="button"
+                className={isListening ? 'os-btn os-btn-primary' : 'os-btn'}
+                title={isListening ? 'Detener dictado por voz' : 'Dictar por voz'}
+                onClick={toggleListening}
+                disabled={!activaId || Boolean(runActivo)}
+              >
+                {isListening ? '🔴' : '🎤'}
+              </button>
+            )}
             <button type="submit" className="os-btn os-btn-primary" disabled={!activaId || Boolean(runActivo) || !texto.trim()}>
               Enviar
             </button>
