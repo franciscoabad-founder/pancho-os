@@ -3,7 +3,7 @@
 // encontrado en la auditoria del 15 ago 2026.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toToolRequest, gfitDiaHoy, gfitConsultarProgreso, isoWeekdayHoyGuayaquil } from '../pages/api/mcp.ts';
+import { toToolRequest, gfitDiaHoy, gfitConsultarProgreso, isoWeekdayHoyGuayaquil } from './osTools.ts';
 
 test('tareas_create mapea prioridad espanol a los valores que la API guarda', () => {
   const req = toToolRequest('tareas_create', { titulo: 'x', prioridad: 'alta' });
