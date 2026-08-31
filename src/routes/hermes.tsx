@@ -19,7 +19,7 @@ function HermesPage() {
         <PageHeader
           eyebrow="Operacion Agente"
           title="Hermes Cockpit"
-          subtitle="Centro de control del agente. Alterna perfiles (VPS, HomeLab, Laptop), cambia modelos en caliente, dicta ordenes y opera sesiones de Telegram y del OS."
+          subtitle="Panel de control del agente. Alterna perfiles (VPS, HomeLab, Laptop), cambia modelos en caliente y monitorea sesiones, kanban y jobs. Para conversar con Hermes, usa /chat."
         />
         <OSHermesCockpit />
       </div>

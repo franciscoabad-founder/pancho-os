@@ -1,19 +1,12 @@
-﻿// OSHermesCockpit: Centro de control operativo para Hermes en Pancho OS.
-// Reemplaza a la app de escritorio de Hermes permitiendo:
+// OSHermesCockpit: Panel de control operativo para Hermes en Pancho OS.
+// Permite:
 // 1. Alternar entre perfiles (VPS, HomeLab, Laptop).
-// 2. Gestionar conversaciones de Telegram y del OS.
+// 2. Ver conversaciones de Telegram y del OS (solo lectura de sesiones).
 // 3. Cambiar modelos en caliente (DeepSeek, Claude, GPT-4o, Gemma).
-// 4. Dictado por voz nativo.
-// 5. Monitorear el kanban de tareas y ejecuciones del agente.
+// 4. Monitorear el kanban de tareas y ejecuciones del agente.
+// Para conversar con Hermes, usar la pagina /chat.
 
-import { useEffect, useRef, useState } from 'react';
-import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
-
-interface Turno {
-  role: 'user' | 'assistant' | 'error';
-  content: string;
-  timestamp?: number | null;
-}
+import { useEffect, useState } from 'react';
 
 interface SesionTaski {
   id: string;
@@ -95,12 +88,6 @@ export default function OSHermesCockpit() {
   const [sesionActual, setSesionActual] = useState(SESION_OS_ID);
   const [filtroSesion, setFiltroSesion] = useState('');
 
-  // Estado de chat
-  const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-  const [pensando, setPensando] = useState(false);
-  const [texto, setTexto] = useState('');
-
   // Estado de modelos
   const [modelos, setModelos] = useState<ModeloHermes[]>([]);
   const [modeloActual, setModeloActual] = useState('deepseek/deepseek-v4-flash');
@@ -111,20 +98,7 @@ export default function OSHermesCockpit() {
   const [cargandoTareas, setCargandoTareas] = useState(false);
 
   // Pestaña en movil
-  const [pestanaMovil, setPestanaMovil] = useState<'chat' | 'sesiones' | 'kanban'>('chat');
-
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const perfilActivoRef = useRef(perfilActivo);
-  perfilActivoRef.current = perfilActivo;
-
-  // Hook de Dictado por Voz
-  const { isListening, isSupported: voiceSupported, toggleListening } = useVoiceDictation({
-    lang: 'es-EC',
-    onResult: (transcripcion) => {
-      setTexto((prev) => (prev ? `${prev} ${transcripcion}` : transcripcion));
-    },
-  });
+  const [pestanaMovil, setPestanaMovil] = useState<'sesiones' | 'kanban'>('sesiones');
 
   // Carga inicial
   useEffect(() => {
@@ -132,7 +106,6 @@ export default function OSHermesCockpit() {
     void cargarModelos();
     void cargarSesiones();
     void cargarTareas();
-    void cargarHistorial(sesionActual);
   }, []);
 
   useEffect(() => {
@@ -142,15 +115,7 @@ export default function OSHermesCockpit() {
     void cargarModelos();
     void cargarSesiones();
     void cargarTareas();
-    void cargarHistorial(sesionActual);
   }, [perfilActivo]);
-
-  // Autoscroll en el chat
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [turnos, pensando]);
 
   async function cargarPerfiles() {
     try {
@@ -200,31 +165,8 @@ export default function OSHermesCockpit() {
     }
   }
 
-  async function cargarHistorial(sessionId: string) {
-    const perfilDeCarga = perfilActivo;
-    setCargandoHistorial(true);
-    setTurnos([]);
-    try {
-      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(sessionId)}&profile_id=${encodeURIComponent(perfilActivo)}`);
-      const data = await res.json();
-      if (perfilActivoRef.current !== perfilDeCarga) return;
-      if (data.mensajes) {
-        setTurnos(data.mensajes);
-      } else if (data.error) {
-        setTurnos([{ role: 'error', content: `Error: ${data.error}` }]);
-      }
-    } catch {
-      if (perfilActivoRef.current === perfilDeCarga) setTurnos([{ role: 'error', content: 'No se pudo cargar el historial.' }]);
-    } finally {
-      if (perfilActivoRef.current === perfilDeCarga) setCargandoHistorial(false);
-    }
-  }
-
   function cambiarSesion(id: string) {
-    if (id === sesionActual || pensando) return;
     setSesionActual(id);
-    void cargarHistorial(id);
-    setPestanaMovil('chat');
   }
 
   async function cambiarModelo(nuevoModelo: string) {
@@ -240,32 +182,6 @@ export default function OSHermesCockpit() {
       // ignore
     } finally {
       setCambiandoModelo(false);
-    }
-  }
-
-  async function enviar() {
-    const msg = texto.trim();
-    if (!msg || pensando) return;
-    setTexto('');
-    setTurnos((prev) => [...prev, { role: 'user', content: msg, timestamp: Date.now() }]);
-    setPensando(true);
-    try {
-      const res = await fetch('/api/taski', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, session_id: sesionActual, profile_id: perfilActivo }),
-      });
-      const data = await res.json();
-      if (data.error || !res.ok) {
-        setTurnos((prev) => [...prev, { role: 'error', content: data.error ?? `Error HTTP ${res.status}` }]);
-      } else {
-        setTurnos((prev) => [...prev, { role: 'assistant', content: data.reply || '(sin respuesta)', timestamp: Date.now() }]);
-      }
-    } catch {
-      setTurnos((prev) => [...prev, { role: 'error', content: 'Error de conexion con Hermes.' }]);
-    } finally {
-      setPensando(false);
-      setTimeout(() => inputRef.current?.focus(), 60);
     }
   }
 
@@ -351,7 +267,7 @@ export default function OSHermesCockpit() {
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--os-text)' }}>Modelo:</span>
             <select
               value={modeloActual}
-              disabled={cambiandoModelo || pensando}
+              disabled={cambiandoModelo}
               onChange={(e) => void cambiarModelo(e.target.value)}
               className="os-input"
               style={{
@@ -386,7 +302,7 @@ export default function OSHermesCockpit() {
           <button
             type="button"
             className="os-btn"
-            onClick={() => void cargarHistorial(sesionActual)}
+            onClick={() => void cargarSesiones()}
             style={{ fontSize: 12, padding: '4px 10px', height: 32 }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
@@ -409,14 +325,6 @@ export default function OSHermesCockpit() {
       >
         <button
           type="button"
-          onClick={() => setPestanaMovil('chat')}
-          className={`os-btn ${pestanaMovil === 'chat' ? 'os-btn-primary' : ''}`}
-          style={{ flex: 1, fontSize: 12 }}
-        >
-          Chat & Terminal
-        </button>
-        <button
-          type="button"
           onClick={() => setPestanaMovil('sesiones')}
           className={`os-btn ${pestanaMovil === 'sesiones' ? 'os-btn-primary' : ''}`}
           style={{ flex: 1, fontSize: 12 }}
@@ -437,7 +345,7 @@ export default function OSHermesCockpit() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '280px 1fr 300px',
+          gridTemplateColumns: '340px 1fr',
           gap: '1rem',
           alignItems: 'start',
         }}
@@ -534,222 +442,7 @@ export default function OSHermesCockpit() {
           </div>
         </div>
 
-        {/* COLUMNA 2: CONSOLA DE CHAT Y COMANDOS */}
-        <div
-          className={`os-card os-cockpit-col ${pestanaMovil !== 'chat' ? 'os-hide-mobile' : ''}`}
-          style={{
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            height: 'calc(100vh - 280px)',
-            minHeight: 520,
-            overflow: 'hidden',
-          }}
-        >
-          {/* Header de la conversacion */}
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              borderBottom: '1px solid var(--os-line-soft)',
-              background: 'var(--os-bg-sunken)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--os-text)' }}>
-                {sesiones.find((s) => s.id === sesionActual)?.title || 'Taski OS'}
-              </span>
-              <p style={{ fontSize: 11, color: 'var(--os-muted)', margin: 0 }}>
-                ID: {sesionActual} | {turnos.length} mensajes cargados
-              </p>
-            </div>
-            <span
-              style={{
-                fontSize: 11,
-                padding: '2px 8px',
-                borderRadius: 999,
-                background: 'rgba(34,197,94,0.12)',
-                color: '#22c55e',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-              Conectado
-            </span>
-          </div>
-
-          {/* Historial de Mensajes */}
-          <div
-            ref={chatScrollRef}
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            {cargandoHistorial && !turnos.length && (
-              <p style={{ margin: 'auto', color: 'var(--os-muted)', fontSize: 13 }}>Cargando conversación...</p>
-            )}
-
-            {!cargandoHistorial && !turnos.length && (
-              <div style={{ margin: 'auto', textAlign: 'center', maxWidth: 360 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 36, color: 'var(--os-accent-light)', marginBottom: 8 }}>
-                  smart_toy
-                </span>
-                <p style={{ fontSize: 13, color: 'var(--os-text-2)', margin: '0 0 6px' }}>
-                  Canal operativo de Hermes listo.
-                </p>
-                <p style={{ fontSize: 12, color: 'var(--os-muted)', margin: 0 }}>
-                  Escribe una instrucción, consulta el brain o dicta una orden por voz.
-                </p>
-              </div>
-            )}
-
-            {turnos.map((t, idx) => {
-              const esUser = t.role === 'user';
-              const esError = t.role === 'error';
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    alignSelf: esUser ? 'flex-end' : 'flex-start',
-                    maxWidth: esUser ? '80%' : '88%',
-                    background: esUser ? 'var(--os-accent)' : esError ? 'rgba(239,68,68,0.1)' : 'var(--os-fill-subtle)',
-                    border: esUser ? 'none' : esError ? '1px solid var(--os-error)' : '1px solid var(--os-line-soft)',
-                    color: esUser ? '#fff' : esError ? 'var(--os-error)' : 'var(--os-text)',
-                    padding: '10px 14px',
-                    borderRadius: esUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {t.content}
-                </div>
-              );
-            })}
-
-            {pensando && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--os-muted)', fontSize: 12 }}>
-                <span
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    border: '2px solid var(--os-line)',
-                    borderTopColor: 'var(--os-accent)',
-                    animation: 'taski-spin 0.8s linear infinite',
-                  }}
-                />
-                Hermes está razonando y ejecutando...
-              </div>
-            )}
-          </div>
-
-          {/* Caja de Input */}
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              borderTop: '1px solid var(--os-line-soft)',
-              background: 'var(--os-bg-sunken)',
-              display: 'flex',
-              gap: 8,
-              alignItems: 'flex-end',
-            }}
-          >
-            <textarea
-              ref={inputRef}
-              rows={2}
-              value={texto}
-              disabled={pensando}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void enviar();
-                }
-              }}
-              placeholder="Escribe una orden para Hermes (Enter para enviar, Shift+Enter para nueva linea)..."
-              style={{
-                flex: 1,
-                resize: 'none',
-                background: 'var(--os-fill-subtle)',
-                border: '1px solid var(--os-line)',
-                borderRadius: 'var(--os-r-md, 8px)',
-                padding: '8px 12px',
-                fontSize: 13,
-                color: 'var(--os-text)',
-                outline: 'none',
-                fontFamily: 'var(--os-font-body)',
-              }}
-            />
-
-            {voiceSupported && (
-              <button
-                type="button"
-                onClick={toggleListening}
-                disabled={pensando}
-                title={isListening ? 'Detener dictado' : 'Dictar por voz'}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 'var(--os-r-md, 8px)',
-                  background: isListening ? 'rgba(239, 68, 68, 0.15)' : 'var(--os-fill-subtle)',
-                  color: isListening ? 'var(--os-error, #ef4444)' : 'var(--os-muted)',
-                  border: isListening ? '1px solid var(--os-error, #ef4444)' : '1px solid var(--os-line-soft)',
-                  cursor: pensando ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontSize: 20,
-                    animation: isListening ? 'os-pulse 1.2s infinite' : 'none',
-                  }}
-                >
-                  {isListening ? 'mic' : 'mic_none'}
-                </span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => void enviar()}
-              disabled={pensando || !texto.trim()}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 'var(--os-r-md, 8px)',
-                background: pensando || !texto.trim() ? 'var(--os-fill-subtle)' : 'var(--os-accent)',
-                color: pensando || !texto.trim() ? 'var(--os-muted)' : '#fff',
-                border: 'none',
-                cursor: pensando || !texto.trim() ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
-                send
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* COLUMNA 3: KANBAN Y OPERACIONES */}
+        {/* COLUMNA 2: KANBAN Y OPERACIONES */}
         <div
           className={`os-card os-cockpit-col ${pestanaMovil !== 'kanban' ? 'os-hide-mobile' : ''}`}
           style={{
@@ -842,7 +535,6 @@ export default function OSHermesCockpit() {
       </div>
 
       <style>{`
-        @keyframes taski-spin { to { transform: rotate(360deg); } }
         .os-mobile-tabs { display: none; }
         @media (max-width: 1024px) {
           .os-cockpit-grid {
