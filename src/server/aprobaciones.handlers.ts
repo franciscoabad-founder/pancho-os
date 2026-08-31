@@ -38,11 +38,13 @@ async function archivarViejas(sb: SupabaseClient): Promise<void> {
     .or(`expira_at.lt.${ahoraIso},created_at.lt.${corte}`);
   // 2) Decididas (aprobado/rechazado) de hace mas de 7 dias: ya cumplieron su
   //    proposito, salen del panel activo. Siguen consultables con estado=archivada.
+  // Se filtra por created_at (no decidido_at): hay decididas viejas con
+  // decidido_at null de un path anterior, y aun asi deben archivarse.
   await sb
     .from('os_aprobaciones')
     .update({ estado: 'archivada', updated_at: ahoraIso })
     .in('estado', ['aprobado', 'rechazado'])
-    .lt('decidido_at', corte);
+    .lt('created_at', corte);
 }
 const ACTORES = new Set(['web', 'hermes', 'api']);
 
