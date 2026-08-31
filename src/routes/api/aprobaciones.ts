@@ -31,14 +31,14 @@ function respuestaError(err: unknown): Response {
   return json({ error: errMsg(err) }, 502);
 }
 
-async function notificarWebhook(aprobacion: unknown): Promise<void> {
+async function notificarWebhook(aprobacion: unknown, evento = 'aprobacion_resuelta'): Promise<void> {
   const url = readEnv('APPROVAL_WEBHOOK_URL');
   if (!url) return;
   try {
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ evento: 'aprobacion_resuelta', aprobacion }),
+      body: JSON.stringify({ evento, aprobacion }),
       signal: AbortSignal.timeout(5000),
     });
   } catch {
@@ -63,7 +63,11 @@ export const Route = createFileRoute('/api/aprobaciones')({
         if (!(await isOsAuthorized(request))) return noAutorizado();
         try {
           const body = (await request.json()) as Record<string, unknown>;
-          return json({ aprobacion: await crearAprobacion(body ?? {}) }, 201);
+          const aprobacion = await crearAprobacion(body ?? {});
+          // Notifica al crear (no solo al decidir): asi una aprobacion nueva
+          // llega a Telegram y Pancho puede responderla desde el chat.
+          void notificarWebhook(aprobacion, 'aprobacion_creada');
+          return json({ aprobacion }, 201);
         } catch (err) {
           return respuestaError(err);
         }

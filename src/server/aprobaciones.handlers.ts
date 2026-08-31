@@ -17,8 +17,24 @@ export function setClienteSupabaseAprobaciones(fn: (() => SupabaseClient) | null
   clienteActual = fn ?? getSupabaseServer;
 }
 
-export const ESTADOS = ['pendiente', 'aprobado', 'rechazado'];
+export const ESTADOS = ['pendiente', 'aprobado', 'rechazado', 'archivada'];
 const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado', 'expira_at'];
+
+// Una aprobacion pendiente que Pancho no toco en DIAS_ARCHIVO dias (o que ya
+// paso su expira_at) deja de ser accionable: se archiva sola. Asi el panel no
+// se llena de decisiones muertas de hace semanas. El archivado es en lote y NO
+// dispara el webhook (no es una decision, es limpieza).
+const DIAS_ARCHIVO = 7;
+
+async function archivarPendientesViejas(sb: SupabaseClient): Promise<void> {
+  const ahora = new Date();
+  const corte = new Date(ahora.getTime() - DIAS_ARCHIVO * 24 * 60 * 60 * 1000).toISOString();
+  await sb
+    .from('os_aprobaciones')
+    .update({ estado: 'archivada', updated_at: ahora.toISOString() })
+    .eq('estado', 'pendiente')
+    .or(`expira_at.lt.${ahora.toISOString()},created_at.lt.${corte}`);
+}
 const ACTORES = new Set(['web', 'hermes', 'api']);
 
 function normalizarActor(value: unknown): string {
@@ -50,8 +66,15 @@ export async function listarAprobaciones(estado: string | null): Promise<unknown
     throw new ErrorAprobaciones(`estado debe ser uno de: ${ESTADOS.join(', ')}`, 400);
   }
   const sb = clienteActual();
+  // Antes de listar, archiva las pendientes vencidas (limpieza perezosa).
+  await archivarPendientesViejas(sb);
   let query = sb.from('os_aprobaciones').select('*').order('created_at', { ascending: false });
-  if (estado) query = query.eq('estado', estado);
+  if (estado) {
+    query = query.eq('estado', estado);
+  } else {
+    // Sin filtro explicito, el panel muestra solo lo vivo (no archivadas).
+    query = query.neq('estado', 'archivada');
+  }
   const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
