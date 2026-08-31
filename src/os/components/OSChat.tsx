@@ -7,6 +7,16 @@
 // El Cockpit (/hermes) sigue siendo la vista power user; esto es la diaria.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  isDesktop,
+  fsReadFile,
+  ollamaStatus,
+  flowHealth,
+  flowStartRecording,
+  flowStopRecording,
+  flowErrorTexto,
+  type OllamaStatus,
+} from '../../lib/desktopBridge.ts';
 
 interface Conversacion {
   id: string;
@@ -62,6 +72,76 @@ export default function OSChat() {
   const [cargando, setCargando] = useState(false);
   const finRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // --- Bridge nativo (solo app de escritorio, Tauri) -----------------------
+  const desktop = isDesktop();
+  const [ollama, setOllama] = useState<OllamaStatus | null>(null);
+  const [grabando, setGrabando] = useState(false);
+  const [meetingId, setMeetingId] = useState<number | null>(null);
+  const [flowMensaje, setFlowMensaje] = useState<string | null>(null);
+  const [flowBusy, setFlowBusy] = useState(false);
+
+  useEffect(() => {
+    if (!desktop) return;
+    let vivo = true;
+    void ollamaStatus().then((s) => {
+      if (vivo) setOllama(s);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [desktop]);
+
+  const adjuntarArchivo = useCallback(async () => {
+    const ruta = window.prompt('Ruta del archivo local a adjuntar:');
+    if (!ruta) return;
+    const r = await fsReadFile(ruta);
+    if (!r.ok) {
+      setError(`No se pudo leer el archivo: ${r.error.mensaje}`);
+      return;
+    }
+    setTexto((prev) => `Archivo ${ruta}:\n\n${r.data.content}\n\n${prev}`);
+  }, []);
+
+  // NOTA: Flow graba reuniones completas (meeting_id), no dictado corto a
+  // texto. flow.rs y desktopBridge.ts no exponen un endpoint de
+  // dictado-a-texto apto para inyectar en este input, asi que el boton se
+  // limita a iniciar/parar una grabacion de reunion con feedback de estado.
+  // El dictado-a-input queda pendiente hasta que Flow (u otro comando Rust)
+  // exponga eso.
+  const alternarGrabacion = useCallback(async () => {
+    if (flowBusy) return;
+    setFlowBusy(true);
+    setFlowMensaje(null);
+    try {
+      if (!grabando) {
+        const salud = await flowHealth();
+        if (!salud.ok) {
+          setFlowMensaje(flowErrorTexto(salud.error));
+          return;
+        }
+        const inicio = await flowStartRecording();
+        if (!inicio.ok) {
+          setFlowMensaje(flowErrorTexto(inicio.error));
+          return;
+        }
+        setMeetingId(inicio.data.meeting_id);
+        setGrabando(true);
+        setFlowMensaje('Grabando reunion en Flow...');
+      } else if (meetingId != null) {
+        const fin = await flowStopRecording(meetingId);
+        if (!fin.ok) {
+          setFlowMensaje(flowErrorTexto(fin.error));
+          return;
+        }
+        setGrabando(false);
+        setMeetingId(null);
+        setFlowMensaje('Grabacion detenida.');
+      }
+    } finally {
+      setFlowBusy(false);
+    }
+  }, [flowBusy, grabando, meetingId]);
 
   const cargarConversaciones = useCallback(async () => {
     try {
@@ -217,8 +297,17 @@ export default function OSChat() {
       {/* Hilo */}
       <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
         {activaId && (
-          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)' }}>
-            {etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}
+          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <span>{etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}</span>
+            {desktop && (
+              <span title="Estado de Ollama local">
+                {ollama
+                  ? ollama.available
+                    ? `Ollama: ${ollama.version ?? 'activo'} (${ollama.models.length} modelos)`
+                    : 'Ollama: no disponible'
+                  : 'Ollama: consultando...'}
+              </span>
+            )}
           </div>
         )}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -274,6 +363,9 @@ export default function OSChat() {
               {error}
             </div>
           )}
+          {desktop && flowMensaje && (
+            <div style={{ color: 'var(--os-muted)', fontSize: 12 }}>{flowMensaje}</div>
+          )}
           <div ref={finRef} />
         </div>
 
@@ -285,6 +377,28 @@ export default function OSChat() {
           }}
           style={{ display: 'flex', gap: 8, padding: '0.75rem 1rem', borderTop: '1px solid var(--os-line-soft)' }}
         >
+          {desktop && (
+            <button
+              type="button"
+              className="os-btn"
+              title="Adjuntar archivo local"
+              onClick={() => void adjuntarArchivo()}
+              disabled={!activaId || Boolean(runActivo)}
+            >
+              📎
+            </button>
+          )}
+          {desktop && (
+            <button
+              type="button"
+              className={grabando ? 'os-btn os-btn-primary' : 'os-btn'}
+              title={grabando ? 'Detener grabacion de reunion (Flow)' : 'Iniciar grabacion de reunion (Flow)'}
+              onClick={() => void alternarGrabacion()}
+              disabled={flowBusy}
+            >
+              {grabando ? '⏹' : '🎙'}
+            </button>
+          )}
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}

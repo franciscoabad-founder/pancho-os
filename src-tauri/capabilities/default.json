@@ -5,6 +5,12 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": [
+      "https://os.franciscoabad.com",
+      "https://next.os.franciscoabad.com"
+    ]
+  },
   "permissions": [
     "core:default",
     "autostart:default",
