@@ -26,14 +26,23 @@ const CAMPOS = ['titulo', 'contexto', 'opciones', 'recomendacion', 'estado', 'ex
 // dispara el webhook (no es una decision, es limpieza).
 const DIAS_ARCHIVO = 7;
 
-async function archivarPendientesViejas(sb: SupabaseClient): Promise<void> {
+async function archivarViejas(sb: SupabaseClient): Promise<void> {
   const ahora = new Date();
+  const ahoraIso = ahora.toISOString();
   const corte = new Date(ahora.getTime() - DIAS_ARCHIVO * 24 * 60 * 60 * 1000).toISOString();
+  // 1) Pendientes vencidas (expira_at pasado, o >7 dias sin tocar).
   await sb
     .from('os_aprobaciones')
-    .update({ estado: 'archivada', updated_at: ahora.toISOString() })
+    .update({ estado: 'archivada', updated_at: ahoraIso })
     .eq('estado', 'pendiente')
-    .or(`expira_at.lt.${ahora.toISOString()},created_at.lt.${corte}`);
+    .or(`expira_at.lt.${ahoraIso},created_at.lt.${corte}`);
+  // 2) Decididas (aprobado/rechazado) de hace mas de 7 dias: ya cumplieron su
+  //    proposito, salen del panel activo. Siguen consultables con estado=archivada.
+  await sb
+    .from('os_aprobaciones')
+    .update({ estado: 'archivada', updated_at: ahoraIso })
+    .in('estado', ['aprobado', 'rechazado'])
+    .lt('decidido_at', corte);
 }
 const ACTORES = new Set(['web', 'hermes', 'api']);
 
@@ -66,8 +75,8 @@ export async function listarAprobaciones(estado: string | null): Promise<unknown
     throw new ErrorAprobaciones(`estado debe ser uno de: ${ESTADOS.join(', ')}`, 400);
   }
   const sb = clienteActual();
-  // Antes de listar, archiva las pendientes vencidas (limpieza perezosa).
-  await archivarPendientesViejas(sb);
+  // Antes de listar, archiva lo viejo (pendientes vencidas + decididas anejas).
+  await archivarViejas(sb);
   let query = sb.from('os_aprobaciones').select('*').order('created_at', { ascending: false });
   if (estado) {
     query = query.eq('estado', estado);
