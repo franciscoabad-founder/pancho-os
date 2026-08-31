@@ -79,7 +79,7 @@ const ms: Record<string, string> = {
   '/hermes': 'smart_toy',
 };
 
-const navGroups = [
+export const navGroups = [
   { label: 'Sistema', items: [
     { href: '/', label: 'Hoy' },
     { href: '/chat', label: 'Chat' },
@@ -127,20 +127,30 @@ const navGroups = [
 // DECISION DE NAVEGACION (fase 1 del rediseno): una sola jerarquia.
 // navGroups es LA fuente de verdad de toda la navegacion del OS.
 // - Desktop: sidebar con los 4 grupos completos.
-// - Movil: bottom-nav con 5 destinos primarios (Hoy, Sistema, Tareas,
-//   Agenda, Salud) DERIVADOS de navGroups, + boton "Mas" que abre el
-//   drawer con los mismos navGroups. Nada se define dos veces.
-const primariosMovil = ['/', '/sistema', '/tareas', '/agenda', '/salud'];
-const etiquetaCorta: Record<string, string> = { '/sistema': 'Sistema' };
+// - Movil: bottom-nav con 5 destinos primarios DERIVADOS de navGroups, +
+//   boton "Mas" que abre el drawer con los mismos navGroups. Nada se define
+//   dos veces. Cada item muestra el label real del nav (sin overrides): antes
+//   habia un etiquetaCorta que pisaba 'Accesos' con 'Sistema', dos nombres
+//   para lo mismo. Se saco: el nombre unico y coherente es el del nav, 'Accesos'.
+export const BOTTOM_NAV_DEFAULT = ['/', '/tareas', '/agenda', '/salud', '/grabar'];
+export const BOTTOM_NAV_CONFIG_KEY = 'bottom_nav';
 const todosLosItems = navGroups.flatMap((g) => g.items);
-const bottomNav = primariosMovil.map((href) => {
-  const item = todosLosItems.find((i) => i.href === href);
-  return {
-    href,
-    label: etiquetaCorta[href] ?? item?.label ?? href,
-    icon: ms[href] ?? 'circle',
-  };
-});
+
+function hrefsAItems(hrefs: string[]) {
+  return hrefs.map((href) => {
+    const item = todosLosItems.find((i) => i.href === href);
+    return { href, label: item?.label ?? href, icon: ms[href] ?? 'circle' };
+  });
+}
+
+/** Valida que la config guardada (bottom_nav) sea usable: 3 a 5 hrefs, todos
+ * existentes en navGroups. Si no, se cae al default nuevo. Exportada para
+ * que el editor en /sistema (OSBottomNavConfig.tsx) valide antes de guardar. */
+export function bottomNavHrefsValidos(hrefs: unknown): hrefs is string[] {
+  if (!Array.isArray(hrefs)) return false;
+  if (hrefs.length < 3 || hrefs.length > 5) return false;
+  return hrefs.every((h) => typeof h === 'string' && todosLosItems.some((i) => i.href === h));
+}
 
 // CSS del shell, copiado tal cual del <style> de OSLayout.astro. Se renderiza
 // desde el cuerpo del layout (no desde __root) para que /login, que no usa este
@@ -427,6 +437,31 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
   // El drawer se cierra solo al navegar: en Astro cada click recargaba la
   // pagina entera y lo desmontaba, aca el shell sobrevive a la navegacion.
   useEffect(() => setDrawerAbierto(false), [pathname]);
+
+  // Bottom-nav configurable (Fase 2): Pancho elige hasta 5 destinos desde
+  // /sistema. Se persiste en os_config (cross-device) via /api/config. Al
+  // montar se intenta leer; si no hay config, viene invalida, o el fetch
+  // falla (sin sesion, tabla sin migrar, offline), se usa el default nuevo.
+  // Server y cliente arrancan con el mismo default, asi que no hay
+  // desajuste de hidratacion: la config guardada llega despues del primer
+  // paint, como cualquier dato de cliente.
+  const [bottomNavHrefs, setBottomNavHrefs] = useState<string[]>(BOTTOM_NAV_DEFAULT);
+  useEffect(() => {
+    let cancelado = false;
+    fetch(`/api/config/${BOTTOM_NAV_CONFIG_KEY}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { config?: { value?: unknown } } | null) => {
+        if (cancelado) return;
+        const hrefs = data?.config?.value;
+        if (bottomNavHrefsValidos(hrefs)) setBottomNavHrefs(hrefs);
+      })
+      .catch(() => {
+        // Sin config valida, se queda con el default. No es un error que
+        // amerite avisar: la config es opcional.
+      });
+    return () => { cancelado = true; };
+  }, []);
+  const bottomNav = hrefsAItems(bottomNavHrefs);
 
   // Registro del service worker (PWA), identico al del .astro.
   useEffect(() => {

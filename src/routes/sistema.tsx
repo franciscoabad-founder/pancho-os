@@ -21,6 +21,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import OSLayout, { tituloOs } from '../os/components/OSLayout.tsx';
 import PageHeader from '../os/components/ui/PageHeader.tsx';
 import OSDispositivos from '../os/components/OSDispositivos.tsx';
+import OSBottomNavConfig from '../os/components/OSBottomNavConfig.tsx';
 
 export const Route = createFileRoute('/sistema')({
   head: () => ({ meta: [{ title: tituloOs('Accesos') }] }),
@@ -37,6 +38,9 @@ function SistemaPage() {
           subtitle="Quien puede hablarle al OS, con que credencial y desde cuando."
         />
         <OSDispositivos />
+        <div style={{ marginTop: 20 }}>
+          <OSBottomNavConfig />
+        </div>
       </div>
     </OSLayout>
   );
