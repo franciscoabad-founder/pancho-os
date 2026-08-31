@@ -8,6 +8,41 @@ type NativeHealthEvent = {
   message?: string;
 };
 
+type BiometricaDia = Record<string, number | string | null | undefined>;
+
+// Metricas de Health Connect que muestra la tarjeta cuando llegan con dato.
+// Las claves coinciden con el payload de HealthConnectSync.kt y las columnas
+// de biometricas_dia (migracion 20260830000003_biometricas_health_connect.sql).
+const METRICAS_HEALTH_CONNECT: { campo: string; label: string; unidad: string; decimales?: number }[] = [
+  { campo: 'fc_promedio', label: 'FC promedio', unidad: 'lpm' },
+  { campo: 'fc_reposo', label: 'FC reposo', unidad: 'lpm' },
+  { campo: 'vfc_ms', label: 'VFC', unidad: 'ms' },
+  { campo: 'calorias_activas_kcal', label: 'Calorías activas', unidad: 'kcal' },
+  { campo: 'calorias_totales_kcal', label: 'Calorías totales', unidad: 'kcal' },
+  { campo: 'distancia_m', label: 'Distancia', unidad: 'm' },
+  { campo: 'ejercicio_min', label: 'Ejercicio', unidad: 'min' },
+  { campo: 'cadencia_pasos_promedio', label: 'Cadencia', unidad: 'pasos/min' },
+  { campo: 'velocidad_promedio_ms', label: 'Velocidad', unidad: 'm/s', decimales: 1 },
+  { campo: 'potencia_promedio_w', label: 'Potencia', unidad: 'W' },
+  { campo: 'pisos_subidos', label: 'Pisos subidos', unidad: '' },
+  { campo: 'elevacion_ganada_m', label: 'Elevación ganada', unidad: 'm' },
+  { campo: 'saturacion_o2_pct', label: 'Saturación O2', unidad: '%', decimales: 1 },
+  { campo: 'frecuencia_respiratoria', label: 'Frec. respiratoria', unidad: 'rpm', decimales: 1 },
+  { campo: 'presion_sistolica_mmhg', label: 'Presión sistólica', unidad: 'mmHg' },
+  { campo: 'presion_diastolica_mmhg', label: 'Presión diastólica', unidad: 'mmHg' },
+  { campo: 'glucosa_mg_dl', label: 'Glucosa', unidad: 'mg/dL' },
+  { campo: 'temperatura_c', label: 'Temperatura', unidad: '°C', decimales: 1 },
+  { campo: 'temperatura_basal_c', label: 'Temperatura basal', unidad: '°C', decimales: 1 },
+  { campo: 'grasa_corporal_pct', label: 'Grasa corporal', unidad: '%', decimales: 1 },
+  { campo: 'masa_osea_kg', label: 'Masa ósea', unidad: 'kg', decimales: 1 },
+  { campo: 'masa_magra_kg', label: 'Masa magra', unidad: 'kg', decimales: 1 },
+  { campo: 'altura_cm', label: 'Altura', unidad: 'cm', decimales: 1 },
+  { campo: 'tmb_kcal_dia', label: 'Metabolismo basal', unidad: 'kcal/día' },
+  { campo: 'vo2_max', label: 'VO2 max', unidad: 'mL/kg/min', decimales: 1 },
+  { campo: 'hidratacion_ml', label: 'Hidratación', unidad: 'mL' },
+  { campo: 'energia_consumida_kcal', label: 'Energía consumida', unidad: 'kcal' },
+];
+
 declare global {
   interface Window {
     PanchoNative?: {
@@ -31,6 +66,7 @@ export default function OSNativeHealthConnect() {
   const [state, setState] = useState<'checking' | 'ready' | 'needs_permission' | 'unavailable' | 'error'>('checking');
   const [message, setMessage] = useState('');
   const [backgroundEnabled, setBackgroundEnabled] = useState(false);
+  const [ultimaBiometrica, setUltimaBiometrica] = useState<BiometricaDia | null>(null);
 
   useEffect(() => {
     if (!window.PanchoNative?.isAndroidApp()) return;
@@ -63,6 +99,12 @@ export default function OSNativeHealthConnect() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setState('ready');
         setMessage('Datos sincronizados con Pancho OS.');
+        try {
+          setUltimaBiometrica(JSON.parse(detail.payload));
+        } catch {
+          // El payload nativo siempre es JSON valido; si algo raro llega, se ignora
+          // y la tarjeta simplemente no muestra el detalle de metricas.
+        }
       } catch {
         setState('error');
         setMessage('Health Connect leyó los datos, pero el OS no pudo guardarlos. Reintenta con conexión.');
@@ -80,20 +122,42 @@ export default function OSNativeHealthConnect() {
     ? { label: 'Dar acceso a Health Connect', run: () => window.PanchoNative?.requestHealthPermissions() }
     : { label: 'Sincronizar ahora', run: () => window.PanchoNative?.syncHealth() };
 
+  const metricasConDato = ultimaBiometrica
+    ? METRICAS_HEALTH_CONNECT.filter((m) => typeof ultimaBiometrica[m.campo] === 'number')
+    : [];
+
   return (
-    <section style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }} aria-label="Health Connect">
-      <div>
-        <p style={{ margin: 0, fontWeight: 700, color: 'var(--os-text)' }}>Health Connect</p>
-        <p style={{ margin: '4px 0 0', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>
-          {state === 'checking' && 'Comprobando permisos de Android…'}
-          {state === 'needs_permission' && 'Conecta pasos, sueño y peso desde tu teléfono.'}
-          {state === 'ready' && (message || 'Conectado. Los datos de hoy se sincronizan directamente con tu OS.')}
-          {state === 'unavailable' && 'Health Connect no está disponible en este teléfono.'}
-          {state === 'error' && message}
-        </p>
+    <section style={{ ...card, display: 'flex', flexDirection: 'column', gap: 12 }} aria-label="Health Connect">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ margin: 0, fontWeight: 700, color: 'var(--os-text)' }}>Health Connect</p>
+          <p style={{ margin: '4px 0 0', color: 'var(--os-muted)', fontSize: 'var(--os-text-sm)' }}>
+            {state === 'checking' && 'Comprobando permisos de Android…'}
+            {state === 'needs_permission' && 'Conecta pasos, sueño, frecuencia cardiaca y más desde tu teléfono.'}
+            {state === 'ready' && (message || 'Conectado. Los datos de hoy se sincronizan directamente con tu OS.')}
+            {state === 'unavailable' && 'Health Connect no está disponible en este teléfono.'}
+            {state === 'error' && message}
+          </p>
+        </div>
+        {state !== 'unavailable' && state !== 'checking' && (
+          <button type="button" className="os-btn os-btn-primary" onClick={action.run}>{action.label}</button>
+        )}
       </div>
-      {state !== 'unavailable' && state !== 'checking' && (
-        <button type="button" className="os-btn os-btn-primary" onClick={action.run}>{action.label}</button>
+      {metricasConDato.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 8 }}>
+          {metricasConDato.map((m) => {
+            const valor = ultimaBiometrica![m.campo] as number;
+            const texto = m.decimales ? valor.toFixed(m.decimales) : Math.round(valor).toString();
+            return (
+              <div key={m.campo} style={{ background: 'var(--os-surface-1)', borderRadius: 'var(--os-r-sm, 8px)', padding: '6px 8px' }}>
+                <p style={{ margin: 0, fontSize: 10, color: 'var(--os-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</p>
+                <p style={{ margin: '2px 0 0', fontFamily: 'var(--os-font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--os-text)' }}>
+                  {texto}{m.unidad && <span style={{ fontSize: 10, color: 'var(--os-muted)' }}> {m.unidad}</span>}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       )}
     </section>
   );

@@ -25,7 +25,39 @@ interface DiaBiometrico {
   fc_reposo?: unknown;
   fuente?: unknown;
   raw?: unknown;
+  [campo: string]: unknown;
 }
+
+// Metricas de Health Connect que llegan como numero decimal no negativo (o ausentes).
+// Ver Android/.../data/health/HealthConnectSync.kt (payload()) para el origen de cada campo.
+const CAMPOS_HEALTH_CONNECT = [
+  'fc_promedio',
+  'vfc_ms',
+  'calorias_activas_kcal',
+  'calorias_totales_kcal',
+  'distancia_m',
+  'ejercicio_min',
+  'cadencia_pasos_promedio',
+  'velocidad_promedio_ms',
+  'potencia_promedio_w',
+  'pisos_subidos',
+  'elevacion_ganada_m',
+  'saturacion_o2_pct',
+  'frecuencia_respiratoria',
+  'presion_sistolica_mmhg',
+  'presion_diastolica_mmhg',
+  'glucosa_mg_dl',
+  'temperatura_c',
+  'temperatura_basal_c',
+  'grasa_corporal_pct',
+  'masa_osea_kg',
+  'masa_magra_kg',
+  'altura_cm',
+  'tmb_kcal_dia',
+  'vo2_max',
+  'hidratacion_ml',
+  'energia_consumida_kcal',
+] as const;
 
 // Entero no negativo o null. Usado para pasos, sueno_min y fc_reposo, que no aceptan
 // decimales ni valores negativos (a diferencia de numOrNull genérico).
@@ -34,6 +66,15 @@ function intNoNegativoOrNull(v: unknown): number | null | 'invalido' {
   const n = numOrNull(v);
   if (n === null) return 'invalido';
   if (!Number.isInteger(n) || n < 0) return 'invalido';
+  return n;
+}
+
+// Decimal no negativo o null. Usado para las metricas de Health Connect que sí
+// aceptan fracciones (distancia, calorías, VO2 max, temperatura, etc.).
+function numNoNegativoOrNull(v: unknown): number | null | 'invalido' {
+  if (v === undefined || v === null || v === '') return null;
+  const n = numOrNull(v);
+  if (n === null || n < 0) return 'invalido';
   return n;
 }
 
@@ -58,7 +99,17 @@ function construirPayload(dia: DiaBiometrico): { error: string } | { payload: Re
     peso_kg = n;
   }
 
-  if (pasos === null && sueno_min === null && peso_kg === null && fc_reposo === null) {
+  const metricasHealthConnect: Record<string, number> = {};
+  for (const campo of CAMPOS_HEALTH_CONNECT) {
+    const valor = numNoNegativoOrNull(dia[campo]);
+    if (valor === 'invalido') return { error: `${campo} debe ser numérico y no negativo` };
+    if (valor !== null) metricasHealthConnect[campo] = valor;
+  }
+
+  if (
+    pasos === null && sueno_min === null && peso_kg === null && fc_reposo === null &&
+    Object.keys(metricasHealthConnect).length === 0
+  ) {
     return { error: 'se requiere al menos una metrica' };
   }
 
@@ -72,6 +123,7 @@ function construirPayload(dia: DiaBiometrico): { error: string } | { payload: Re
     fecha,
     fuente,
     updated_at: new Date().toISOString(),
+    ...metricasHealthConnect,
   };
   if (pasos !== null) payload.pasos = pasos;
   if (sueno_min !== null) payload.sueno_min = sueno_min;

@@ -1,0 +1,32 @@
+-- Amplia biometricas_dia con las metricas de Health Connect que el Android de
+-- Pancho OS ahora lee ademas de pasos, sueno y peso: frecuencia cardiaca,
+-- calorias, distancia, ejercicio, composicion corporal, signos vitales,
+-- hidratacion y nutricion. Aditiva, no rompe filas existentes.
+
+alter table biometricas_dia
+  add column if not exists fc_promedio integer,
+  add column if not exists vfc_ms numeric,
+  add column if not exists calorias_activas_kcal numeric,
+  add column if not exists calorias_totales_kcal numeric,
+  add column if not exists distancia_m numeric,
+  add column if not exists ejercicio_min integer,
+  add column if not exists cadencia_pasos_promedio numeric,
+  add column if not exists velocidad_promedio_ms numeric,
+  add column if not exists potencia_promedio_w numeric,
+  add column if not exists pisos_subidos numeric,
+  add column if not exists elevacion_ganada_m numeric,
+  add column if not exists saturacion_o2_pct numeric,
+  add column if not exists frecuencia_respiratoria numeric,
+  add column if not exists presion_sistolica_mmhg numeric,
+  add column if not exists presion_diastolica_mmhg numeric,
+  add column if not exists glucosa_mg_dl numeric,
+  add column if not exists temperatura_c numeric,
+  add column if not exists temperatura_basal_c numeric,
+  add column if not exists grasa_corporal_pct numeric,
+  add column if not exists masa_osea_kg numeric,
+  add column if not exists masa_magra_kg numeric,
+  add column if not exists altura_cm numeric,
+  add column if not exists tmb_kcal_dia numeric,
+  add column if not exists vo2_max numeric,
+  add column if not exists hidratacion_ml numeric,
+  add column if not exists energia_consumida_kcal numeric;
