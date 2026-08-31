@@ -39,6 +39,24 @@ interface Run {
   iniciado_at: string;
 }
 
+// Sesiones de Telegram que Hermes ya guarda en el VPS. Vista de solo lectura:
+// no hay envio, no hay polling, solo se listan y se leen. El campo de datos
+// es role/content/timestamp, distinto de rol/contenido/created_at del OS.
+interface TelegramSesion {
+  id: string;
+  source: string;
+  title: string | null;
+  preview: string | null;
+  messageCount: number;
+  lastActive: string;
+}
+
+interface TelegramMensaje {
+  role: 'user' | 'assistant' | 'sistema';
+  content: string;
+  timestamp: string;
+}
+
 const POLL_MS = 3000;
 
 // Cada conversacion elige que Hermes la atiende. El del VPS tiene Telegram,
@@ -72,6 +90,16 @@ export default function OSChat() {
   const [cargando, setCargando] = useState(false);
   const finRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 'os' = conversacion soberana editable. 'telegram-readonly' = viendo un
+  // hilo de Telegram que Hermes ya guardo en el VPS, sin input ni polling.
+  const [modo, setModo] = useState<'os' | 'telegram-readonly'>('os');
+  const [telegramAbierto, setTelegramAbierto] = useState(false);
+  const [telegramSesiones, setTelegramSesiones] = useState<TelegramSesion[]>([]);
+  const [telegramCargandoLista, setTelegramCargandoLista] = useState(false);
+  const [telegramActivaId, setTelegramActivaId] = useState<string | null>(null);
+  const [telegramMensajes, setTelegramMensajes] = useState<TelegramMensaje[]>([]);
+  const [telegramCargandoHilo, setTelegramCargandoHilo] = useState(false);
 
   // --- Bridge nativo (solo app de escritorio, Tauri) -----------------------
   const desktop = isDesktop();
@@ -170,6 +198,41 @@ export default function OSChat() {
     }
   }, []);
 
+  const cargarSesionesTelegram = useCallback(async () => {
+    setTelegramCargandoLista(true);
+    try {
+      const res = await fetch('/api/taski/sesiones?profile_id=vps-default');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const lista: TelegramSesion[] = (data.sesiones ?? []).filter(
+        (s: TelegramSesion) => s.source === 'telegram',
+      );
+      lista.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+      setTelegramSesiones(lista);
+    } catch (e) {
+      setError(`No se pudo cargar Telegram: ${String(e)}`);
+    } finally {
+      setTelegramCargandoLista(false);
+    }
+  }, []);
+
+  const abrirHiloTelegram = useCallback(async (id: string) => {
+    setModo('telegram-readonly');
+    setTelegramActivaId(id);
+    setTelegramCargandoHilo(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(id)}&profile_id=vps-default`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setTelegramMensajes(data.mensajes ?? []);
+    } catch (e) {
+      setError(`No se pudo cargar el hilo de Telegram: ${String(e)}`);
+    } finally {
+      setTelegramCargandoHilo(false);
+    }
+  }, []);
+
   // Arranque: lista + abrir la mas reciente (o crear la primera).
   useEffect(() => {
     void (async () => {
@@ -190,17 +253,17 @@ export default function OSChat() {
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
-    if (runActivo && activaId) {
+    if (modo === 'os' && runActivo && activaId) {
       pollRef.current = setInterval(() => void cargarHilo(activaId), POLL_MS);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [runActivo, activaId, cargarHilo]);
+  }, [modo, runActivo, activaId, cargarHilo]);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensajes.length, runActivo?.estado]);
+  }, [mensajes.length, runActivo?.estado, telegramMensajes.length]);
 
   const [perfilNuevo, setPerfilNuevo] = useState('vps-default');
 
@@ -215,6 +278,7 @@ export default function OSChat() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       await cargarConversaciones();
+      setModo('os');
       setActivaId(data.conversacion.id);
       setMensajes([]);
       setRunActivo(null);
@@ -277,12 +341,15 @@ export default function OSChat() {
             key={c.id}
             type="button"
             className="os-btn"
-            onClick={() => setActivaId(c.id)}
+            onClick={() => {
+              setModo('os');
+              setActivaId(c.id);
+            }}
             style={{
               justifyContent: 'flex-start',
               textAlign: 'left',
               fontSize: 12,
-              background: c.id === activaId ? 'var(--os-fill-subtle)' : undefined,
+              background: modo === 'os' && c.id === activaId ? 'var(--os-fill-subtle)' : undefined,
               overflow: 'hidden',
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
@@ -292,126 +359,218 @@ export default function OSChat() {
             {c.titulo}
           </button>
         ))}
+
+        {/* Seccion colapsable de solo lectura: hilos que Hermes ya guardo de Telegram */}
+        <button
+          type="button"
+          className="os-btn"
+          onClick={() => {
+            const abrir = !telegramAbierto;
+            setTelegramAbierto(abrir);
+            if (abrir && telegramSesiones.length === 0) void cargarSesionesTelegram();
+          }}
+          style={{ justifyContent: 'space-between', fontSize: 12, marginTop: 8 }}
+        >
+          <span>Telegram</span>
+          <span>{telegramAbierto ? '▾' : '▸'}</span>
+        </button>
+        {telegramAbierto && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {telegramCargandoLista && (
+              <span style={{ fontSize: 11, color: 'var(--os-muted)', padding: '2px 6px' }}>Cargando...</span>
+            )}
+            {!telegramCargandoLista && telegramSesiones.length === 0 && (
+              <span style={{ fontSize: 11, color: 'var(--os-muted)', padding: '2px 6px' }}>Sin hilos de Telegram.</span>
+            )}
+            {telegramSesiones.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="os-btn"
+                onClick={() => void abrirHiloTelegram(s.id)}
+                style={{
+                  justifyContent: 'flex-start',
+                  textAlign: 'left',
+                  fontSize: 11,
+                  background: modo === 'telegram-readonly' && s.id === telegramActivaId ? 'var(--os-fill-subtle)' : undefined,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                }}
+                title={s.title ?? s.id}
+              >
+                {(s.title ?? s.id.slice(0, 12)) + ` (${s.messageCount})`}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Hilo */}
-      <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
-        {activaId && (
-          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span>{etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}</span>
-            {desktop && (
-              <span title="Estado de Ollama local">
-                {ollama
-                  ? ollama.available
-                    ? `Ollama: ${ollama.version ?? 'activo'} (${ollama.models.length} modelos)`
-                    : 'Ollama: no disponible'
-                  : 'Ollama: consultando...'}
-              </span>
-            )}
+      {modo === 'telegram-readonly' ? (
+        <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-accent)', background: 'var(--os-fill-subtle)' }}>
+            Vista de solo lectura - conversacion de Telegram
           </div>
-        )}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {!activaId && (
-            <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>
-              Crea una conversacion para hablar con Hermes. El hilo queda guardado en tu OS.
-            </p>
-          )}
-          {mensajes.map((m) => {
-            const esUser = m.rol === 'user';
-            return (
-              <div key={m.id} style={{ alignSelf: esUser ? 'flex-end' : 'flex-start', maxWidth: esUser ? '80%' : '88%' }}>
-                <div
-                  style={{
-                    background: esUser ? 'var(--os-accent)' : 'var(--os-fill-subtle)',
-                    border: esUser ? 'none' : '1px solid var(--os-line-soft)',
-                    color: esUser ? '#fff' : 'var(--os-text)',
-                    padding: '10px 14px',
-                    borderRadius: esUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {m.contenido}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {telegramCargandoHilo && (
+              <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>Cargando hilo de Telegram...</p>
+            )}
+            {!telegramCargandoHilo && telegramMensajes.length === 0 && (
+              <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>Este hilo no tiene mensajes.</p>
+            )}
+            {telegramMensajes.map((m, i) => {
+              const esUser = m.role === 'user';
+              return (
+                <div key={i} style={{ alignSelf: esUser ? 'flex-end' : 'flex-start', maxWidth: esUser ? '80%' : '88%' }}>
+                  <div
+                    style={{
+                      background: esUser ? 'var(--os-accent)' : 'var(--os-fill-subtle)',
+                      border: esUser ? 'none' : '1px solid var(--os-line-soft)',
+                      color: esUser ? '#fff' : 'var(--os-text)',
+                      padding: '10px 14px',
+                      borderRadius: esUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {m.content}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--os-muted)', marginTop: 2, textAlign: esUser ? 'right' : 'left' }}>
+                    {horaCorta(m.timestamp)}
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--os-muted)', marginTop: 2, textAlign: esUser ? 'right' : 'left' }}>
-                  {horaCorta(m.created_at)}
-                </div>
+              );
+            })}
+            {error && (
+              <div style={{ color: 'var(--os-error)', fontSize: 12, border: '1px solid var(--os-error)', borderRadius: 8, padding: '8px 12px' }}>
+                {error}
               </div>
-            );
-          })}
-
-          {runActivo && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--os-muted)', fontSize: 12 }}>
-              <span
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  border: '2px solid var(--os-line)',
-                  borderTopColor: 'var(--os-accent)',
-                  animation: 'taski-spin 0.8s linear infinite',
-                }}
-              />
-              Hermes esta trabajando... {segundosTrabajando}s (puede tardar 1 a 3 minutos)
-            </div>
-          )}
-
-          {error && (
-            <div style={{ color: 'var(--os-error)', fontSize: 12, border: '1px solid var(--os-error)', borderRadius: 8, padding: '8px 12px' }}>
-              {error}
-            </div>
-          )}
-          {desktop && flowMensaje && (
-            <div style={{ color: 'var(--os-muted)', fontSize: 12 }}>{flowMensaje}</div>
-          )}
-          <div ref={finRef} />
+            )}
+            <div ref={finRef} />
+          </div>
         </div>
+      ) : (
+        <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+          {activaId && (
+            <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <span>{etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}</span>
+              {desktop && (
+                <span title="Estado de Ollama local">
+                  {ollama
+                    ? ollama.available
+                      ? `Ollama: ${ollama.version ?? 'activo'} (${ollama.models.length} modelos)`
+                      : 'Ollama: no disponible'
+                    : 'Ollama: consultando...'}
+                </span>
+              )}
+            </div>
+          )}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {!activaId && (
+              <p style={{ color: 'var(--os-muted)', fontSize: 13 }}>
+                Crea una conversacion para hablar con Hermes. El hilo queda guardado en tu OS.
+              </p>
+            )}
+            {mensajes.map((m) => {
+              const esUser = m.rol === 'user';
+              return (
+                <div key={m.id} style={{ alignSelf: esUser ? 'flex-end' : 'flex-start', maxWidth: esUser ? '80%' : '88%' }}>
+                  <div
+                    style={{
+                      background: esUser ? 'var(--os-accent)' : 'var(--os-fill-subtle)',
+                      border: esUser ? 'none' : '1px solid var(--os-line-soft)',
+                      color: esUser ? '#fff' : 'var(--os-text)',
+                      padding: '10px 14px',
+                      borderRadius: esUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {m.contenido}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--os-muted)', marginTop: 2, textAlign: esUser ? 'right' : 'left' }}>
+                    {horaCorta(m.created_at)}
+                  </div>
+                </div>
+              );
+            })}
 
-        {/* Input */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void enviar();
-          }}
-          style={{ display: 'flex', gap: 8, padding: '0.75rem 1rem', borderTop: '1px solid var(--os-line-soft)' }}
-        >
-          {desktop && (
-            <button
-              type="button"
-              className="os-btn"
-              title="Adjuntar archivo local"
-              onClick={() => void adjuntarArchivo()}
+            {runActivo && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--os-muted)', fontSize: 12 }}>
+                <span
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    border: '2px solid var(--os-line)',
+                    borderTopColor: 'var(--os-accent)',
+                    animation: 'taski-spin 0.8s linear infinite',
+                  }}
+                />
+                Hermes esta trabajando... {segundosTrabajando}s (puede tardar 1 a 3 minutos)
+              </div>
+            )}
+
+            {error && (
+              <div style={{ color: 'var(--os-error)', fontSize: 12, border: '1px solid var(--os-error)', borderRadius: 8, padding: '8px 12px' }}>
+                {error}
+              </div>
+            )}
+            {desktop && flowMensaje && (
+              <div style={{ color: 'var(--os-muted)', fontSize: 12 }}>{flowMensaje}</div>
+            )}
+            <div ref={finRef} />
+          </div>
+
+          {/* Input */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void enviar();
+            }}
+            style={{ display: 'flex', gap: 8, padding: '0.75rem 1rem', borderTop: '1px solid var(--os-line-soft)' }}
+          >
+            {desktop && (
+              <button
+                type="button"
+                className="os-btn"
+                title="Adjuntar archivo local"
+                onClick={() => void adjuntarArchivo()}
+                disabled={!activaId || Boolean(runActivo)}
+              >
+                📎
+              </button>
+            )}
+            {desktop && (
+              <button
+                type="button"
+                className={grabando ? 'os-btn os-btn-primary' : 'os-btn'}
+                title={grabando ? 'Detener grabacion de reunion (Flow)' : 'Iniciar grabacion de reunion (Flow)'}
+                onClick={() => void alternarGrabacion()}
+                disabled={flowBusy}
+              >
+                {grabando ? '⏹' : '🎙'}
+              </button>
+            )}
+            <input
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder={runActivo ? 'Hermes esta trabajando...' : 'Escribe un mensaje'}
               disabled={!activaId || Boolean(runActivo)}
-            >
-              📎
+              className="os-input"
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="os-btn os-btn-primary" disabled={!activaId || Boolean(runActivo) || !texto.trim()}>
+              Enviar
             </button>
-          )}
-          {desktop && (
-            <button
-              type="button"
-              className={grabando ? 'os-btn os-btn-primary' : 'os-btn'}
-              title={grabando ? 'Detener grabacion de reunion (Flow)' : 'Iniciar grabacion de reunion (Flow)'}
-              onClick={() => void alternarGrabacion()}
-              disabled={flowBusy}
-            >
-              {grabando ? '⏹' : '🎙'}
-            </button>
-          )}
-          <input
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={runActivo ? 'Hermes esta trabajando...' : 'Escribe un mensaje'}
-            disabled={!activaId || Boolean(runActivo)}
-            className="os-input"
-            style={{ flex: 1 }}
-          />
-          <button type="submit" className="os-btn os-btn-primary" disabled={!activaId || Boolean(runActivo) || !texto.trim()}>
-            Enviar
-          </button>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
