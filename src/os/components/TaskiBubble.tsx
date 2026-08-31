@@ -12,6 +12,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
+import { useDraggableBubble } from '../hooks/useDraggableBubble.ts';
 
 interface Turno {
   role: 'user' | 'assistant' | 'error';
@@ -35,6 +36,16 @@ interface ModeloTaski {
 
 const SESION_OS_ID = 'pancho-os';
 
+// Clampea la posicion vertical de la pestana de restaurar para que nunca
+// quede pegada arriba/abajo del todo, aunque la burbuja se haya ocultado
+// desde una esquina extrema.
+function clampPestana(y: number, size: number): number {
+  if (typeof window === 'undefined') return y;
+  const min = 12;
+  const max = window.innerHeight - size - 12;
+  return Math.min(Math.max(y, min), max);
+}
+
 function etiquetaSesion(s: SesionTaski): string {
   if (s.id === SESION_OS_ID) return s.title || 'Taski (OS)';
   return s.title || (s.source === 'telegram' ? 'Conversacion sin titulo' : s.source);
@@ -55,6 +66,18 @@ function useEsDesktop(): boolean {
 
 export default function TaskiBubble() {
   const desktop = useEsDesktop();
+  const bubbleSize = desktop ? 52 : 56;
+  // Reserva espacio abajo para no tapar el bottom-nav movil (72px + safe area
+  // aprox). En desktop no hay bottom-nav, asi que no reserva nada.
+  const bottomReservado = desktop ? 0 : 86;
+  const {
+    pos: posArrastre,
+    oculto: burbujaOculta,
+    ocultar: ocultarBurbuja,
+    mostrar: mostrarBurbuja,
+    onPointerDown: onPointerDownBurbuja,
+    registrarComoTap,
+  } = useDraggableBubble({ size: bubbleSize, margin: desktop ? 22 : 14, bottomReservado });
   const [abierto, setAbierto] = useState(false);
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
@@ -200,17 +223,65 @@ export default function TaskiBubble() {
     }
   }
 
-  // Posicion de la burbuja: en movil queda encima del bottom-nav (72px + safe area).
-  const posBurbuja: CSSProperties = desktop
-    ? { bottom: 22, right: 22 }
-    : { bottom: 'calc(72px + env(safe-area-inset-bottom, 0px) + 14px)', right: 14 };
+  // Posicion de la burbuja: arrastrable, con clamp a los limites de pantalla.
+  // Mientras la posicion inicial todavia no se calcula (primer render antes
+  // del efecto), usa la esquina inferior derecha de siempre para no saltar.
+  const posBurbuja: CSSProperties = posArrastre
+    ? { left: posArrastre.x, top: posArrastre.y }
+    : desktop
+      ? { bottom: 22, right: 22 }
+      : { bottom: 'calc(72px + env(safe-area-inset-bottom, 0px) + 14px)', right: 14 };
 
   const burbuja: CSSProperties = {
     position: 'fixed',
     zIndex: 170,
-    width: desktop ? 52 : 56,
-    height: desktop ? 52 : 56,
+    width: bubbleSize,
+    height: bubbleSize,
     borderRadius: 'var(--os-r-full, 999px)',
+    background: 'var(--os-accent)',
+    color: '#fff',
+    border: 'none',
+    cursor: 'grab',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: 'var(--os-shadow-accent, 0 6px 18px rgba(59,78,217,0.4))',
+    transition: 'transform 0.15s',
+    touchAction: 'none',
+    ...posBurbuja,
+  };
+
+  const botonOcultar: CSSProperties = {
+    position: 'fixed',
+    zIndex: 171,
+    left: posArrastre ? posArrastre.x + bubbleSize - 8 : undefined,
+    top: posArrastre ? posArrastre.y - 6 : undefined,
+    width: 20,
+    height: 20,
+    borderRadius: 'var(--os-r-full, 999px)',
+    background: 'var(--os-bg-sunken)',
+    border: '1px solid var(--os-line-soft)',
+    color: 'var(--os-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 12,
+    lineHeight: 1,
+    cursor: 'pointer',
+    padding: 0,
+  };
+
+  // Pestanita discreta para volver a mostrar la burbuja cuando esta oculta.
+  // Se ancla al mismo borde vertical donde quedo antes de ocultarse.
+  const pestanaRestaurar: CSSProperties = {
+    position: 'fixed',
+    zIndex: 170,
+    right: 0,
+    top: posArrastre ? clampPestana(posArrastre.y, bubbleSize) : '50%',
+    width: 22,
+    height: 44,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
     background: 'var(--os-accent)',
     color: '#fff',
     border: 'none',
@@ -218,9 +289,7 @@ export default function TaskiBubble() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: 'var(--os-shadow-accent, 0 6px 18px rgba(59,78,217,0.4))',
-    transition: 'transform 0.15s',
-    ...posBurbuja,
+    boxShadow: 'var(--os-shadow-accent, 0 4px 12px rgba(59,78,217,0.35))',
   };
 
   const panel: CSSProperties = desktop
@@ -579,9 +648,40 @@ export default function TaskiBubble() {
         </div>
       )}
 
-      {!abierto && (
-        <button type="button" onClick={abrir} aria-label="Abrir Taski, chat con Hermes" style={burbuja}>
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 26 }}>
+      {!abierto && !burbujaOculta && (
+        <>
+          <button
+            type="button"
+            onPointerDown={onPointerDownBurbuja}
+            onClick={registrarComoTap(abrir)}
+            aria-label="Abrir Taski, chat con Hermes. Arrastra para moverla"
+            style={burbuja}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 26 }}>
+              smart_toy
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={ocultarBurbuja}
+            aria-label="Ocultar Taski"
+            title="Ocultar Taski"
+            style={botonOcultar}
+          >
+            ×
+          </button>
+        </>
+      )}
+
+      {!abierto && burbujaOculta && (
+        <button
+          type="button"
+          onClick={mostrarBurbuja}
+          aria-label="Mostrar Taski, chat con Hermes"
+          title="Mostrar Taski"
+          style={pestanaRestaurar}
+        >
+          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: 18 }}>
             smart_toy
           </span>
         </button>
