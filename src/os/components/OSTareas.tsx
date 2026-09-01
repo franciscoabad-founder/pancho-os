@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, EmptyState, Spinner, ToastProvider, useConfirm, useToast } from './ui';
 import { useProyectosActivos } from '../hooks/useProyectosActivos.ts';
+import OSTareaDetalle from './OSTareaDetalle.tsx';
 
 interface Tarea {
   id: string;
@@ -26,16 +27,28 @@ const PRIORIDAD_META: Record<string, { label: string; color: string; bg: string 
   low:      { label: 'Low',      color: 'var(--os-muted)', bg: 'rgba(107,114,128,0.16)' },
 };
 
+// 5 estados desde la Rebanada A (antes solo pendiente/en_progreso/hecho).
 const ESTADO_META: Record<string, { label: string; color: string; bg: string }> = {
   pendiente:   { label: 'Pendiente',   color: 'var(--os-text-2)', bg: 'var(--os-fill-subtle)' },
   en_progreso: { label: 'En progreso', color: 'var(--os-accent-light)', bg: 'rgba(107,122,232,0.16)' },
+  bloqueada:   { label: 'Bloqueada',   color: '#D4537E', bg: 'rgba(212,83,126,0.14)' },
   hecho:       { label: 'Hecho',       color: 'var(--os-champagne)', bg: 'rgba(181,152,90,0.14)' },
+  cancelada:   { label: 'Cancelada',   color: 'var(--os-muted)', bg: 'var(--os-fill-subtle)' },
 };
 
 const GRUPO_ACCENT: Record<string, string> = {
   'URGENTE ASAP': '#D4537E',
   'URGENTE!': 'var(--os-warn)',
   general: 'var(--os-accent)',
+};
+
+type Agrupacion = 'grupo' | 'proyecto' | 'fecha' | 'ninguna';
+const AGRUPACION_CONFIG_KEY = 'tareas_agrupacion';
+const AGRUPACION_LABEL: Record<Agrupacion, string> = {
+  grupo: 'Urgencia',
+  proyecto: 'Proyecto',
+  fecha: 'Fecha',
+  ninguna: 'Sin agrupar',
 };
 
 function estadoValue(estado: string) {
@@ -48,6 +61,16 @@ function grupoRank(g: string) {
   if (g === 'general') return 99;
   return 50;
 }
+
+function bucketFecha(t: Tarea, today: string): string {
+  if (!t.deadline) return 'Sin fecha';
+  if (t.deadline < today) return 'Vencidas';
+  if (t.deadline === today) return 'Hoy';
+  const en7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  if (t.deadline <= en7) return 'Esta semana';
+  return 'Mas adelante';
+}
+const FECHA_RANK: Record<string, number> = { Vencidas: 0, Hoy: 1, 'Esta semana': 2, 'Mas adelante': 3, 'Sin fecha': 4 };
 
 const selectStyle: React.CSSProperties = {
   background: 'var(--os-surface)',
@@ -85,6 +108,8 @@ function OSTareasInner() {
   const [expandidas, setExpandidas] = useState<Record<string, boolean>>({});
   const [subInputs, setSubInputs] = useState<Record<string, string>>({});
   const [mostrarHechas, setMostrarHechas] = useState(false);
+  const [detalleId, setDetalleId] = useState<string | null>(null);
+  const [agrupacion, setAgrupacion] = useState<Agrupacion>('grupo');
 
   // Alta rapida
   const [nTitulo, setNTitulo] = useState('');
@@ -110,6 +135,27 @@ function OSTareasInner() {
   }
 
   useEffect(() => { load(); }, []);
+
+  // Agrupacion configurable, recordada en os_config (misma mecanica que
+  // bottom_nav): asi la eleccion de Pancho persiste entre dispositivos.
+  useEffect(() => {
+    fetch(`/api/config/${AGRUPACION_CONFIG_KEY}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const v = data?.config?.value;
+        if (v === 'grupo' || v === 'proyecto' || v === 'fecha' || v === 'ninguna') setAgrupacion(v);
+      })
+      .catch(() => null);
+  }, []);
+
+  function cambiarAgrupacion(v: Agrupacion) {
+    setAgrupacion(v);
+    fetch(`/api/config/${AGRUPACION_CONFIG_KEY}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: v }),
+    }).catch(() => null);
+  }
 
   async function patch(id: string, body: Record<string, unknown>) {
     try {
@@ -140,38 +186,6 @@ function OSTareasInner() {
     } catch (err) {
       toast.show('Error: ' + (err instanceof Error ? err.message : String(err)), 'error');
     }
-  }
-
-  function editarTitulo(t: Tarea) {
-    const titulo = window.prompt('Titulo:', t.titulo);
-    if (titulo === null || !titulo.trim()) return;
-    patch(t.id, { titulo: titulo.trim() });
-  }
-
-  function editarDeadline(t: Tarea) {
-    const val = window.prompt('Deadline (YYYY-MM-DD, vacio = quitar):', t.deadline || '');
-    if (val === null) return;
-    const v = val.trim();
-    if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) { toast.show('Formato invalido. Usa YYYY-MM-DD', 'error'); return; }
-    patch(t.id, { deadline: v || null });
-  }
-
-  function editarNotas(t: Tarea) {
-    const notas = window.prompt('Notas:', t.notas || '');
-    if (notas === null) return;
-    patch(t.id, { notas: notas.trim() || null });
-  }
-
-  function editarTipo(t: Tarea) {
-    const val = window.prompt('Tipo (ej. deep work, llamada, tramite):', t.tipo || '');
-    if (val === null) return;
-    patch(t.id, { tipo: val.trim() || null });
-  }
-
-  function editarGrupo(t: Tarea) {
-    const val = window.prompt('Grupo (ej. URGENTE ASAP, URGENTE!, general):', t.grupo || 'general');
-    if (val === null) return;
-    patch(t.id, { grupo: val.trim() || 'general' });
   }
 
   async function crear(body: Record<string, unknown>) {
@@ -219,6 +233,25 @@ function OSTareasInner() {
     }
   }
 
+  // Quick-add por grupo visible: crea la tarea con el contexto del grupo que
+  // se esta mirando (grupo/proyecto segun la agrupacion activa), sin abrir el
+  // formulario de alta de arriba.
+  const [quickAdd, setQuickAdd] = useState<Record<string, string>>({});
+  async function agregarEnGrupo(nombreGrupo: string) {
+    const titulo = (quickAdd[nombreGrupo] || '').trim();
+    if (!titulo) return;
+    try {
+      const body: Record<string, unknown> = { titulo };
+      if (agrupacion === 'grupo') body.grupo = nombreGrupo;
+      else if (agrupacion === 'proyecto' && nombreGrupo !== 'Sin proyecto') body.proyecto = nombreGrupo;
+      await crear(body);
+      setQuickAdd((prev) => ({ ...prev, [nombreGrupo]: '' }));
+      await load();
+    } catch (err) {
+      toast.show('Error: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    }
+  }
+
   const { grupos, hijosPor } = useMemo(() => {
     const hijosPor: Record<string, Tarea[]> = {};
     const padres: Tarea[] = [];
@@ -233,19 +266,33 @@ function OSTareasInner() {
       hijosPor[k].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.created_at.localeCompare(b.created_at));
     }
     const visibles = padres.filter((t) => mostrarHechas || estadoValue(t.estado) !== 'hecho' || (hijosPor[t.id] ?? []).some((h) => estadoValue(h.estado) !== 'hecho'));
+
+    const today = new Date().toISOString().slice(0, 10);
+    const claveDe = (t: Tarea): string => {
+      if (agrupacion === 'proyecto') return t.proyecto || 'Sin proyecto';
+      if (agrupacion === 'fecha') return bucketFecha(t, today);
+      if (agrupacion === 'ninguna') return 'Todas';
+      return t.grupo || 'general';
+    };
+    const rankDe = (g: string): number => {
+      if (agrupacion === 'fecha') return FECHA_RANK[g] ?? 9;
+      if (agrupacion === 'grupo') return grupoRank(g);
+      return 50;
+    };
+
     const porGrupo: Record<string, Tarea[]> = {};
     for (const t of visibles) {
-      const g = t.grupo || 'general';
+      const g = claveDe(t);
       (porGrupo[g] ??= []).push(t);
     }
     const grupos = Object.keys(porGrupo)
-      .sort((a, b) => grupoRank(a) - grupoRank(b) || a.localeCompare(b))
+      .sort((a, b) => rankDe(a) - rankDe(b) || a.localeCompare(b))
       .map((g) => ({
         nombre: g,
         items: porGrupo[g].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || (a.deadline || '9999').localeCompare(b.deadline || '9999')),
       }));
     return { grupos, hijosPor };
-  }, [tareas, mostrarHechas]);
+  }, [tareas, mostrarHechas, agrupacion]);
 
   const pendientesCount = tareas.filter((t) => estadoValue(t.estado) !== 'hecho').length;
 
@@ -261,12 +308,16 @@ function OSTareasInner() {
 
     return (
       <div key={t.id}>
-        <div className="wr-row" style={{ paddingLeft: esSub ? 34 : 0, opacity: isDone ? 0.55 : 1 }}>
+        <div
+          className="wr-row"
+          style={{ paddingLeft: esSub ? 34 : 0, opacity: isDone ? 0.55 : 1, cursor: 'pointer' }}
+          onClick={() => setDetalleId(t.id)}
+        >
           {/* Item */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
             {!esSub && (
               <button
-                onClick={() => setExpandidas((prev) => ({ ...prev, [t.id]: !abierta }))}
+                onClick={(e) => { e.stopPropagation(); setExpandidas((prev) => ({ ...prev, [t.id]: !abierta })); }}
                 title={abierta ? 'Colapsar subtareas' : 'Expandir subtareas'}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: hijos.length ? 'var(--os-accent-light)' : 'var(--os-muted)', padding: 0, fontSize: 'var(--os-text-xs)', width: 16, flexShrink: 0 }}
               >
@@ -274,7 +325,7 @@ function OSTareasInner() {
               </button>
             )}
             <button
-              onClick={() => patch(t.id, { estado: isDone ? 'pendiente' : 'hecho' })}
+              onClick={(e) => { e.stopPropagation(); patch(t.id, { estado: isDone ? 'pendiente' : 'hecho' }); }}
               title={isDone ? 'Reabrir' : 'Marcar hecha'}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, lineHeight: 1, flexShrink: 0, display: 'flex' }}
             >
@@ -283,9 +334,8 @@ function OSTareasInner() {
               </span>
             </button>
             <span
-              onClick={() => editarTitulo(t)}
-              title="Editar titulo"
-              style={{ fontSize: 'var(--os-text-sm)', color: isDone ? 'var(--os-muted)' : 'var(--os-text)', textDecoration: isDone ? 'line-through' : 'none', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title="Abrir detalle"
+              style={{ fontSize: 'var(--os-text-sm)', color: isDone ? 'var(--os-muted)' : 'var(--os-text)', textDecoration: isDone ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
               {t.titulo}
             </span>
@@ -297,17 +347,19 @@ function OSTareasInner() {
             )}
           </div>
 
-          {/* Due date */}
-          <button onClick={() => editarDeadline(t)} title="Cambiar deadline"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            <span className="os-mono" style={{ fontSize: 'var(--os-text-xs)', color: vencida ? 'var(--os-error)' : t.deadline === today ? 'var(--os-warn)' : 'var(--os-muted)' }}>
-              {t.deadline ? new Date(t.deadline + 'T12:00:00').toLocaleDateString('es', { day: 'numeric', month: 'short' }) : '+ fecha'}
-            </span>
-          </button>
+          {/* Due date: control real, no prompt */}
+          <input
+            type="date"
+            value={t.deadline ?? ''}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => patch(t.id, { deadline: e.target.value || null })}
+            style={{ ...selectStyle, color: vencida ? 'var(--os-error)' : t.deadline === today ? 'var(--os-warn)' : 'var(--os-muted)', padding: '3px 4px', fontFamily: 'var(--os-font-body)', fontWeight: 400 }}
+          />
 
           {/* Prioridad */}
           <select
             value={t.prioridad || 'medium'}
+            onClick={(e) => e.stopPropagation()}
             onChange={(e) => patch(t.id, { prioridad: e.target.value })}
             style={{ ...selectStyle, color: pr.color }}
           >
@@ -318,48 +370,39 @@ function OSTareasInner() {
           </select>
 
           {/* Proyecto */}
-          <select value={t.proyecto ?? ''} onChange={(e) => patch(t.id, { proyecto: e.target.value || null })} title="Cambiar proyecto" style={{ ...selectStyle, maxWidth: 130 }}>
+          <select
+            value={t.proyecto ?? ''}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => patch(t.id, { proyecto: e.target.value || null })}
+            title="Cambiar proyecto"
+            style={{ ...selectStyle, maxWidth: 130 }}
+          >
             <option value="">+ proyecto</option>
             {t.proyecto && !proyectos.includes(t.proyecto) && <option value={t.proyecto}>{t.proyecto}</option>}
             {proyectos.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
 
-          {/* Tipo */}
-          <button onClick={() => editarTipo(t)} title="Cambiar tipo" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            <span style={{ fontSize: 'var(--os-text-xs)', color: t.tipo ? 'var(--os-text-2)' : 'var(--os-muted)' }}>{t.tipo || '+ tipo'}</span>
-          </button>
-
-          {/* Estado */}
+          {/* Estado: inline, sin abrir el panel (lo que mas se usa por dia) */}
           <select
             value={est}
+            onClick={(e) => e.stopPropagation()}
             onChange={(e) => patch(t.id, { estado: e.target.value })}
             style={{ ...selectStyle, color: em.color }}
           >
-            <option value="pendiente">Pendiente</option>
-            <option value="en_progreso">En progreso</option>
-            <option value="hecho">Hecho</option>
+            {Object.entries(ESTADO_META).map(([v, m]) => <option key={v} value={v}>{m.label}</option>)}
           </select>
 
           {/* Acciones */}
-          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-            {!esSub && (
-              <button onClick={() => editarGrupo(t)} title="Mover de grupo"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--os-muted)', padding: 4, lineHeight: 1, display: 'flex' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>swap_vert</span>
-              </button>
-            )}
+          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => eliminar(t.id)} title="Eliminar"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--os-muted)', padding: 4, lineHeight: 1, display: 'flex' }}>
               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
-            </button>
-            <button onClick={() => editarNotas(t)} title="Editar notas" style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.notas ? 'var(--os-accent-light)' : 'var(--os-muted)', padding: 4, lineHeight: 1, display: 'flex' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>sticky_note_2</span>
             </button>
           </div>
         </div>
 
         {!esSub && abierta && (
-          <div style={{ borderLeft: '2px solid var(--os-line-accent)', marginLeft: 7 }}>
+          <div style={{ borderLeft: '2px solid var(--os-line-accent)', marginLeft: 7 }} onClick={(e) => e.stopPropagation()}>
             {hijos.map((h) => filaTarea(h, true))}
             <div style={{ display: 'flex', gap: 6, padding: '5px 0 7px 34px' }}>
               <input
@@ -381,7 +424,7 @@ function OSTareasInner() {
       <style>{`
         .wr-row {
           display: grid;
-          grid-template-columns: minmax(200px, 1fr) 74px 96px minmax(90px, 130px) minmax(70px, 100px) 110px 56px;
+          grid-template-columns: minmax(200px, 1fr) 96px minmax(90px, 130px) minmax(70px, 100px) 110px 34px;
           gap: 10px;
           align-items: center;
           padding: 7px 10px;
@@ -390,7 +433,7 @@ function OSTareasInner() {
         .wr-row:hover { background: var(--os-hover); }
         .wr-head {
           display: grid;
-          grid-template-columns: minmax(200px, 1fr) 74px 96px minmax(90px, 130px) minmax(70px, 100px) 110px 56px;
+          grid-template-columns: minmax(200px, 1fr) 96px minmax(90px, 130px) minmax(70px, 100px) 110px 34px;
           gap: 10px;
           padding: 4px 10px 6px;
           font-family: var(--os-font-display);
@@ -401,7 +444,7 @@ function OSTareasInner() {
           color: var(--os-muted);
         }
         .wr-table { overflow-x: auto; }
-        .wr-table-inner { min-width: 760px; }
+        .wr-table-inner { min-width: 700px; }
       `}</style>
 
       {/* Alta rapida */}
@@ -427,11 +470,17 @@ function OSTareasInner() {
         </Button>
       </form>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: 8 }}>
         <p className="os-num" style={{ fontSize: 'var(--os-text-xs)', margin: 0 }}>{pendientesCount} pendientes</p>
-        <Button size="sm" variant="ghost" onClick={() => setMostrarHechas((v) => !v)}>
-          {mostrarHechas ? 'Ocultar hechas' : 'Ver hechas'}
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>Agrupar por</span>
+          <select value={agrupacion} onChange={(e) => cambiarAgrupacion(e.target.value as Agrupacion)} style={selectStyle}>
+            {Object.entries(AGRUPACION_LABEL).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+          </select>
+          <Button size="sm" variant="ghost" onClick={() => setMostrarHechas((v) => !v)}>
+            {mostrarHechas ? 'Ocultar hechas' : 'Ver hechas'}
+          </Button>
+        </div>
       </div>
 
       {error && <p style={{ color: 'var(--os-error)', fontSize: 'var(--os-text-xs)', marginBottom: 10 }}>Error: {error}</p>}
@@ -472,11 +521,19 @@ function OSTareasInner() {
                     <span>Due date</span>
                     <span>Prioridad</span>
                     <span>Proyecto</span>
-                    <span>Tipo</span>
                     <span>Estado</span>
                     <span></span>
                   </div>
                   {items.map((t) => filaTarea(t))}
+                  <div style={{ display: 'flex', gap: 6, padding: '6px 10px 9px' }}>
+                    <input
+                      value={quickAdd[nombre] || ''}
+                      onChange={(e) => setQuickAdd((prev) => ({ ...prev, [nombre]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarEnGrupo(nombre); } }}
+                      placeholder="+ tarea en este grupo (Enter)"
+                      style={{ ...inputStyle, flex: 1, fontSize: 'var(--os-text-xs)', padding: '4px 9px', minHeight: 32 }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -484,6 +541,9 @@ function OSTareasInner() {
         );
       })}
       {sheet}
+      {detalleId && (
+        <OSTareaDetalle tareaId={detalleId} onClose={() => setDetalleId(null)} onCambiada={load} />
+      )}
     </div>
   );
 }
