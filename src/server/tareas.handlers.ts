@@ -17,9 +17,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
 import { registrarEvento } from '../lib/juego/motor.ts';
+import { type Actor, type TareaEvento, listarEventos, registrarCambio } from './tareaEventos.handlers.ts';
 
 export const PRIORIDADES = ['low', 'medium', 'high', 'critical'] as const;
-export const ESTADOS = ['pendiente', 'en_progreso', 'hecho'] as const;
+// 5 valores (antes solo 3): 'bloqueada' y 'cancelada' entran con el CHECK de
+// la migracion 20260831000100_tareas_baseline.sql. Los dos viajan en el mismo
+// despliegue: ampliar aca sin el CHECK en la base, o el CHECK sin ampliar
+// aca, da 400 intermitentes o filas ilegales segun que gane.
+export const ESTADOS = ['pendiente', 'en_progreso', 'bloqueada', 'hecho', 'cancelada'] as const;
 
 export type Prioridad = (typeof PRIORIDADES)[number];
 
@@ -38,6 +43,16 @@ export interface Tarea {
   parent_id: string | null;
   orden: number | null;
   created_at: string;
+  updated_at: string;
+  completado_at: string | null;
+  visto_hasta: string | null;
+  linea_id: string | null;
+}
+
+export interface TareaDetalle {
+  tarea: Tarea;
+  subtareas: Tarea[];
+  eventos: TareaEvento[];
 }
 
 // Cuerpo crudo de la peticion: no confiamos en su forma, cada campo se
@@ -136,10 +151,21 @@ export async function crearTarea(
   return data as Tarea;
 }
 
+export interface OpcionesActualizarTarea {
+  /** `updated_at` que el cliente vio al abrir el detalle. Si la fila cambio
+   * desde entonces, el PATCH se rechaza con 409 en vez de pisar en silencio
+   * (Pancho y Hermes pueden editar la misma tarea a la vez). */
+  ifMatch?: string | null;
+  /** Quien hizo el cambio, para el evento 'cambio' del feed. Sin actor no se
+   * registra evento (lo usan callers viejos que no propagan identidad). */
+  actor?: Actor;
+}
+
 export async function actualizarTarea(
   id: string | null,
   body: CuerpoTarea,
   sb: SupabaseClient = getSupabaseServer(),
+  opts: OpcionesActualizarTarea = {},
 ): Promise<Tarea> {
   if (!id) throw new ErrorTareas('id requerido', 400);
 
@@ -170,16 +196,22 @@ export async function actualizarTarea(
   if ('orden' in body) patch.orden = aOrden(body.orden);
   if (!Object.keys(patch).length) throw new ErrorTareas('sin campos para actualizar', 400);
 
-  // Solo se relee la tarea si el cambio puede romper la relacion padre/hijo.
-  if ('parent_id' in patch || 'deadline' in patch) {
-    const { data: actual, error: actualError } = await sb
-      .from('tareas')
-      .select('id, deadline, parent_id')
-      .eq('id', id)
-      .maybeSingle();
-    if (actualError) throw actualError;
-    if (!actual) throw new ErrorTareas('tarea no encontrada', 404);
+  // Siempre se relee la fila actual: hace falta para el If-Match, para el
+  // diff que va al feed, y (si cambia parent_id/deadline) para validar contra
+  // el padre. Es una sola lectura extra, aceptable para un OS de un usuario.
+  const { data: actual, error: actualError } = await sb
+    .from('tareas')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (actualError) throw actualError;
+  if (!actual) throw new ErrorTareas('tarea no encontrada', 404);
 
+  if (opts.ifMatch && (actual as Tarea).updated_at !== opts.ifMatch) {
+    throw new ErrorTareas('la tarea cambio desde que la abriste; recarga y reintenta', 409);
+  }
+
+  if ('parent_id' in patch || 'deadline' in patch) {
     const parentId = ('parent_id' in patch ? patch.parent_id : actual.parent_id) as string | null;
     const deadline = ('deadline' in patch ? patch.deadline : actual.deadline) as string | null;
     if (parentId) {
@@ -207,7 +239,51 @@ export async function actualizarTarea(
       meta: { prioridad: tarea.prioridad ?? undefined },
     }).catch(() => null);
   }
+
+  // Un evento 'cambio' por PATCH con todos los campos modificados, no uno por
+  // campo. Sin actor (callers que aun no propagan identidad) no se registra:
+  // mejor un feed incompleto que uno con autor inventado.
+  if (opts.actor) {
+    const cambios: Record<string, { antes: unknown; despues: unknown }> = {};
+    for (const campo of Object.keys(patch)) {
+      const antes = (actual as Record<string, unknown>)[campo] ?? null;
+      const despues = patch[campo] ?? null;
+      if (antes !== despues) cambios[campo] = { antes, despues };
+    }
+    registrarCambio(sb, id, cambios, opts.actor).catch(() => null);
+  }
+
   return tarea;
+}
+
+/** Tarea + subtareas + feed, para el panel de detalle.
+ * `tipoEvento` filtra el feed (p.ej. 'comentario' para solo conversacion).
+ * Marca `visto_hasta = now()` en la tarea abierta (regla de avance: abrir el
+ * detalle es la señal de "Pancho lo vio"), en background y best-effort: si
+ * falla, el detalle igual se muestra. */
+export async function obtenerTarea(
+  id: string,
+  tipoEvento: string | null = null,
+  sb: SupabaseClient = getSupabaseServer(),
+): Promise<TareaDetalle> {
+  const { data: tarea, error } = await sb.from('tareas').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  if (!tarea) throw new ErrorTareas('tarea no encontrada', 404);
+
+  const { data: subtareas, error: subError } = await sb
+    .from('tareas')
+    .select('*')
+    .eq('parent_id', id)
+    .order('orden', { ascending: true });
+  if (subError) throw subError;
+
+  const eventos = await listarEventos(sb, id, tipoEvento);
+
+  void (async () => {
+    await sb.from('tareas').update({ visto_hasta: new Date().toISOString() }).eq('id', id);
+  })().catch(() => null);
+
+  return { tarea: tarea as Tarea, subtareas: (subtareas ?? []) as Tarea[], eventos };
 }
 
 export async function eliminarTarea(

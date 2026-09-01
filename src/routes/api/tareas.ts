@@ -15,7 +15,7 @@
 // API (Bearer / X-OS-Token), igual que la version Astro.
 
 import { createFileRoute } from '@tanstack/react-router';
-import { isOsAuthorized, json } from '../../server/osAuth.ts';
+import { identidadCliente, isOsAuthorized, json } from '../../server/osAuth.ts';
 import {
   ErrorTareas,
   actualizarTarea,
@@ -72,7 +72,9 @@ export const Route = createFileRoute('/api/tareas')({
           // Astro: OSTareas.tsx usa la query, otros clientes usan el cuerpo.
           const url = new URL(request.url);
           const id = url.searchParams.get('id') ?? (body.id === undefined || body.id === null ? null : String(body.id));
-          const tarea = await actualizarTarea(id, body);
+          const ifMatch = request.headers.get('if-match');
+          const actor = await identidadCliente(request);
+          const tarea = await actualizarTarea(id, body, undefined, { ifMatch, actor });
           return json({ ok: true, tarea });
         } catch (err) {
           return respuestaError(err);

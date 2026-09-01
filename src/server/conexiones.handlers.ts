@@ -10,7 +10,9 @@ export async function obtenerConexiones() {
   const sb = getSupabaseServer();
   const [lineas, tareas, journal, personas, planes, objetivos] = await Promise.all([
     sb.from('os_lineas').select('id, nombre, estado').neq('estado', 'pausado'),
-    sb.from('tareas').select('id, titulo, proyecto, estado').neq('estado', 'hecho').limit(80),
+    // 'hecho' y 'cancelada' (5 valores desde la Rebanada A) quedan fuera: ninguna
+    // de las dos es una tarea activa que valga la pena graficar.
+    sb.from('tareas').select('id, titulo, proyecto, estado').not('estado', 'in', '(hecho,cancelada)').limit(80),
     sb.from('os_journal').select('id, titulo, proyecto, fecha').order('fecha', { ascending: false }).limit(60),
     sb.from('os_red_personas').select('id, nombre, area, ultima_interaccion').eq('activo', true).limit(24),
     sb.from('os_red_planes').select('id, meta').eq('activo', true).limit(12),
