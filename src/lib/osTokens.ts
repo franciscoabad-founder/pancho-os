@@ -32,6 +32,23 @@ export function parseNombresTokens(raw: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
+// Dado el token crudo que trajo la request, busca su nombre en OS_API_TOKENS
+// ('nombre:token,...'). Devuelve null si no hay match o si la entrada es del
+// formato viejo sin nombre (token pelado). Existe para que identidadCliente()
+// (osAuth.ts) pueda atribuir un comentario/evento al nombre real del cliente
+// en vez de al token maestro.
+export function nombrePorToken(raw: string | undefined | null, candidato: string | null | undefined): string | null {
+  if (!raw || !candidato) return null;
+  for (const entrada of raw.split(',')) {
+    const idx = entrada.indexOf(':');
+    if (idx <= 0) continue;
+    const nombre = entrada.slice(0, idx).trim();
+    const token = entrada.slice(idx + 1).trim();
+    if (nombre && token === candidato) return nombre;
+  }
+  return null;
+}
+
 export function esTokenValido(
   candidato: string | null | undefined,
   maestro: string | undefined | null,

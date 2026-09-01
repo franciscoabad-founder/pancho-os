@@ -14,7 +14,7 @@
 // se cuele en el grafo del cliente cuando el middleware global se registra
 // desde src/start.ts (ese archivo si se bundlea para el cliente).
 
-import { esTokenValido } from '../lib/osTokens.ts';
+import { esTokenValido, nombrePorToken } from '../lib/osTokens.ts';
 import { readEnv } from '../lib/env.ts';
 
 // Nombre y vida de la cookie de sesion del navegador. Iguales a los de la
@@ -141,6 +141,61 @@ async function autorizadoPorDispositivo(request: Request): Promise<boolean> {
 export async function isOsAuthorized(request: Request): Promise<boolean> {
   if (isOsAuthorizedSync(request)) return true;
   return autorizadoPorDispositivo(request);
+}
+
+// --- Identidad del cliente ---------------------------------------------------
+//
+// Quien hizo la request, para atribuir autoria en cosas como el feed de
+// tareas (tarea_eventos): el `autor` de un comentario/evento NUNCA sale del
+// body (mismo principio que journal_log fijando fuente:'hermes'), siempre se
+// deriva de como se autentico.
+//
+//   - cookie de sesion, o token de un dispositivo emparejado -> pancho/humano
+//     (los dispositivos emparejados son el telefono de Pancho, no un agente).
+//   - token maestro OS_API_TOKEN -> hermes/agente (asi entran Hermes, n8n, y
+//     el propio MCP cuando llama a su API interna sin actor propagado).
+//   - key con nombre de OS_API_TOKENS -> <nombre>/agente.
+//
+// El header X-Os-Actor-Interno es de uso EXCLUSIVO del propio backend: lo
+// pone executeOsTool() (src/mcp/osTools.ts) en su llamada HTTP interna,
+// propagando el actor real que vio src/routes/api/mcp.ts, porque esa llamada
+// interna siempre firma con el token maestro y sin esto todo comentario de
+// cualquier agente con key nombrada aparecería como "hermes". Un cliente
+// externo no puede fijarlo: nada expone esta cabecera hacia afuera y ningun
+// proxy de la ruta pública la reenvia desde el navegador.
+export type TipoActorOs = 'humano' | 'agente';
+
+export interface IdentidadCliente {
+  actor: string;
+  tipo: TipoActorOs;
+}
+
+export async function identidadCliente(request: Request): Promise<IdentidadCliente> {
+  const actorInterno = request.headers.get('x-os-actor-interno');
+  if (actorInterno) return { actor: actorInterno, tipo: 'agente' };
+
+  if (tieneSesionOs(request)) return { actor: 'pancho', tipo: 'humano' };
+
+  const tokens = tokensDeCabecera(request);
+  const sessionToken = readEnv('OS_AUTH_TOKEN');
+  const apiToken = readEnv('OS_API_TOKEN') ?? sessionToken;
+  const listaTokens = readEnv('OS_API_TOKENS');
+
+  for (const token of tokens) {
+    if (apiToken && token === apiToken) return { actor: 'hermes', tipo: 'agente' };
+    const nombre = nombrePorToken(listaTokens, token);
+    if (nombre) return { actor: nombre, tipo: 'agente' };
+  }
+
+  for (const token of tokens) {
+    try {
+      if (await verificadorActual(token)) return { actor: 'pancho', tipo: 'humano' };
+    } catch {
+      continue;
+    }
+  }
+
+  return { actor: 'desconocido', tipo: 'agente' };
 }
 
 // --- Defensa CSRF de los server routes de os-auth ---------------------------

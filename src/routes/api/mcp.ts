@@ -17,7 +17,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { handleMcpStatelessRequest, type McpJsonRpcRequest } from '../../mcp/engine.ts';
 import { executeOsTool } from '../../mcp/osTools.ts';
-import { esTokenValido } from '../../lib/osTokens.ts';
+import { esTokenValido, nombrePorToken } from '../../lib/osTokens.ts';
 import { readEnv } from '../../lib/env.ts';
 
 // Algunos clientes MCP (Hermes incluido) mandan un preflight OPTIONS antes
@@ -60,12 +60,19 @@ export const Route = createFileRoute('/api/mcp')({
           );
         }
 
+        // Si el token que llego es una key con nombre (no el maestro), su
+        // nombre se propaga a executeOsTool para que firme el evento con su
+        // propia identidad en vez de con "hermes" (ver identidadCliente en
+        // src/server/osAuth.ts). Con el token maestro, actorNombrado queda
+        // null y executeOsTool no manda el header interno.
+        const actorNombrado = tokenHeader === expectedToken ? null : nombrePorToken(listaTokens, tokenHeader);
+
         try {
           const rawBody = await request.json();
           const responsePayload = await handleMcpStatelessRequest(
             rawBody as McpJsonRpcRequest,
             request.headers,
-            (name, args) => executeOsTool(request, name, args),
+            (name, args) => executeOsTool(request, name, args, actorNombrado),
           );
 
           return new Response(JSON.stringify(responsePayload), {

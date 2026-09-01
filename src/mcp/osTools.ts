@@ -446,12 +446,24 @@ export async function gfitConsultarProgreso(request: Request, headers: Headers):
 // que la llamada interna cae en el mismo proceso que atiende /api/* y hereda
 // host y esquema publicos. Vale igual en Astro y en TanStack Start: en las dos
 // el handler recibe un Request estandar con url absoluta.
-export async function executeOsTool(request: Request, name: string, args: Record<string, unknown>) {
+//
+// `actorPropagado` es el nombre real del llamador que vio src/routes/api/mcp.ts
+// (una key con nombre de OS_API_TOKENS), NO el token maestro que esta funcion
+// siempre usa para la llamada HTTP interna. Sin propagarlo, identidadCliente()
+// (src/server/osAuth.ts) veria solo el token maestro y atribuiria todo a
+// "hermes" sin importar que agente llamo de verdad.
+export async function executeOsTool(
+  request: Request,
+  name: string,
+  args: Record<string, unknown>,
+  actorPropagado?: string | null,
+) {
   const headers = new Headers({ Accept: 'application/json' });
   const internalToken = readEnv('OS_API_TOKEN');
   if (!internalToken) throw new Error('OS_API_TOKEN no configurado para ejecutar herramientas MCP.');
   headers.set('Authorization', `Bearer ${internalToken}`);
   headers.set('X-OS-Token', internalToken);
+  if (actorPropagado) headers.set('X-Os-Actor-Interno', actorPropagado);
 
   if (name === 'gfit_dia_hoy') return gfitDiaHoy(request, headers, args);
   if (name === 'gfit_consultar_progreso') return gfitConsultarProgreso(request, headers);
