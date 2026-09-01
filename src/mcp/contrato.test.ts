@@ -19,6 +19,51 @@ test('tareas_update mapea prioridad y arma PATCH con id en query', () => {
   assert.equal(req.body?.estado, 'hecho');
 });
 
+// Rebanada C: tareas_create/tareas_update ahora aceptan proyecto/notas, pero
+// una llamada vieja (sin esas claves) tiene que seguir produciendo exactamente
+// el mismo body que antes. undefined desaparece con JSON.stringify: si esto
+// deja de ser cierto, un caller viejo de Hermes empezaria a mandar
+// proyecto:undefined/notas:undefined a la API real.
+test('tareas_create sin proyecto/notas sigue produciendo el body historico', () => {
+  const req = toToolRequest('tareas_create', { titulo: 'x', prioridad: 'alta', fecha_limite: '2026-09-01' });
+  assert.deepEqual(JSON.parse(JSON.stringify(req.body)), { titulo: 'x', prioridad: 'high', deadline: '2026-09-01' });
+});
+
+test('tareas_create con proyecto/notas los incluye en el body', () => {
+  const req = toToolRequest('tareas_create', { titulo: 'x', proyecto: 'Art for Peace', notas: 'contexto' });
+  assert.equal(req.body?.proyecto, 'Art for Peace');
+  assert.equal(req.body?.notas, 'contexto');
+});
+
+test('tareas_update acepta proyecto y notas ademas de los campos historicos', () => {
+  const req = toToolRequest('tareas_update', { id: 'abc', proyecto: 'Art for Peace', notas: 'contexto' });
+  assert.equal(req.body?.proyecto, 'Art for Peace');
+  assert.equal(req.body?.notas, 'contexto');
+});
+
+test('tareas_detalle arma un GET a /api/tareas/:id', () => {
+  const req = toToolRequest('tareas_detalle', { id: 'abc' });
+  assert.equal(req.method, 'GET');
+  assert.equal(req.path, '/api/tareas/abc');
+});
+
+test('tareas_detalle exige id', () => {
+  assert.throws(() => toToolRequest('tareas_detalle', {}));
+});
+
+test('tareas_comentar arma un POST a /api/tareas/comentarios con tarea_id y cuerpo', () => {
+  const req = toToolRequest('tareas_comentar', { id: 'abc', comentario: 'hola' });
+  assert.equal(req.method, 'POST');
+  assert.equal(req.path, '/api/tareas/comentarios');
+  assert.equal(req.body?.tarea_id, 'abc');
+  assert.equal(req.body?.cuerpo, 'hola');
+});
+
+test('tareas_comentar exige id y comentario no vacio', () => {
+  assert.throws(() => toToolRequest('tareas_comentar', { id: 'abc' }));
+  assert.throws(() => toToolRequest('tareas_comentar', { comentario: 'hola' }));
+});
+
 test('nutricion_buscar_alimentos acepta alias del termino y nunca busca vacio', () => {
   for (const key of ['consulta', 'query', 'q', 'texto']) {
     const req = toToolRequest('nutricion_buscar_alimentos', { [key]: 'huevo' });

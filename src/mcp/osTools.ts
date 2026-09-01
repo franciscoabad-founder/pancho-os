@@ -104,7 +104,20 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
     case 'tareas_list':
       return { path: '/api/tareas', method: 'GET' };
     case 'tareas_create':
-      return { path: '/api/tareas', method: 'POST', body: { titulo: args.titulo, prioridad: PRIORIDAD_MCP[String(args.prioridad)] ?? args.prioridad, deadline: args.fecha_limite } };
+      // proyecto/notas quedan undefined si el agente no las manda, y
+      // JSON.stringify las omite: una llamada vieja sigue produciendo el
+      // mismo body de siempre (contrato.test.ts lo verifica con deepEqual).
+      return {
+        path: '/api/tareas',
+        method: 'POST',
+        body: {
+          titulo: args.titulo,
+          prioridad: PRIORIDAD_MCP[String(args.prioridad)] ?? args.prioridad,
+          deadline: args.fecha_limite,
+          proyecto: typeof args.proyecto === 'string' ? args.proyecto : undefined,
+          notas: typeof args.notas === 'string' ? args.notas : undefined,
+        },
+      };
     // `moneda` es opcional y aditiva: si el agente no la manda, el handler
     // asume USD (la base del OS) y el body queda identico al de antes.
     case 'finanzas_log_gasto':
@@ -346,8 +359,22 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       if ('deadline' in args) patch.deadline = args.deadline;
       if (typeof args.titulo === 'string') patch.titulo = args.titulo;
       if (typeof args.urgente === 'boolean') patch.urgente = args.urgente;
-      if (!Object.keys(patch).length) throw new Error('Nada que actualizar: pasa estado, prioridad, deadline, titulo o urgente.');
+      if (typeof args.proyecto === 'string') patch.proyecto = args.proyecto;
+      if (typeof args.notas === 'string') patch.notas = args.notas;
+      if (!Object.keys(patch).length) throw new Error('Nada que actualizar: pasa estado, prioridad, deadline, titulo, proyecto, notas o urgente.');
       return { path: `/api/tareas?id=${encodeURIComponent(id)}`, method: 'PATCH', body: patch };
+    }
+    case 'tareas_detalle': {
+      const id = String(args.id ?? '').trim();
+      if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
+      return { path: `/api/tareas/${encodeURIComponent(id)}`, method: 'GET' };
+    }
+    case 'tareas_comentar': {
+      const id = String(args.id ?? '').trim();
+      if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
+      const cuerpo = String(args.comentario ?? '').trim();
+      if (!cuerpo) throw new Error('comentario requerido.');
+      return { path: '/api/tareas/comentarios', method: 'POST', body: { tarea_id: id, cuerpo, origen: 'mcp' } };
     }
     default:
       throw new Error(`Herramienta MCP no soportada: ${name}`);
@@ -483,5 +510,32 @@ export async function executeOsTool(
     const estado = args.estado === 'pendientes' ? 'pendiente' : args.estado === 'completadas' ? 'hecho' : null;
     if (estado) data.tareas = data.tareas.filter((tarea: Record<string, unknown>) => tarea.estado === estado);
   }
+
+  // tareas_create y tareas_update aceptan un `comentario` opcional: no es un
+  // campo de la fila, es un segundo request al feed (tarea_eventos) despues
+  // de que el primero confirmo. Es best-effort: si el comentario falla, la
+  // tarea ya se creo/actualizo igual, y se lo dice en la respuesta en vez de
+  // fallar todo el tool call por un problema en el segundo paso.
+  if ((name === 'tareas_create' || name === 'tareas_update') && typeof args.comentario === 'string' && args.comentario.trim()) {
+    const tareaId = name === 'tareas_create'
+      ? (data.tarea as Record<string, unknown> | undefined)?.id
+      : String(args.id ?? '').trim();
+    if (tareaId) {
+      try {
+        const comentarioHeaders = new Headers(headers);
+        comentarioHeaders.set('Content-Type', 'application/json');
+        const comentarioRes = await fetch(new URL('/api/tareas/comentarios', request.url), {
+          method: 'POST',
+          headers: comentarioHeaders,
+          body: JSON.stringify({ tarea_id: tareaId, cuerpo: args.comentario, origen: 'mcp' }),
+        });
+        const comentarioData = await comentarioRes.json().catch(() => ({}));
+        if (!comentarioRes.ok) throw new Error(typeof comentarioData?.error === 'string' ? comentarioData.error : `HTTP ${comentarioRes.status}`);
+      } catch (err) {
+        data.comentario_error = err instanceof Error ? err.message : String(err);
+      }
+    }
+  }
+
   return data as Record<string, unknown>;
 }

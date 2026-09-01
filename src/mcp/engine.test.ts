@@ -252,6 +252,33 @@ test('publica las 3 herramientas de GFIT y las enruta por el ejecutor real (no c
   }
 });
 
+test('publica tareas_detalle y tareas_comentar (Rebanada C) y las enruta por el ejecutor real', async () => {
+  const list = await handleMcpStatelessRequest(
+    { jsonrpc: '2.0', id: 'c-tools', method: 'tools/list' },
+    new Headers(),
+  );
+  const toolNames = (list.result as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
+  assert.equal(toolNames.includes('tareas_detalle'), true);
+  assert.equal(toolNames.includes('tareas_comentar'), true);
+
+  for (const [name, args] of [
+    ['tareas_detalle', { id: 'abc' }],
+    ['tareas_comentar', { id: 'abc', comentario: 'hola' }],
+  ] as const) {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleMcpStatelessRequest(
+      { jsonrpc: '2.0', id: `${name}-1`, method: 'tools/call', params: { name, arguments: args } },
+      new Headers(),
+      async (toolName, toolArgs) => {
+        calls.push({ name: toolName, args: toolArgs });
+        return { ok: true };
+      },
+    );
+    assert.deepEqual(calls, [{ name, args }]);
+    assert.equal('error' in response, false);
+  }
+});
+
 test('enruta biometricas_registrar por el ejecutor real conservando solo lo enviado', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   await handleMcpStatelessRequest(
