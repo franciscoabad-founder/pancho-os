@@ -98,6 +98,8 @@ export default function OSContenidoEditor() {
   const [plataforma, setPlataforma] = useState<Plataforma>('linkedin');
   const [guardando, setGuardando] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [generandoVariantes, setGenerandoVariantes] = useState(false);
+  const [variantes, setVariantes] = useState<Array<{ estilo: string; hook: string; cuerpo: string }>>([]);
 
   // Ultima version que el servidor ya tiene. Sirve para no disparar un PATCH
   // apenas se carga un borrador en el formulario (nada cambio todavia) y para
@@ -208,6 +210,43 @@ export default function OSContenidoEditor() {
     setTitulo('');
     setCuerpo('');
     ultimoGuardado.current = '';
+    setVariantes([]);
+  }
+
+  async function generarVariantes() {
+    if (!titulo.trim() && !cuerpo.trim()) return;
+    setGenerandoVariantes(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/contenido/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, cuerpo })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error generando variantes');
+      }
+
+      if (data.variantes && Array.isArray(data.variantes)) {
+        setVariantes(data.variantes);
+      } else {
+        throw new Error('La respuesta de la IA no tiene el formato esperado');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGenerandoVariantes(false);
+    }
+  }
+
+  function aplicarVariante(v: { hook: string; cuerpo: string }) {
+    setTitulo(v.hook);
+    setCuerpo(v.cuerpo);
+    setVariantes([]);
   }
 
   // Abre un borrador guardado en el formulario. Lo que ya estaba escrito se
@@ -322,12 +361,20 @@ export default function OSContenidoEditor() {
           rows={6}
           style={{ ...inputStyle, fontSize: 'var(--os-text-sm)', resize: 'vertical', lineHeight: 1.5, marginBottom: 10 }}
         />
-        {/* TODO: AI assist - generar variantes, mejorar hook */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)', fontFamily: 'var(--os-font-mono)' }}>
             {cuerpo.length} car
           </span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={generarVariantes}
+              disabled={generandoVariantes || (!titulo.trim() && !cuerpo.trim())}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16, marginRight: 4 }}>magic_button</span>
+              {generandoVariantes ? 'Generando...' : 'Mejorar con IA'}
+            </Button>
             {editandoId && (
               <Button size="sm" variant="ghost" onClick={limpiar}>Nuevo</Button>
             )}
@@ -342,6 +389,31 @@ export default function OSContenidoEditor() {
           </div>
         </div>
       </div>
+
+      {variantes.length > 0 && (
+        <div className="os-card-2" style={{ marginBottom: '1rem', background: 'var(--os-fill-subtle)', borderColor: 'var(--os-accent-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <p className="os-section-title" style={{ margin: 0, color: 'var(--os-accent-light)' }}>
+              Variantes generadas por IA
+            </p>
+            <button onClick={() => setVariantes([])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--os-muted)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {variantes.map((v, i) => (
+              <div key={i} style={{ padding: 10, background: 'var(--os-bg)', borderRadius: 6, border: '1px solid var(--os-line-soft)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--os-accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{v.estilo}</span>
+                  <Button size="sm" variant="ghost" onClick={() => aplicarVariante(v)} style={{ height: 24, padding: '0 8px', fontSize: 11 }}>Usar esta</Button>
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 4px', color: 'var(--os-text)' }}>{v.hook}</p>
+                <p style={{ fontSize: 12, margin: 0, color: 'var(--os-muted)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{v.cuerpo}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Lista de borradores */}
       <div className="os-card-2">
