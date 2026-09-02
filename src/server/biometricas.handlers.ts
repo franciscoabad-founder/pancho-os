@@ -185,20 +185,27 @@ export async function guardarBiometricas(body: any): Promise<Record<string, unkn
       if ('error' in resultado) throw error400(resultado.error);
       payloads.push(resultado.payload);
     }
-    // Upsert de a uno a proposito: cada payload trae SOLO las metricas que vinieron,
-    // asi que sus claves difieren entre items. Un upsert masivo obligaria a una lista
-    // de columnas unica y rellenaria las faltantes con null, que es justo el borrado
-    // que se quiere evitar (ademas de que PostgREST exige claves homogeneas).
-    const filas: unknown[] = [];
+    // Agrupamos los payloads por su firma de claves. PostgREST exige claves
+    // homogeneas para upserts masivos. Al agrupar, evitamos rellenar con nulls
+    // que causarian borrados no deseados, y reducimos N queries a solo K (una por grupo).
+    const payloadsPorClaves = new Map<string, Record<string, unknown>[]>();
     for (const payload of payloads) {
+      const firma = Object.keys(payload).sort().join(',');
+      if (!payloadsPorClaves.has(firma)) payloadsPorClaves.set(firma, []);
+      payloadsPorClaves.get(firma)!.push(payload);
+    }
+
+    const promesas = Array.from(payloadsPorClaves.values()).map(async (grupo) => {
       const { data, error } = await sb
         .from('biometricas_dia')
-        .upsert(payload, { onConflict: 'fecha' })
-        .select()
-        .single();
+        .upsert(grupo, { onConflict: 'fecha' })
+        .select();
       if (error) throw error;
-      filas.push(data);
-    }
+      return data;
+    });
+
+    const resultados = await Promise.all(promesas);
+    const filas = resultados.flat();
     return { biometricas: filas, n: filas.length };
   }
 
