@@ -138,19 +138,35 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
   let exportados = 0;
   let omitidos = 0;
 
+  const googleIds = eventosRemotos.map((e) => String(e.id)).filter(Boolean);
+  const localByGoogleId = new Map<string, Record<string, unknown>>();
+
+  for (let i = 0; i < googleIds.length; i += 500) {
+    const chunk = googleIds.slice(i, i + 500);
+    const { data: localsChunk, error: lookupError } = await sb.from('reuniones').select('*').in('google_event_id', chunk);
+    if (lookupError) throw lookupError;
+    for (const loc of localsChunk ?? []) {
+      if (loc.google_event_id) localByGoogleId.set(String(loc.google_event_id), loc as Record<string, unknown>);
+    }
+  }
+
+  const toDeleteGoogleIds: string[] = [];
+  const toDeleteLocalIds: string[] = [];
+  const toUpdateMeta: Array<Record<string, unknown>> = [];
+  const toUpdateFull: Array<Record<string, unknown>> = [];
+  const toInsert: Array<Record<string, unknown>> = [];
+
   for (const event of eventosRemotos) {
     if (!event.id) continue;
-    const { data: local, error: localLookupError } = await sb.from('reuniones').select('*').eq('google_event_id', String(event.id)).maybeSingle();
-    if (localLookupError) throw localLookupError;
+    const local = localByGoogleId.get(String(event.id));
+
     if (event.status === 'cancelled') {
-      const { error } = await sb.from('reuniones').delete().eq('google_event_id', String(event.id));
-      if (error) throw error;
+      toDeleteGoogleIds.push(String(event.id));
       continue;
     }
     if (local?.google_deleted_at) {
       await googleRequest(config, `/events/${encodeURIComponent(String(event.id))}`, { method: 'DELETE' });
-      const { error } = await sb.from('reuniones').delete().eq('id', local.id);
-      if (error) throw error;
+      toDeleteLocalIds.push(String(local.id));
       exportados++;
       continue;
     }
@@ -159,17 +175,54 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
     if (local) {
       if (local.google_dirty_at) {
         const actualizado = await googleRequest(config, `/events/${encodeURIComponent(String(event.id))}`, { method: 'PATCH', body: JSON.stringify(googleEventPayload(local)) }) as Record<string, unknown>;
-        const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_etag: actualizado.etag ?? null, google_updated_at: actualizado.updated ?? null, google_dirty_at: null }).eq('id', local.id);
-        if (error) throw error;
+        toUpdateMeta.push({ id: local.id, fuente: 'google_calendar', google_etag: actualizado.etag ?? null, google_updated_at: actualizado.updated ?? null, google_dirty_at: null });
         exportados++;
         continue;
       }
-      const { error } = await sb.from('reuniones').update({ ...body, fuente: 'google_calendar', google_etag: event.etag ?? null, google_updated_at: event.updated ?? null, google_dirty_at: null, google_deleted_at: null }).eq('id', local.id);
-      if (error) throw error;
+      toUpdateFull.push({ id: local.id, ...body, fuente: 'google_calendar', google_etag: event.etag ?? null, google_updated_at: event.updated ?? null, google_dirty_at: null, google_deleted_at: null });
     } else {
-      const { error } = await sb.from('reuniones').insert([{ ...body, fuente: 'google_calendar', google_event_id: String(event.id), google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }]);
-      if (error) throw error;
+      toInsert.push({ ...body, fuente: 'google_calendar', google_event_id: String(event.id), google_etag: event.etag ?? null, google_updated_at: event.updated ?? null });
       importados++;
+    }
+  }
+
+  if (toDeleteGoogleIds.length > 0) {
+    for (let i = 0; i < toDeleteGoogleIds.length; i += 500) {
+      const chunk = toDeleteGoogleIds.slice(i, i + 500);
+      const { error } = await sb.from('reuniones').delete().in('google_event_id', chunk);
+      if (error) throw error;
+    }
+  }
+
+  if (toDeleteLocalIds.length > 0) {
+    for (let i = 0; i < toDeleteLocalIds.length; i += 500) {
+      const chunk = toDeleteLocalIds.slice(i, i + 500);
+      const { error } = await sb.from('reuniones').delete().in('id', chunk);
+      if (error) throw error;
+    }
+  }
+
+  if (toUpdateMeta.length > 0) {
+    for (let i = 0; i < toUpdateMeta.length; i += 500) {
+      const chunk = toUpdateMeta.slice(i, i + 500);
+      const { error } = await sb.from('reuniones').upsert(chunk);
+      if (error) throw error;
+    }
+  }
+
+  if (toUpdateFull.length > 0) {
+    for (let i = 0; i < toUpdateFull.length; i += 500) {
+      const chunk = toUpdateFull.slice(i, i + 500);
+      const { error } = await sb.from('reuniones').upsert(chunk);
+      if (error) throw error;
+    }
+  }
+
+  if (toInsert.length > 0) {
+    for (let i = 0; i < toInsert.length; i += 500) {
+      const chunk = toInsert.slice(i, i + 500);
+      const { error } = await sb.from('reuniones').insert(chunk);
+      if (error) throw error;
     }
   }
 
