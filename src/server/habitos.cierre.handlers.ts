@@ -174,8 +174,14 @@ export async function cerrarPendientes(
   const cerrados: string[] = [];
   const resumenes: Record<string, unknown> = {};
 
-  for (const dia of dias) {
-    const { resumen, insertado } = await cerrarDia(sb, dia);
+  const resultados = await Promise.all(
+    dias.map(async (dia) => {
+      const { resumen, insertado } = await cerrarDia(sb, dia);
+      return { dia, resumen, insertado };
+    }),
+  );
+
+  for (const { dia, resumen, insertado } of resultados) {
     if (insertado) {
       cerrados.push(dia);
       resumenes[dia] = resumen;
