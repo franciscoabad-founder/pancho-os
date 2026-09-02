@@ -56,7 +56,144 @@ interface SupabaseLike {
  * aplica dano/muerte si corresponde, y actualiza el estado agregado de `jugador`.
  * Devuelve null si el evento ya habia sido otorgado (colision de unique).
  */
+export async function registrarEventos(
+  sb: SupabaseLike,
+  eventos: EventoEntrada[],
+  rng: () => number = Math.random,
+): Promise<ResultadoEvento[] | null> {
+  if (!eventos.length) return [];
+
+  const { data: jugadorRows, error: errJugador } = await sb
+    .from('jugador')
+    .select('id, xp_total, oro, hp, hp_max, config')
+    .limit(1);
+  if (errJugador || !jugadorRows || jugadorRows.length === 0) return null;
+
+  const jugador = jugadorRows[0] as JugadorRow;
+  const config = jugador.config ?? {};
+  const hpActivo = config.hp_activo !== false;
+  const oroActivo = config.oro_activo !== false;
+  const lootActivo = config.loot_activo !== false;
+
+  let currentXp = jugador.xp_total;
+  let currentOro = jugador.oro;
+  let currentHp = jugador.hp;
+
+  const xpEventsToInsert: any[] = [];
+  const resultados: ResultadoEvento[] = [];
+
+  for (const ev of eventos) {
+    const meta = ev.meta ?? {};
+    const calculado = recompensaPorEvento(ev.tipo, meta);
+    const oroExplicito = ev.oro !== undefined;
+    const hpExplicito = ev.hp !== undefined;
+
+    let xp = ev.xp ?? calculado.xp;
+    let oro = ev.oro ?? calculado.oro;
+
+    if (!oroActivo && !oroExplicito) oro = 0;
+
+    let hpDelta = ev.hp ?? 0;
+    if ((ev.tipo === 'diaria_fallo') && hpActivo && !hpExplicito && hpDelta === 0) {
+      const dificultad = (meta.dificultad ?? 'facil') as Dificultad;
+      const valor = meta.valor ?? 0;
+      hpDelta = -danioPorFallo(dificultad, valor);
+    }
+    if (!hpActivo && !hpExplicito) hpDelta = 0;
+
+    const fecha = ev.fecha ?? hoyLocal();
+
+    xpEventsToInsert.push({
+      tipo: ev.tipo,
+      ref_tabla: ev.ref_tabla ?? null,
+      ref_id: ev.ref_id ?? null,
+      xp,
+      oro,
+      hp: hpDelta,
+      fecha,
+      meta,
+    });
+
+    currentXp += xp;
+    currentOro += oro;
+    currentHp = Math.min(jugador.hp_max, Math.max(0, currentHp + hpDelta));
+
+    let loot: Loot | undefined;
+    if (lootActivo && ev.tipo !== 'loot') {
+      const racha = typeof meta.valor === 'number' ? meta.valor : 0;
+      const tirada = tirarLoot(rng, { racha });
+      if (tirada) {
+        loot = tirada;
+        oro += tirada.oro;
+        currentOro += tirada.oro;
+        xpEventsToInsert.push({
+          tipo: 'loot',
+          xp: 0,
+          oro: tirada.oro,
+          hp: 0,
+          fecha,
+          meta: { mensaje: tirada.mensaje },
+        });
+      }
+    }
+
+    let muerte: ResultadoEvento['muerte'];
+    if (currentHp <= 0 && hpActivo) {
+      const { oroPerdido, hpNuevo: hpRestaurado } = aplicarMuerte(currentOro, jugador.hp_max);
+      muerte = { oroPerdido };
+      currentOro = Math.max(0, currentOro - oroPerdido);
+      currentHp = hpRestaurado;
+
+      xpEventsToInsert.push({
+        tipo: 'muerte',
+        xp: 0,
+        oro: -oroPerdido,
+        hp: 0,
+        fecha,
+        meta: {},
+      });
+    }
+
+    resultados.push({
+      xp,
+      oro,
+      hp: currentHp,
+      nivel: 0, // Placeholder
+      subioNivel: false, // Placeholder
+      loot,
+      muerte,
+    });
+  }
+
+  if (xpEventsToInsert.length > 0) {
+    const { error: errInsert } = await sb.from('xp_events').insert(xpEventsToInsert);
+    if (errInsert) {
+      if ((errInsert as { code?: string }).code === '23505') return null;
+      return null;
+    }
+  }
+
+  const nivelAntes = nivelDesdeXp(jugador.xp_total).nivel;
+  const xpTotalNuevo = currentXp;
+  const nivelInfo = nivelDesdeXp(xpTotalNuevo);
+
+  // We perform an absolute update based on our perfect simulation.
+  // This avoids drifting from multiple sequential RPC calls, while preserving N=1 query profile.
+  await sb
+    .from('jugador')
+    .update({ xp_total: currentXp, oro: currentOro, hp: currentHp, updated_at: new Date().toISOString() })
+    .eq('id', jugador.id);
+
+  for (const r of resultados) {
+    r.nivel = nivelInfo.nivel;
+    r.subioNivel = nivelInfo.nivel > nivelAntes;
+  }
+
+  return resultados;
+}
+
 export async function registrarEvento(
+
   sb: SupabaseLike,
   ev: EventoEntrada,
   rng: () => number = Math.random,

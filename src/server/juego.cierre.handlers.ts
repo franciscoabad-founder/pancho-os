@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
 import { json } from './osAuth.ts';
 import { cerrarPendientes } from './habitos.cierre.handlers.ts';
-import { registrarEvento } from '../lib/juego/motor.ts';
+import { registrarEvento, registrarEventos } from '../lib/juego/motor.ts';
 import { danioPorFallo, freshStart } from '../lib/juego/hp.ts';
 import { evaluarQuest, liquidarQuest, type ObjetivoQuest } from '../lib/juego/quests.ts';
 import { rachaDiaria } from '../lib/habitos/racha.ts';
@@ -35,7 +35,7 @@ interface FalladaDetalle {
 // 'diaria_fallo' con hp negativo. Soporta resúmenes viejos (solo array de nombres, sin
 // detalle): en ese caso no hay forma de saber es_core/dificultad, así que se ignoran
 // (comportamiento previo a este cambio: sin daño HP retroactivo).
-async function aplicarDanioPorFallos(
+export async function aplicarDanioPorFallos(
   sb: SB,
   resumenes: Record<string, unknown>,
 ): Promise<number> {
@@ -49,22 +49,32 @@ async function aplicarDanioPorFallos(
   if (!hpActivo) return 0;
 
   let hpPerdidoTotal = 0;
+  const eventosBatched: any[] = [];
+
   for (const [fecha, resumenRaw] of Object.entries(resumenes)) {
     const resumen = resumenRaw as { diarias_falladas_detalle?: FalladaDetalle[] };
     const detalle = resumen.diarias_falladas_detalle ?? [];
     for (const h of detalle) {
       if (!h.es_core) continue;
       const hp = -danioPorFallo(h.dificultad, h.valor);
-      const resultado = await registrarEvento(sb, {
+      eventosBatched.push({
         tipo: 'diaria_fallo',
         ref_tabla: 'habitos',
         fecha,
         hp,
         meta: { habito_id: h.id, nombre: h.nombre, dificultad: h.dificultad, valor: h.valor },
       });
-      if (resultado) hpPerdidoTotal += Math.abs(hp);
+      hpPerdidoTotal += Math.abs(hp);
     }
   }
+
+  if (eventosBatched.length > 0) {
+    const resultados = await registrarEventos(sb, eventosBatched);
+    if (!resultados) {
+      hpPerdidoTotal = 0;
+    }
+  }
+
   return hpPerdidoTotal;
 }
 
