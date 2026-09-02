@@ -121,17 +121,19 @@ export async function aplicarOs(sb: SB, respuestas: Record<string, unknown>) {
   for (const d of manager) modoPorDia.set(d, 'manager');
   for (const d of off) modoPorDia.set(d, 'off');
 
-  let semanaEscritas = 0;
+  const upserts = [];
+  const now = new Date().toISOString();
   for (let dia = 1; dia <= 7; dia++) {
     const modo = modoPorDia.get(dia) ?? 'manager';
     const sale = diasSale.includes(dia);
-    const { error } = await sb
-      .from('os_semana')
-      .update({ modo, sale, updated_at: new Date().toISOString() })
-      .eq('dia', dia);
-    if (error) throw error;
-    semanaEscritas++;
+    upserts.push({ dia, modo, sale, updated_at: now });
   }
+
+  const { error: errSemana } = await sb
+    .from('os_semana')
+    .upsert(upserts, { onConflict: 'dia' });
+  if (errSemana) throw errSemana;
+  const semanaEscritas = upserts.length;
 
   const lineasMaker: string[] = Array.isArray(r.lineas_maker) ? r.lineas_maker as string[] : [];
   const { data: todasLineas, error: errLineas } = await sb.from('os_lineas').select('id, nombre');
