@@ -137,14 +137,18 @@ export async function aplicarOs(sb: SB, respuestas: Record<string, unknown>) {
   const { data: todasLineas, error: errLineas } = await sb.from('os_lineas').select('id, nombre');
   if (errLineas) throw errLineas;
   let lineasEscritas = 0;
-  for (const l of (todasLineas ?? []) as { id: string; nombre: string }[]) {
-    const recibeMaker = lineasMaker.includes(l.nombre);
+  const lineasAActualizar = ((todasLineas ?? []) as { id: string; nombre: string }[]).map((l) => ({
+    id: l.id,
+    recibe_maker: lineasMaker.includes(l.nombre),
+    updated_at: new Date().toISOString(),
+  }));
+
+  if (lineasAActualizar.length > 0) {
     const { error } = await sb
       .from('os_lineas')
-      .update({ recibe_maker: recibeMaker, updated_at: new Date().toISOString() })
-      .eq('id', l.id);
+      .upsert(lineasAActualizar);
     if (error) throw error;
-    lineasEscritas++;
+    lineasEscritas = lineasAActualizar.length;
   }
 
   const presupuesto = (r.presupuesto ?? {}) as Record<string, unknown>;
