@@ -570,28 +570,39 @@ const anyBottomActive = bottomNav.some(i => isActive(i.href));
       let chatHistory: ChatTurn[] = [];
       try { chatHistory = JSON.parse(sessionStorage.getItem(CHAT_KEY) ?? '[]'); } catch { chatHistory = []; }
 
-      const escHtml = (s: string) =>
-        s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
       function renderChat(pending = false) {
         if (!preguntaBody) return;
+
+        preguntaBody.innerHTML = ''; // Limpiar el contenedor de forma segura primero
+
         if (!chatHistory.length && !pending) {
-          preguntaBody.innerHTML = '<p style="color:var(--os-muted);font-size:12px;margin:auto;text-align:center;">Pregunta lo que quieras. El cerebro recuerda esta conversacion.</p>';
+          const emptyMsg = document.createElement('p');
+          emptyMsg.style.cssText = 'color:var(--os-muted);font-size:12px;margin:auto;text-align:center;';
+          emptyMsg.textContent = 'Pregunta lo que quieras. El cerebro recuerda esta conversacion.';
+          preguntaBody.appendChild(emptyMsg);
           return;
         }
-        let html = chatHistory.map((t) => {
+
+        chatHistory.forEach((t) => {
+          const msgDiv = document.createElement('div');
           if (t.role === 'user') {
-            return '<div style="align-self:flex-end;max-width:85%;background:var(--os-accent);color:#fff;padding:7px 11px;border-radius:10px 10px 2px 10px;font-size:13px;white-space:pre-wrap;">' + escHtml(t.text) + '</div>';
+            msgDiv.style.cssText = 'align-self:flex-end;max-width:85%;background:var(--os-accent);color:#fff;padding:7px 11px;border-radius:10px 10px 2px 10px;font-size:13px;white-space:pre-wrap;';
+          } else if (t.role === 'error') {
+            msgDiv.style.cssText = 'align-self:flex-start;max-width:85%;color:var(--os-error);font-size:12px;padding:2px 0;';
+          } else {
+            msgDiv.style.cssText = 'align-self:flex-start;max-width:90%;background:var(--os-fill-subtle);border:1px solid var(--os-line-soft);color:var(--os-text-2);padding:8px 11px;border-radius:10px 10px 10px 2px;font-size:13px;white-space:pre-wrap;';
           }
-          if (t.role === 'error') {
-            return '<div style="align-self:flex-start;max-width:85%;color:var(--os-error);font-size:12px;padding:2px 0;">' + escHtml(t.text) + '</div>';
-          }
-          return '<div style="align-self:flex-start;max-width:90%;background:var(--os-fill-subtle);border:1px solid var(--os-line-soft);color:var(--os-text-2);padding:8px 11px;border-radius:10px 10px 10px 2px;font-size:13px;white-space:pre-wrap;">' + escHtml(t.text) + '</div>';
-        }).join('');
+          msgDiv.textContent = t.text;
+          preguntaBody.appendChild(msgDiv);
+        });
+
         if (pending) {
-          html += '<div style="align-self:flex-start;color:var(--os-muted);font-size:12px;padding:2px 0;">Consultando el cerebro...</div>';
+          const pendingDiv = document.createElement('div');
+          pendingDiv.style.cssText = 'align-self:flex-start;color:var(--os-muted);font-size:12px;padding:2px 0;';
+          pendingDiv.textContent = 'Consultando el cerebro...';
+          preguntaBody.appendChild(pendingDiv);
         }
-        preguntaBody.innerHTML = html;
+
         preguntaBody.scrollTop = preguntaBody.scrollHeight;
       }
 
