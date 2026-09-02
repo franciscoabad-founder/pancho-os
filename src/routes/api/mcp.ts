@@ -27,7 +27,7 @@ import { readEnv } from '../../lib/env.ts';
 // MCP lo rechaza pensando que la URL apunta a una pagina, no a un endpoint.
 // Bug real encontrado por Hermes (perfiles braintech/rafik), no hipotetico.
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': readEnv('OS_PUBLIC_URL') || '',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-OS-Token, Mcp-Method, Mcp-Name',
 };
