@@ -126,30 +126,39 @@ async function reagendarRecordatoriosHoy(sb: SB, hoy: string): Promise<void> {
     .not('hora_recordatorio', 'is', null);
   if (errHabitos) throw errHabitos;
 
+  const habitosHoy = (habitosData ?? []).filter((h) => (h.dias_semana ?? []).includes(diaIso(hoy)));
+  if (habitosHoy.length === 0) return;
+
   const inicioHoy = `${hoy}T00:00:00-05:00`;
   const inicioManana = `${addDias(hoy, 1)}T00:00:00-05:00`;
+  const habitosIds = habitosHoy.map((h) => h.id);
 
-  for (const h of habitosData ?? []) {
-    if (!(h.dias_semana ?? []).includes(diaIso(hoy))) continue;
+  const { data: pendientesData, error: errPendientes } = await sb
+    .from('recordatorios')
+    .select('habito_id')
+    .in('habito_id', habitosIds)
+    .eq('estado', 'pendiente')
+    .gte('recordar_at', inicioHoy)
+    .lt('recordar_at', inicioManana);
+  if (errPendientes) throw errPendientes;
 
-    const { data: pendientes, error: errPendientes } = await sb
-      .from('recordatorios')
-      .select('id')
-      .eq('habito_id', h.id)
-      .eq('estado', 'pendiente')
-      .gte('recordar_at', inicioHoy)
-      .lt('recordar_at', inicioManana)
-      .limit(1);
-    if (errPendientes) throw errPendientes;
-    if (pendientes && pendientes.length) continue;
+  const habitosConPendientes = new Set((pendientesData ?? []).map((p) => p.habito_id));
+  const inserts = [];
+
+  for (const h of habitosHoy) {
+    if (habitosConPendientes.has(h.id)) continue;
 
     const recordarAt = timestampGuayaquil(hoy, h.hora_recordatorio as string);
-    const { error: errInsertRec } = await sb.from('recordatorios').insert([{
+    inserts.push({
       mensaje: h.intencion?.trim() || h.nombre,
       recordar_at: recordarAt.toISOString(),
       canal: 'telegram',
       habito_id: h.id,
-    }]);
+    });
+  }
+
+  if (inserts.length > 0) {
+    const { error: errInsertRec } = await sb.from('recordatorios').insert(inserts);
     if (errInsertRec) throw errInsertRec;
   }
 }
