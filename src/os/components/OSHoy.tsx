@@ -31,6 +31,7 @@ interface KPIHoy { id: string; label: string; unidad: string | null; meta: numbe
 interface DiaSemana { dia: number; modo: 'maker' | 'manager' | 'off'; sale: string | null; etiqueta: string | null; }
 interface Linea { id: string; nombre: string; estado: string; }
 interface SugerenciaDomino { texto: string; slug: string; }
+interface Principio { id: string; texto: string; orden: number; }
 
 const DIA_LABEL = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const MODO_COLOR: Record<string, string> = { maker: 'var(--os-accent-light)', manager: 'var(--os-muted)', off: 'var(--os-muted)' };
@@ -59,6 +60,7 @@ export default function OSHoy() {
   const [semana, setSemana] = useState<DiaSemana[]>([]);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [sugerencias, setSugerencias] = useState<SugerenciaDomino[]>([]);
+  const [principios, setPrincipios] = useState<Principio[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editDomino, setEditDomino] = useState(false);
@@ -74,13 +76,14 @@ export default function OSHoy() {
   async function cargar() {
     // Sin ?maker=1: el domino del dia puede caer en cualquier linea viva, no solo
     // en las de foco maker de esta semana.
-    const [diaRes, stackRes, objRes, semRes, lineasRes, kpisRes] = await Promise.all([
+    const [diaRes, stackRes, objRes, semRes, lineasRes, kpisRes, prinRes] = await Promise.all([
       safeJson('/api/dia'),
       safeJson('/api/priority-stack'),
       safeJson('/api/objetivos'),
       safeJson('/api/semana'),
       safeJson('/api/lineas'),
       safeJson('/api/kpis'),
+      safeJson('/api/principios'),
     ]);
     if (diaRes) {
       setDia(diaRes.dia ?? null);
@@ -91,6 +94,7 @@ export default function OSHoy() {
     if (kpisRes) setKpis(kpisRes.kpis ?? []);
     if (semRes) setSemana(semRes.dias ?? []);
     if (lineasRes) setLineas((lineasRes.lineas ?? []).filter((l: Linea) => l.estado !== 'pausado'));
+    if (prinRes) setPrincipios(prinRes.principios ?? []);
     setLoading(false);
   }
 
@@ -476,17 +480,19 @@ export default function OSHoy() {
             )}
           </div>
 
-          {/* Principios: sin endpoint todavia, se mantiene el estatico de data/daily.ts */}
-          {/* TODO: crear /api/principios cuando exista tabla os_principios; hasta entonces esto queda fijo */}
           <div className="os-card">
             <p className="os-section-title">Principios</p>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {datosDaily.principios.map((p, i) => (
-                <li key={i} style={{ display: 'flex', gap: 8 }}>
+              {principios.length > 0 ? principios.map((p, i) => (
+                <li key={p.id} style={{ display: 'flex', gap: 8 }}>
                   <span className="os-mono" style={{ fontSize: 11, fontWeight: 700, color: 'var(--os-accent)', minWidth: 16, paddingTop: 2 }}>{i + 1}</span>
-                  <span style={{ fontSize: 12, color: 'var(--os-muted)', lineHeight: 1.35 }}>{p}</span>
+                  <span style={{ fontSize: 12, color: 'var(--os-muted)', lineHeight: 1.35 }}>{p.texto}</span>
                 </li>
-              ))}
+              )) : (
+                <li style={{ display: 'flex', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--os-muted)', lineHeight: 1.35 }}>No hay principios configurados.</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
