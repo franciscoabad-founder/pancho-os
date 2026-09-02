@@ -14,6 +14,7 @@
 //   - limit=12 por pagina
 //   - el mini renderer de markdown del modal
 import { useCallback, useEffect, useRef, useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import OSGraphBrain from './OSGraphBrain.tsx';
 
 // Lista cerrada de tags validos del brain (CLAUDE.md). No se inventan tags.
@@ -69,7 +70,7 @@ function esc(s: unknown): string {
 }
 
 function mdToHtml(md: string): string {
-  return esc(md)
+  const html = esc(md)
     .replace(/^#### (.+)$/gm, '<b style="color:var(--os-accent-light);font-size:12px;">$1</b>')
     .replace(/^### (.+)$/gm, '<b style="color:var(--os-text-2);font-size:13px;">$1</b>')
     .replace(/^## (.+)$/gm, '<b style="color:var(--os-text);font-size:14px;">$1</b>')
@@ -80,6 +81,8 @@ function mdToHtml(md: string): string {
     .replace(/^\d+\. (.+)$/gm, '<span style="display:block;padding-left:12px;">$1</span>')
     .replace(/\n\n/g, '<br><br>')
     .replace(/\n/g, '<br>');
+
+  return DOMPurify.sanitize(html);
 }
 
 const cssCerebro = `
