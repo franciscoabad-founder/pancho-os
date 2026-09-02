@@ -175,18 +175,29 @@ export async function syncAgendaGoogle(desde: string, hasta: string, sb: Supabas
 
   const { data: locales, error: localError } = await sb.from('reuniones').select('*').gte('fecha', `${desde}T00:00:00-05:00`).lt('fecha', `${diaSiguiente(hasta)}T00:00:00-05:00`).is('google_event_id', null).is('google_deleted_at', null);
   if (localError) throw localError;
-  for (const local of locales ?? []) {
-    const existente = eventosRemotos.find((remoto) => remoto.id && remoto.status !== 'cancelled' && esMismoEventoAgenda(local as Record<string, unknown>, remoto));
-    if (existente) {
-      const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: String(existente.id), google_etag: existente.etag ?? null, google_updated_at: existente.updated ?? null, google_dirty_at: null }).eq('id', local.id);
+
+  const LOCALES_CONCURRENCY = 5;
+  const localesArray = locales ?? [];
+  for (let i = 0; i < localesArray.length; i += LOCALES_CONCURRENCY) {
+    const chunk = localesArray.slice(i, i + LOCALES_CONCURRENCY);
+    const results = await Promise.all(chunk.map(async (local) => {
+      const existente = eventosRemotos.find((remoto) => remoto.id && remoto.status !== 'cancelled' && esMismoEventoAgenda(local as Record<string, unknown>, remoto));
+      if (existente) {
+        const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: String(existente.id), google_etag: existente.etag ?? null, google_updated_at: existente.updated ?? null, google_dirty_at: null }).eq('id', local.id);
+        if (error) throw error;
+        return { exportados: 0, omitidos: 1 };
+      }
+      const event = await googleRequest(config, '/events', { method: 'POST', body: JSON.stringify(googleEventPayload(local as Record<string, unknown>)) }) as Record<string, unknown>;
+      const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: event.id, google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }).eq('id', local.id);
       if (error) throw error;
-      omitidos++;
-      continue;
+      return { exportados: 1, omitidos: 0 };
+    }));
+
+    for (const r of results) {
+      exportados += r.exportados;
+      omitidos += r.omitidos;
     }
-    const event = await googleRequest(config, '/events', { method: 'POST', body: JSON.stringify(googleEventPayload(local as Record<string, unknown>)) }) as Record<string, unknown>;
-    const { error } = await sb.from('reuniones').update({ fuente: 'google_calendar', google_event_id: event.id, google_etag: event.etag ?? null, google_updated_at: event.updated ?? null }).eq('id', local.id);
-    if (error) throw error;
-    exportados++;
   }
+
   return { importados, exportados, omitidos };
 }
