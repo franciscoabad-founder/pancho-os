@@ -65,6 +65,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WebView.setWebContentsDebuggingEnabled(true)
         window.statusBarColor = Color.WHITE
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars = true
@@ -97,16 +98,22 @@ class MainActivity : ComponentActivity() {
 
     /** Entrega el micrófono al grabador del OS solo después de que el usuario lo solicita. */
     fun requestMicrophonePermission(request: PermissionRequest) {
+        android.util.Log.d("PanchoMic", "requestMicrophonePermission origin=${request.origin} resources=${request.resources.joinToString()}")
         if (!request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+            android.util.Log.d("PanchoMic", "deny: no RESOURCE_AUDIO_CAPTURE in request")
             request.deny()
             return
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        val selfPerm = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+        android.util.Log.d("PanchoMic", "checkSelfPermission RECORD_AUDIO = $selfPerm (granted=${PackageManager.PERMISSION_GRANTED})")
+        if (selfPerm == PackageManager.PERMISSION_GRANTED) {
+            android.util.Log.d("PanchoMic", "granting RESOURCE_AUDIO_CAPTURE")
             request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
             return
         }
         pendingWebPermission?.deny()
         pendingWebPermission = request
+        android.util.Log.d("PanchoMic", "launching runtime permission request")
         requestMicrophonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 

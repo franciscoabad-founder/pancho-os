@@ -215,9 +215,20 @@ export default function OSGrabar() {
     if (!mime) { setError('Este navegador no soporta grabacion de audio.'); return; }
     let stream: MediaStream;
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError('Este contexto no permite acceso al microfono (revisa que la pagina cargue por HTTPS).');
+        return;
+      }
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setError('No se pudo acceder al microfono. Revisa los permisos del navegador.');
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : 'desconocido';
+      const detalle =
+        name === 'NotAllowedError' ? 'Permiso de microfono denegado.'
+        : name === 'NotFoundError' ? 'No se encontro un microfono en el dispositivo.'
+        : name === 'NotReadableError' ? 'El microfono esta siendo usado por otra app. Cierra otras apps que lo usen (llamadas, asistente, otro grabador) e intenta de nuevo.'
+        : name === 'SecurityError' ? 'El navegador bloqueo el acceso por seguridad (contexto no HTTPS).'
+        : `Error ${name}: ${err instanceof Error ? err.message : String(err)}`;
+      setError(`No se pudo acceder al microfono. ${detalle}`);
       return;
     }
     streamRef.current = stream;

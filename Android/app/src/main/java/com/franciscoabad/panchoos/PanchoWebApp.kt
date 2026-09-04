@@ -39,6 +39,7 @@ fun PanchoWebApp(activity: MainActivity) {
                 }
                 webChromeClient = object : WebChromeClient() {
                     override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                        android.util.Log.d("PanchoMic", "onPermissionRequest fired: ${request.resources.joinToString()} origin=${request.origin}")
                         activity.runOnUiThread {
                             when {
                                 request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE) ->
@@ -48,6 +49,10 @@ fun PanchoWebApp(activity: MainActivity) {
                                 else -> request.deny()
                             }
                         }
+                    }
+                    override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
+                        android.util.Log.d("PanchoConsole", "${message.messageLevel()} ${message.message()} [${message.sourceId()}:${message.lineNumber()}]")
+                        return true
                     }
                 }
                 activity.attachWebView(this)

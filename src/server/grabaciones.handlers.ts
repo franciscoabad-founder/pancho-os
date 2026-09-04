@@ -29,6 +29,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import { readEnv } from '../lib/env.ts';
+import { createGbrainClient } from '../os/lib/gbrain.ts';
+import { bindBrainWriteToTenant, createDedupeKey, validateBrainWrite, type BrainWriteClientInput, BRAIN_WRITE_TAGS } from '../lib/brain-write.ts';
 
 export const PROYECTOS = ['braintech', 'rafik', 'cortex', 'taskr', 'arazza', 'codeis', 'marca', 'personal', 'otros'];
 
@@ -139,10 +141,19 @@ export function firmaDescargaValida(path: string, expRaw: string | null, sig: st
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// --- Aviso a n8n -------------------------------------------------------------
+// --- Transcripcion y minuta (Groq) + escritura al brain ---------------------
+//
+// Antes esto lo hacia un webhook de n8n (N8N_TRANSCRIBE_URL) que nunca se
+// configuro. Ahora corre dentro del propio proceso del OS: no depende de
+// infraestructura externa mas alla de la API de Groq y gbrain.
+//   1. Whisper de Groq (whisper-large-v3-turbo) transcribe el audio ya
+//      guardado en disco.
+//   2. Un modelo de chat de Groq (llama-3.3-70b-versatile) redacta una
+//      minuta corta a partir de esa transcripcion.
+//   3. La pagina (minuta + transcripcion completa) se escribe a gbrain con
+//      el mismo contrato que usa el Diario (src/lib/brain-write.ts).
 
 export interface AvisoTranscripcion {
-  audioUrl: string;
   path: string;
   titulo: string;
   proyecto: string;
@@ -150,29 +161,105 @@ export interface AvisoTranscripcion {
   mime: string;
 }
 
-export async function notificarTranscripcion(aviso: AvisoTranscripcion): Promise<void> {
-  const webhook = readEnv('N8N_TRANSCRIBE_URL');
-  if (!webhook) throw new Error('N8N_TRANSCRIBE_URL no configurado');
+const EXT_A_GROQ: Record<string, string> = { webm: 'webm', m4a: 'm4a', mp3: 'mp3', wav: 'wav', ogg: 'ogg' };
 
-  const osToken = readEnv('OS_API_TOKEN') ?? readEnv('OS_AUTH_TOKEN');
-  const res = await fetch(webhook, {
+async function transcribirConGroq(audio: Buffer, mime: string, nombreArchivo: string): Promise<string> {
+  const apiKey = readEnv('GROQ_API_KEY');
+  if (!apiKey) throw new Error('GROQ_API_KEY no configurado');
+
+  const form = new FormData();
+  form.append('file', new Blob([new Uint8Array(audio)], { type: mime }), nombreArchivo);
+  form.append('model', 'whisper-large-v3-turbo');
+  form.append('language', 'es');
+  form.append('response_format', 'text');
+
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(osToken ? { 'X-OS-Token': osToken } : {}),
-    },
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+  if (!res.ok) throw new Error(`Groq Whisper HTTP ${res.status}: ${await res.text()}`);
+  return (await res.text()).trim();
+}
+
+async function redactarMinuta(transcript: string, titulo: string, proyecto: string): Promise<string> {
+  const apiKey = readEnv('GROQ_API_KEY');
+  if (!apiKey) throw new Error('GROQ_API_KEY no configurado');
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      audio_url: aviso.audioUrl,
-      path: aviso.path,
-      titulo: aviso.titulo,
-      proyecto: aviso.proyecto,
-      duracion_s: aviso.duracion,
-      mime: aviso.mime,
-      fecha: new Date().toISOString(),
-      source: 'os-grabar',
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Redactas minutas de reunion en espanol, breves y accionables. ' +
+            'Estructura fija en Markdown: "## Resumen" (2-4 frases), "## Puntos clave" (bullets), ' +
+            '"## Acuerdos y pendientes" (bullets, con responsable si se menciona). ' +
+            'No inventes nombres, cifras ni acuerdos que no esten en la transcripcion. ' +
+            'Si la transcripcion es muy corta o poco clara, dilo explicitamente en vez de rellenar.',
+        },
+        {
+          role: 'user',
+          content: `Titulo: ${titulo || '(sin titulo)'}\nProyecto: ${proyecto}\n\nTranscripcion:\n${transcript}`,
+        },
+      ],
     }),
   });
-  if (!res.ok) throw new Error(`n8n HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Groq chat HTTP ${res.status}: ${await res.text()}`);
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const minuta = data.choices?.[0]?.message?.content?.trim();
+  if (!minuta) throw new Error('Groq chat: respuesta sin contenido');
+  return minuta;
+}
+
+/** Mapea el proyecto de OSGrabar (lista PROYECTOS) a un tag valido de gbrain. */
+function tagDeProyecto(proyecto: string): string {
+  return (BRAIN_WRITE_TAGS as readonly string[]).includes(proyecto) ? proyecto : 'os';
+}
+
+export async function transcribirYGuardarEnBrain(aviso: AvisoTranscripcion): Promise<{ slug: string }> {
+  const token = readEnv('GBRAIN_TOKEN');
+  if (!token) throw new Error('GBRAIN_TOKEN no configurado: no se puede escribir la reunion al brain.');
+
+  const { datos, mime } = await leerGrabacion(aviso.path);
+  const ext = aviso.path.split('.').pop()?.toLowerCase() ?? 'webm';
+  const transcript = await transcribirConGroq(datos, mime, `audio.${EXT_A_GROQ[ext] ?? 'webm'}`);
+  if (!transcript) throw new Error('Groq Whisper devolvio una transcripcion vacia');
+
+  const minuta = await redactarMinuta(transcript, aviso.titulo, aviso.proyecto);
+
+  const fecha = new Date();
+  const fechaIso = fecha.toISOString();
+  const tag = tagDeProyecto(aviso.proyecto);
+  const title = aviso.titulo || `Reunion ${fechaIso.slice(0, 10)}`;
+  const slug = `reunion-os-${fechaIso.slice(0, 10)}-${fecha.getTime().toString(36)}`;
+  const body = `${minuta}\n\n## Transcripcion completa\n\n${transcript}\n\nRelacionado: [[reunion]] [[pancho-os]]`;
+  const sourceRef = `os:grabacion:${aviso.path}`;
+  const tenant = readEnv('GBRAIN_TENANT_ID') ?? 'pancho';
+
+  const input: BrainWriteClientInput = {
+    target: 'brain',
+    op: 'create',
+    slug,
+    title,
+    body,
+    tags: Array.from(new Set(['os', tag])),
+    wikilinks: ['reunion', 'pancho-os'],
+    evidence: { source: 'os', source_ref: sourceRef, observed_at: fechaIso, confidence: 2 },
+    dedupe_key: await createDedupeKey(tenant, title, sourceRef),
+  };
+  const write = bindBrainWriteToTenant(tenant, 'human', input);
+  const validacion = validateBrainWrite(write);
+  if (!validacion.ok) throw new Error(`brain-write invalido: ${validacion.issues.join('; ')}`);
+
+  const brain = createGbrainClient(token);
+  await brain.putPage({ slug, title, body, type: 'report', tags: write.tags });
+
+  return { slug };
 }
 
 /** Normaliza el proyecto al catalogo cerrado, cayendo a 'otros'. */

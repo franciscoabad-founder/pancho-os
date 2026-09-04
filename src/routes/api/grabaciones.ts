@@ -23,28 +23,18 @@
 // que se le manda a n8n y el equivalente local de createSignedUrl.
 
 import { createFileRoute } from '@tanstack/react-router';
-import { readEnv } from '../../lib/env.ts';
 import { isOsAuthorized, json } from '../../server/osAuth.ts';
 import {
   firmaDescargaValida,
   guardarGrabacion,
   leerGrabacion,
   normalizarProyecto,
-  notificarTranscripcion,
   nuevaRutaGrabacion,
-  queryDescargaFirmado,
   rutaAbsoluta,
+  transcribirYGuardarEnBrain,
 } from '../../server/grabaciones.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
-
-// Base publica para la URL que consume n8n. En produccion detras de Caddy el
-// esquema que reconstruye Nitro puede ser http, por eso OS_PUBLIC_URL manda si
-// esta puesto; sin ella se cae al origen de la propia request.
-function origenPublico(request: Request): string {
-  const configurado = readEnv('OS_PUBLIC_URL');
-  return (configurado || new URL(request.url).origin).replace(/\/$/, '');
-}
 
 async function manejarStart(body: Record<string, unknown>): Promise<Response> {
   try {
@@ -56,7 +46,12 @@ async function manejarStart(body: Record<string, unknown>): Promise<Response> {
   }
 }
 
-async function manejarDone(body: Record<string, unknown>, request: Request): Promise<Response> {
+// La transcripcion (Groq Whisper + minuta + escritura a gbrain) puede tomar
+// mas de lo que conviene esperar en una sola respuesta HTTP. manejarDone
+// devuelve en cuanto arranca el trabajo; el resultado (o el error) queda en
+// el log del servidor. OSGrabar ya no necesita mas que "ok" para marcar la
+// grabacion como subida.
+async function manejarDone(body: Record<string, unknown>): Promise<Response> {
   const path = String(body.path ?? '');
   try {
     rutaAbsoluta(path);
@@ -69,21 +64,12 @@ async function manejarDone(body: Record<string, unknown>, request: Request): Pro
   const duracion = Math.max(0, Math.round(Number(body.duracion ?? 0)));
   const mime = String(body.mime ?? 'audio/webm');
 
-  let audioUrl: string;
-  try {
-    audioUrl = `${origenPublico(request)}/api/grabaciones?${queryDescargaFirmado(path)}`;
-  } catch (err) {
-    return json({ error: `No se pudo firmar la descarga: ${String(err)}` }, 502);
-  }
+  void transcribirYGuardarEnBrain({ path, titulo, proyecto, duracion, mime }).then(
+    ({ slug }) => console.log(`[grabaciones] ${path} -> brain:${slug}`),
+    (err) => console.error(`[grabaciones] fallo transcripcion/brain para ${path}:`, err),
+  );
 
-  try {
-    await notificarTranscripcion({ audioUrl, path, titulo, proyecto, duracion, mime });
-    return json({ ok: true });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === 'N8N_TRANSCRIBE_URL no configurado') return json({ error: msg }, 500);
-    return json({ error: `No se pudo notificar a n8n: ${msg}` }, 502);
-  }
+  return json({ ok: true });
 }
 
 export const Route = createFileRoute('/api/grabaciones')({
@@ -101,7 +87,7 @@ export const Route = createFileRoute('/api/grabaciones')({
 
         const action = String(body.action ?? '');
         if (action === 'start') return manejarStart(body);
-        if (action === 'done') return manejarDone(body, request);
+        if (action === 'done') return manejarDone(body);
         return json({ error: 'action debe ser start o done' }, 400);
       },
 
