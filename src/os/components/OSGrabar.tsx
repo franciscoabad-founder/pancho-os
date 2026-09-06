@@ -6,8 +6,9 @@
 //   /api/grabaciones action=start. Esa URL apuntaba antes a Supabase Storage y
 //   hoy apunta a la propia route, que escribe el audio en el disco del servidor
 //   (ver la cabecera de src/routes/api/grabaciones.ts). El flujo del cliente es
-//   identico. Luego /api/grabaciones action=done dispara el pipeline de
-//   transcripcion en n8n.
+//   identico. Luego /api/grabaciones action=done dispara en el servidor la
+//   transcripcion con Groq y la escritura al brain; la UI consulta
+//   /api/grabaciones?estado=<path> hasta ver 'listo' o 'error'.
 // - Si al cargar hay una grabacion sin subir en IndexedDB, se ofrece recuperarla.
 import { useEffect, useRef, useState } from 'react';
 import { Button, Card, FieldInput, Spinner } from './ui';
@@ -140,6 +141,8 @@ export default function OSGrabar() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [recuperable, setRecuperable] = useState<Sesion | null>(null);
   const [progreso, setProgreso] = useState('');
+  const [postProceso, setPostProceso] = useState<{ estado: string; slug?: string; error?: string } | null>(null);
+  const pathSubidoRef = useRef('');
 
   const recRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -173,6 +176,25 @@ export default function OSGrabar() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
+
+  // Tras subir, consultar el estado del post-proceso hasta que termine.
+  useEffect(() => {
+    if (estado !== 'subido' || !pathSubidoRef.current) return;
+    let vivo = true;
+    const path = pathSubidoRef.current;
+    const consultar = async () => {
+      try {
+        const res = await fetch(`/api/grabaciones?estado=${encodeURIComponent(path)}`);
+        const data = await res.json();
+        if (!vivo) return;
+        setPostProceso(data);
+        if (data.estado === 'listo' || data.estado === 'error') return;
+      } catch { /* reintenta en el siguiente tick */ }
+      if (vivo) setTimeout(consultar, 5000);
+    };
+    consultar();
+    return () => { vivo = false; };
+  }, [estado]);
 
   useEffect(() => () => {
     // Cleanup al desmontar: liberar mic y wake lock (los chunks quedan en IndexedDB).
@@ -392,6 +414,8 @@ export default function OSGrabar() {
       setBlobListo(null);
       setPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return ''; });
       setProgreso('');
+      pathSubidoRef.current = dataStart.path;
+      setPostProceso({ estado: 'procesando' });
       setEstado('subido');
     } catch (err) {
       setProgreso('');
@@ -401,6 +425,8 @@ export default function OSGrabar() {
   }
 
   function nuevaGrabacion() {
+    pathSubidoRef.current = '';
+    setPostProceso(null);
     setTitulo('');
     segundosRef.current = 0;
     setSegundos(0);
@@ -584,9 +610,19 @@ export default function OSGrabar() {
             <p style={{ fontSize: 'var(--os-text-sm)', color: 'var(--os-text)', fontWeight: 600 }}>
               Grabacion enviada al cerebro
             </p>
-            <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>
-              n8n la esta transcribiendo y resumiendo. La nota aparecera en gbrain en unos minutos.
-            </p>
+            {postProceso?.estado === 'listo' ? (
+              <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-text-2)' }}>
+                Transcrita y guardada en el brain como <strong>{postProceso.slug}</strong>.
+              </p>
+            ) : postProceso?.estado === 'error' ? (
+              <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-error, #D4537E)' }}>
+                La transcripcion fallo: {postProceso.error}. El audio quedo guardado en el servidor.
+              </p>
+            ) : (
+              <p style={{ fontSize: 'var(--os-text-xs)', color: 'var(--os-muted)' }}>
+                <Spinner inline /> El OS la esta transcribiendo con Groq y redactando la minuta. Esto tarda entre segundos y un par de minutos.
+              </p>
+            )}
             <Button size="sm" onClick={nuevaGrabacion}>Nueva grabacion</Button>
           </div>
         </Card>

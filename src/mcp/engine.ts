@@ -65,6 +65,7 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         evento_id: { type: 'string', description: 'ID del evento a eliminar' },
+        confirm: { type: 'boolean', description: 'Confirmacion MRTR: la primera llamada sin confirm devuelve input_required; repite con confirm: true para borrar.' },
       },
       required: ['evento_id'],
     },
@@ -540,13 +541,27 @@ export async function handleMcpStatelessRequest(
     const isGenericGoogleSync = toolName === 'os_api_request' && String(toolArgs.module ?? '') === 'agenda/sync' && String(toolArgs.method ?? '').toUpperCase() === 'POST';
     if (toolDef?.requiresMRTR || isGenericDelete || isGenericGoogleSync) {
       const inputResponses = meta.inputResponses || toolArgs.inputResponses;
-      if (!inputResponses || (inputResponses as Record<string, unknown>).confirm !== true) {
+      const confirmado = (inputResponses as Record<string, unknown> | undefined)?.confirm === true || toolArgs.confirm === true;
+      if (!confirmado) {
+        const prompt = `[Confirmación de Seguridad MRTR] ¿Estás seguro de que deseas ejecutar la acción sensible '${toolName}'?`;
         return {
           jsonrpc: '2.0',
           id: requestId,
           result: {
+            // `content` es lo unico que renderizan los clientes MCP estandar
+            // (Claude, Cursor, etc.). Sin este bloque el agente veia "sin
+            // output" y no tenia forma de saber que debia confirmar.
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                resultType: 'input_required',
+                tool: toolName,
+                prompt,
+                como_confirmar: `Vuelve a llamar '${toolName}' con los mismos argumentos y ademas confirm: true (o inputResponses: { confirm: true }).`,
+              }, null, 2),
+            }],
             resultType: 'input_required',
-            prompt: `[Confirmación de Seguridad MRTR] ¿Estás seguro de que deseas ejecutar la acción sensible '${toolName}'?`,
+            prompt,
             fields: [
               {
                 name: 'confirm',

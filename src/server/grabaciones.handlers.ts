@@ -161,6 +161,9 @@ export interface AvisoTranscripcion {
   mime: string;
 }
 
+// Limite documentado de la API de audio de Groq (free tier): 25 MB por archivo.
+const GROQ_MAX_BYTES = 25 * 1024 * 1024;
+
 const EXT_A_GROQ: Record<string, string> = { webm: 'webm', m4a: 'm4a', mp3: 'mp3', wav: 'wav', ogg: 'ogg' };
 
 async function transcribirConGroq(audio: Buffer, mime: string, nombreArchivo: string): Promise<string> {
@@ -221,11 +224,57 @@ function tagDeProyecto(proyecto: string): string {
   return (BRAIN_WRITE_TAGS as readonly string[]).includes(proyecto) ? proyecto : 'os';
 }
 
+// --- Estado del post-proceso -------------------------------------------------
+// Sidecar <audio>.estado.json junto al audio. Es lo que la UI consulta con
+// GET /api/grabaciones?estado=<path> para saber si la transcripcion ya se
+// escribio al brain o fallo, ya que manejarDone responde antes de terminar.
+
+export type EstadoGrabacion =
+  | { estado: 'procesando'; iniciado: string }
+  | { estado: 'listo'; slug: string; terminado: string }
+  | { estado: 'error'; error: string; terminado: string };
+
+function rutaEstado(path: string): string {
+  return `${rutaAbsoluta(path)}.estado.json`;
+}
+
+export async function escribirEstado(path: string, estado: EstadoGrabacion): Promise<void> {
+  await writeFile(rutaEstado(path), JSON.stringify(estado));
+}
+
+export async function leerEstado(path: string): Promise<EstadoGrabacion | null> {
+  try {
+    return JSON.parse(await readFile(rutaEstado(path), 'utf8')) as EstadoGrabacion;
+  } catch {
+    return null;
+  }
+}
+
+/** Corre el pipeline completo y deja el resultado en el sidecar de estado. */
+export async function procesarGrabacion(aviso: AvisoTranscripcion): Promise<void> {
+  await escribirEstado(aviso.path, { estado: 'procesando', iniciado: new Date().toISOString() });
+  try {
+    const { slug } = await transcribirYGuardarEnBrain(aviso);
+    await escribirEstado(aviso.path, { estado: 'listo', slug, terminado: new Date().toISOString() });
+    console.log(`[grabaciones] ${aviso.path} -> brain:${slug}`);
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    await escribirEstado(aviso.path, { estado: 'error', error, terminado: new Date().toISOString() });
+    console.error(`[grabaciones] fallo transcripcion/brain para ${aviso.path}: ${error}`);
+  }
+}
+
 export async function transcribirYGuardarEnBrain(aviso: AvisoTranscripcion): Promise<{ slug: string }> {
   const token = readEnv('GBRAIN_TOKEN');
   if (!token) throw new Error('GBRAIN_TOKEN no configurado: no se puede escribir la reunion al brain.');
 
   const { datos, mime } = await leerGrabacion(aviso.path);
+  if (datos.byteLength > GROQ_MAX_BYTES) {
+    throw new Error(
+      `Audio de ${(datos.byteLength / 1024 / 1024).toFixed(1)} MB supera el limite de ${GROQ_MAX_BYTES / 1024 / 1024} MB de Groq Whisper. ` +
+      'Grabaciones muy largas requieren trocear el audio antes de transcribir.',
+    );
+  }
   const ext = aviso.path.split('.').pop()?.toLowerCase() ?? 'webm';
   const transcript = await transcribirConGroq(datos, mime, `audio.${EXT_A_GROQ[ext] ?? 'webm'}`);
   if (!transcript) throw new Error('Groq Whisper devolvio una transcripcion vacia');
@@ -257,7 +306,7 @@ export async function transcribirYGuardarEnBrain(aviso: AvisoTranscripcion): Pro
   if (!validacion.ok) throw new Error(`brain-write invalido: ${validacion.issues.join('; ')}`);
 
   const brain = createGbrainClient(token);
-  await brain.putPage({ slug, title, body, type: 'report', tags: write.tags });
+  await brain.putPage({ slug, title, body, type: 'meeting', tags: write.tags });
 
   return { slug };
 }

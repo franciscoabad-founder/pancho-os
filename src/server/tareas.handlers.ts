@@ -129,6 +129,13 @@ export async function crearTarea(
     if (invalido) throw new ErrorTareas(invalido, 400);
   }
 
+  // Igual que en actualizar: una prioridad presente pero invalida es 400, no
+  // un 'medium' silencioso. Ausente o vacia sigue cayendo al default.
+  const prioridadCruda = body.prioridad;
+  const prioridadDada = prioridadCruda !== undefined && prioridadCruda !== null && prioridadCruda !== '';
+  if (prioridadDada && !esPrioridad(prioridadCruda)) throw new ErrorTareas('prioridad invalida', 400);
+  const prioridad = prioridadDada ? (prioridadCruda as Prioridad) : 'medium';
+
   const { data, error } = await sb
     .from('tareas')
     .insert([{
@@ -139,7 +146,7 @@ export async function crearTarea(
       urgente: body.urgente === true || body.urgente === 'true',
       deadline,
       notas: body.notas ?? null,
-      prioridad: esPrioridad(body.prioridad) ? body.prioridad : 'medium',
+      prioridad,
       tipo: textoOpcional(body.tipo),
       grupo: textoOpcional(body.grupo) ?? 'general',
       parent_id: parentId,

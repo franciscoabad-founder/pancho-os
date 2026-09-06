@@ -30,8 +30,9 @@ import {
   leerGrabacion,
   normalizarProyecto,
   nuevaRutaGrabacion,
+  leerEstado,
+  procesarGrabacion,
   rutaAbsoluta,
-  transcribirYGuardarEnBrain,
 } from '../../server/grabaciones.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
@@ -64,10 +65,7 @@ async function manejarDone(body: Record<string, unknown>): Promise<Response> {
   const duracion = Math.max(0, Math.round(Number(body.duracion ?? 0)));
   const mime = String(body.mime ?? 'audio/webm');
 
-  void transcribirYGuardarEnBrain({ path, titulo, proyecto, duracion, mime }).then(
-    ({ slug }) => console.log(`[grabaciones] ${path} -> brain:${slug}`),
-    (err) => console.error(`[grabaciones] fallo transcripcion/brain para ${path}:`, err),
-  );
+  void procesarGrabacion({ path, titulo, proyecto, duracion, mime });
 
   return json({ ok: true });
 }
@@ -116,6 +114,20 @@ export const Route = createFileRoute('/api/grabaciones')({
       // reproducir una grabacion ya subida desde una sesion del OS.
       GET: async ({ request }) => {
         const url = new URL(request.url);
+
+        // Estado del post-proceso (transcripcion + brain) de una grabacion.
+        const pathEstado = url.searchParams.get('estado');
+        if (pathEstado !== null) {
+          if (!(await isOsAuthorized(request))) return noAutorizado();
+          try {
+            rutaAbsoluta(pathEstado);
+          } catch {
+            return json({ error: 'Path invalido' }, 400);
+          }
+          const estado = await leerEstado(pathEstado);
+          return json(estado ?? { estado: 'desconocido' });
+        }
+
         const path = url.searchParams.get('path') ?? '';
 
         const firmada = firmaDescargaValida(path, url.searchParams.get('exp'), url.searchParams.get('sig'));
@@ -129,7 +141,7 @@ export const Route = createFileRoute('/api/grabaciones')({
 
         try {
           const { datos, mime } = await leerGrabacion(path);
-          return new Response(datos, {
+          return new Response(new Uint8Array(datos), {
             headers: {
               'Content-Type': mime,
               'Content-Length': String(datos.byteLength),

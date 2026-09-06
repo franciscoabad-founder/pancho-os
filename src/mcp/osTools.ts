@@ -64,6 +64,17 @@ const MCP_OS_MODULES = new Set([
 // La API de tareas guarda prioridades en ingles; el catalogo MCP habla espanol.
 const PRIORIDAD_MCP: Record<string, string> = { baja: 'low', media: 'medium', alta: 'high', critica: 'critical' };
 
+// Traduce la prioridad del catalogo (espanol) o acepta el valor de la API
+// (ingles). Un valor fuera de ambos conjuntos es error explicito: antes se
+// mandaba tal cual y la API lo degradaba en silencio a 'medium'.
+function prioridadApi(valor: unknown): string | undefined {
+  if (valor === undefined || valor === null || valor === '') return undefined;
+  const v = String(valor).trim().toLowerCase();
+  if (PRIORIDAD_MCP[v]) return PRIORIDAD_MCP[v];
+  if (Object.values(PRIORIDAD_MCP).includes(v)) return v;
+  throw new Error(`prioridad invalida: '${String(valor)}'. Usa baja, media, alta o critica.`);
+}
+
 export function toToolRequest(name: string, args: Record<string, unknown>): ToolRequest {
   switch (name) {
     case 'agenda_get_eventos': {
@@ -84,6 +95,9 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       const id = String(args.evento_id ?? '').trim();
       if (!id) throw new Error('evento_id requerido: usa agenda_get_eventos para obtenerlo.');
       const fecha = typeof args.fecha === 'string' ? args.fecha : undefined;
+      if (!fecha && (typeof args.hora_inicio === 'string' || typeof args.hora_fin === 'string')) {
+        throw new Error('Para cambiar hora_inicio/hora_fin manda tambien fecha (YYYY-MM-DD): sin ella las horas no se aplican.');
+      }
       const inicio = fecha && typeof args.hora_inicio === 'string' ? `${fecha}T${args.hora_inicio}:00-05:00` : args.inicio;
       const fin = fecha && typeof args.hora_fin === 'string' ? `${fecha}T${args.hora_fin}:00-05:00` : args.fin;
       const body: Record<string, unknown> = {};
@@ -112,7 +126,7 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
         method: 'POST',
         body: {
           titulo: args.titulo,
-          prioridad: PRIORIDAD_MCP[String(args.prioridad)] ?? args.prioridad,
+          prioridad: prioridadApi(args.prioridad),
           deadline: args.fecha_limite,
           proyecto: typeof args.proyecto === 'string' ? args.proyecto : undefined,
           notas: typeof args.notas === 'string' ? args.notas : undefined,
@@ -355,7 +369,7 @@ export function toToolRequest(name: string, args: Record<string, unknown>): Tool
       if (!id) throw new Error('id de tarea requerido (usa tareas_list para obtenerlo).');
       const patch: Record<string, unknown> = {};
       if (typeof args.estado === 'string') patch.estado = args.estado;
-      if (typeof args.prioridad === 'string') patch.prioridad = PRIORIDAD_MCP[args.prioridad] ?? args.prioridad;
+      if (args.prioridad !== undefined) patch.prioridad = prioridadApi(args.prioridad);
       if ('deadline' in args) patch.deadline = args.deadline;
       if (typeof args.titulo === 'string') patch.titulo = args.titulo;
       if (typeof args.urgente === 'boolean') patch.urgente = args.urgente;
