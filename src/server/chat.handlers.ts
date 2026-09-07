@@ -13,10 +13,27 @@
 // Si el server se reinicia con un run en vuelo, ese run queda 'trabajando'
 // para siempre: obtenerHilo lo marca 'fallido' pasado RUN_TIMEOUT_MS. Honesto
 // y simple; el usuario reintenta con un boton.
+//
+// F1 (streaming) agrega un SEGUNDO camino de envio, no un reemplazo:
+// enviarMensajeStream devuelve un ReadableStream con los eventos del turno en
+// vivo. Los dos caminos comparten prepararTurno() (validaciones, candado de un
+// run por conversacion, mensaje del usuario y run) y los dos persisten igual.
+// La persistencia nunca depende del cliente: si el navegador se va, se deja de
+// emitir pero el turno termina y se guarda.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
-import { crearSesionTaski, enviarATaski, renombrarSesionHermes, validarPerfil, MAX_LARGO_MENSAJE } from './taski.handlers.ts';
+import {
+  crearSesionTaski,
+  enviarATaski,
+  renombrarSesionHermes,
+  streamTaski,
+  validarPerfil,
+  MAX_LARGO_MENSAJE,
+  type EventoHermes,
+  type OpcionesStreamTaski,
+} from './taski.handlers.ts';
+import { formatearSse } from '../os/lib/sse.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -32,7 +49,21 @@ export function setEnviarAHermesChat(fn: EnviarAHermes | null): void {
   enviarAHermesActual = fn ?? enviarATaski;
 }
 
-type CrearSesion = (sessionId: string, titulo: string, perfil: string) => Promise<void>;
+// Seam para tests del camino con streaming. Misma idea que el de arriba, pero
+// con el callback de eventos: el doble decide que eventos emite.
+type StreamAHermes = (
+  mensaje: string,
+  sessionId: string,
+  opts: OpcionesStreamTaski,
+  onEvento: (evento: EventoHermes) => void,
+) => Promise<string>;
+let streamAHermesActual: StreamAHermes = streamTaski;
+
+export function setStreamHermesChat(fn: StreamAHermes | null): void {
+  streamAHermesActual = fn ?? streamTaski;
+}
+
+type CrearSesion = (sessionId: string, titulo: string, perfil: string, sessionKey?: string) => Promise<void>;
 let crearSesionActual: CrearSesion = crearSesionTaski;
 
 export function setCrearSesionHermesChat(fn: CrearSesion | null): void {
@@ -204,7 +235,21 @@ export interface EnvioResultado {
   run: Run;
 }
 
-export async function enviarMensaje(conversacionId: string, contenidoRaw: unknown): Promise<EnvioResultado> {
+interface TurnoPreparado extends EnvioResultado {
+  conversacion: Conversacion;
+  contenido: string;
+}
+
+/**
+ * Todo lo que hay que hacer ANTES de hablar con Hermes, igual para el camino
+ * sincronico (enviarMensaje) y para el de streaming (enviarMensajeStream):
+ * validar, respetar el candado de un run por conversacion, guardar el mensaje
+ * del usuario, abrir el run y poner titulo automatico.
+ *
+ * Se extrajo para que el streaming no duplique reglas: si manana cambia el
+ * candado o el limite de largo, cambia en un solo lugar.
+ */
+async function prepararTurno(conversacionId: string, contenidoRaw: unknown): Promise<TurnoPreparado> {
   const contenido = String(contenidoRaw ?? '').trim();
   if (!contenido) fallar('Mensaje requerido');
   if (contenido.length > MAX_LARGO_MENSAJE) fallar(`Mensaje demasiado largo (max ${MAX_LARGO_MENSAJE})`);
@@ -252,10 +297,30 @@ export async function enviarMensaje(conversacionId: string, contenidoRaw: unknow
     .update({ updated_at: new Date().toISOString(), ...(titulo ? { titulo } : {}) })
     .eq('id', conversacionId);
 
-  // Fire-and-forget: el POST vuelve ya; el run avanza en segundo plano.
-  void procesarRun((run as Run).id, c, contenido);
+  return { mensaje: msg as Mensaje, run: run as Run, conversacion: c, contenido };
+}
 
-  return { mensaje: msg as Mensaje, run: run as Run };
+export async function enviarMensaje(conversacionId: string, contenidoRaw: unknown): Promise<EnvioResultado> {
+  const turno = await prepararTurno(conversacionId, contenidoRaw);
+  // Fire-and-forget: el POST vuelve ya; el run avanza en segundo plano.
+  void procesarRun(turno.run.id, turno.conversacion, turno.contenido);
+  return { mensaje: turno.mensaje, run: turno.run };
+}
+
+/**
+ * Scope de memoria del tema en Hermes (cabecera X-Hermes-Session-Key).
+ *
+ * En F1 el perfil de Hermes es siempre el default: el OS todavia no modela
+ * "perfil de Hermes" aparte de "nodo" (eso es F2), y la clave no depende del
+ * titulo a proposito, para que renombrar una conversacion no le borre la
+ * memoria al agente.
+ */
+export function claveSesionTema(conv: Conversacion): string {
+  return `os:default:${conv.id.slice(0, 8)}`;
+}
+
+function sesionDeConversacion(conv: Conversacion): string {
+  return conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
 }
 
 // Exportada para tests (que la awaitean); en produccion corre sin await.
@@ -265,10 +330,10 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
   await sb.from('chat_runs').update({ estado: 'trabajando' }).eq('id', runId);
 
   try {
-    const sessionId = conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
+    const sessionId = sesionDeConversacion(conv);
     // Hermes solo acepta chat sobre sesiones existentes: crearla es idempotente
     // (409 = ya estaba) y barato, asi que se asegura en cada run.
-    await crearSesionActual(sessionId, conv.titulo, conv.perfil);
+    await crearSesionActual(sessionId, conv.titulo, conv.perfil, claveSesionTema(conv));
     // 4 min de presupuesto: el run corre en background, no bloquea a nadie.
     const respuesta = await enviarAHermesActual(contenido, sessionId, conv.perfil, 240_000);
     const texto = respuesta.trim() || '(Hermes devolvio una respuesta vacia)';
@@ -305,4 +370,139 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
       })
       .eq('id', runId);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Camino con streaming (F1)
+// ---------------------------------------------------------------------------
+//
+// Misma maquina de estados que arriba: el run vive en chat_runs y la respuesta
+// final se guarda en chat_mensajes. La diferencia es que el turno tambien se
+// va contando en vivo por SSE.
+//
+// REGLA: la persistencia NO depende del cliente. Si el navegador cierra la
+// pestana a mitad del turno, `emitir` deja de escribir (el ReadableStream ya no
+// acepta datos) pero procesarRunStream sigue hasta el final y guarda la
+// respuesta igual que procesarRun. El stream es presentacion; la verdad del
+// transcript sigue siendo la base del OS.
+
+/**
+ * Procesa un turno con streaming. `emitir` recibe cada evento que hay que
+ * mandarle al cliente; puede ser un no-op si el cliente ya se fue.
+ *
+ * Exportada para tests (que la awaitean); en produccion la dispara
+ * enviarMensajeStream sin await.
+ */
+export async function procesarRunStream(
+  runId: string,
+  conv: Conversacion,
+  contenido: string,
+  emitir: (evento: EventoHermes) => void,
+): Promise<void> {
+  const sb = clienteActual();
+  const inicio = Date.now();
+  await sb.from('chat_runs').update({ estado: 'trabajando' }).eq('id', runId);
+
+  const sessionId = sesionDeConversacion(conv);
+  const sessionKey = claveSesionTema(conv);
+
+  try {
+    await crearSesionActual(sessionId, conv.titulo, conv.perfil, sessionKey);
+
+    const respuesta = await streamAHermesActual(
+      contenido,
+      sessionId,
+      { perfil: validarPerfil(conv.perfil), sessionKey, timeoutMs: 240_000 },
+      // El run.completed de Hermes se filtra: el cliente lo usa como senal de
+      // "recarga el hilo", y si lo reemitieramos tal cual llegaria ANTES de que
+      // el mensaje del assistant este guardado. El OS emite el suyo al final.
+      (evento) => {
+        if (evento.tipo === 'run.completed') return;
+        emitir(evento);
+      },
+    );
+    const texto = respuesta.trim() || '(Hermes devolvio una respuesta vacia)';
+
+    const { data: msgA, error: eA } = await sb
+      .from('chat_mensajes')
+      .insert({ conversacion_id: conv.id, rol: 'assistant', contenido: texto })
+      .select('*')
+      .single();
+    if (eA) throw new Error(`guardar respuesta: ${eA.message}`);
+
+    await sb
+      .from('chat_runs')
+      .update({
+        estado: 'completado',
+        mensaje_assistant_id: (msgA as Mensaje).id,
+        terminado_at: new Date().toISOString(),
+        evidencia: {
+          duracion_ms: Date.now() - inicio,
+          hermes_session_id: sessionId,
+          session_key: sessionKey,
+          perfil: conv.perfil,
+          streaming: true,
+        },
+      })
+      .eq('id', runId);
+    await sb.from('chat_conversaciones').update({ updated_at: new Date().toISOString() }).eq('id', conv.id);
+
+    emitir({ tipo: 'run.completed', datos: { run_id: runId, mensaje_id: (msgA as Mensaje).id, estado: 'completado' } });
+  } catch (err) {
+    const detalle = err instanceof Error ? err.message : String(err);
+    await sb
+      .from('chat_runs')
+      .update({
+        estado: 'fallido',
+        error: detalle,
+        terminado_at: new Date().toISOString(),
+        evidencia: { duracion_ms: Date.now() - inicio, perfil: conv.perfil, streaming: true },
+      })
+      .eq('id', runId);
+    emitir({ tipo: 'error', detalle });
+    // Igual se cierra el turno: el cliente tiene que apagar el spinner.
+    emitir({ tipo: 'run.completed', datos: { run_id: runId, estado: 'fallido' } });
+  }
+}
+
+/**
+ * Version con streaming de enviarMensaje: devuelve el cuerpo SSE que la ruta
+ * /api/chat/:id/stream entrega tal cual.
+ *
+ * Las validaciones y el 409 de "ya hay un run activo" siguen viviendo en
+ * prepararTurno, asi que fallan ANTES de abrir el stream y la ruta las traduce
+ * al mismo status de siempre.
+ */
+export async function enviarMensajeStream(conversacionId: string, contenidoRaw: unknown): Promise<ReadableStream<Uint8Array>> {
+  const turno = await prepararTurno(conversacionId, contenidoRaw);
+  const codificador = new TextEncoder();
+
+  return new ReadableStream<Uint8Array>({
+    start(controlador) {
+      let abierto = true;
+      const emitir = (evento: EventoHermes) => {
+        if (!abierto) return;
+        try {
+          controlador.enqueue(codificador.encode(formatearSse(evento.tipo, evento)));
+        } catch {
+          // El cliente se fue. Solo dejamos de emitir: el run sigue vivo.
+          abierto = false;
+        }
+      };
+
+      // Primer frame: el run recien creado, para que el cliente pueda pintar el
+      // estado y, si el stream se corta, caer al polling con el id correcto.
+      emitir({ tipo: 'run.started', datos: { run: turno.run, mensaje: turno.mensaje } });
+
+      void procesarRunStream(turno.run.id, turno.conversacion, turno.contenido, emitir).finally(() => {
+        if (!abierto) return;
+        abierto = false;
+        try {
+          controlador.close();
+        } catch {
+          // Ya estaba cerrado por cancelacion del cliente.
+        }
+      });
+    },
+  });
 }

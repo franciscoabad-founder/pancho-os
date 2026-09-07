@@ -11,6 +11,7 @@
 // elegir cual ver, en vez de estar atados a una sola conversacion continua.
 
 import { readEnv } from '../lib/env.ts';
+import { leerSse, type TramaSse } from '../os/lib/sse.ts';
 
 const TASKI_BASE = 'https://brain.franciscoabad.com/taski';
 export const SESSION_ID = 'pancho-os';
@@ -43,41 +44,67 @@ function tokenPerfil(perfil: PerfilId): string | undefined {
   return readEnv('TASKI_TOKEN');
 }
 
-function taskiHeaders(perfil: PerfilId = 'vps-default'): Record<string, string> {
-  return {
+// La session key (X-Hermes-Session-Key) es el scope de memoria del lado de
+// Hermes: dos sesiones distintas con la misma key comparten contexto. El OS la
+// usa para que un tema tenga memoria propia, y en F3 para engancharse a la
+// misma key que usa un topic de Telegram. Solo se manda si viene: sin ella el
+// api_server se comporta exactamente como antes.
+function taskiHeaders(perfil: PerfilId = 'vps-default', sessionKey?: string): Record<string, string> {
+  const headers: Record<string, string> = {
     Authorization: `Bearer ${tokenPerfil(perfil)}`,
     'Content-Type': 'application/json',
   };
+  const key = (sessionKey ?? '').trim();
+  if (key) headers['X-Hermes-Session-Key'] = key;
+  return headers;
 }
 
-async function taskiFetch(path: string, init: RequestInit, timeoutMs: number, perfil: PerfilId = 'vps-default'): Promise<Response> {
+async function taskiFetch(
+  path: string,
+  init: RequestInit,
+  timeoutMs: number,
+  perfil: PerfilId = 'vps-default',
+  sessionKey?: string,
+): Promise<Response> {
   const base = basePerfil(perfil);
   if (!base) throw new Error(`Perfil Hermes no configurado: ${perfil}`);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(`${base}${path}`, { ...init, headers: taskiHeaders(perfil), signal: ctrl.signal });
+    return await fetch(`${base}${path}`, {
+      ...init,
+      // Las cabeceras propias del llamador (Accept, por ejemplo) mandan sobre
+      // las de base; el Authorization sigue saliendo de taskiHeaders.
+      headers: { ...taskiHeaders(perfil, sessionKey), ...((init.headers as Record<string, string> | undefined) ?? {}) },
+      signal: ctrl.signal,
+    });
   } finally {
     clearTimeout(t);
   }
 }
 
-async function asegurarSesion(sessionId: string, perfil: PerfilId = 'vps-default'): Promise<void> {
+async function asegurarSesion(sessionId: string, perfil: PerfilId = 'vps-default', sessionKey?: string): Promise<void> {
   // Solo la sesion propia del OS se autocrea. Las sesiones de Telegram son de
   // Hermes: si una ya no existe (borrada, etc.) no hay que resucitarla aca.
   if (sessionId !== SESSION_ID) return;
-  await crearSesionTaski(sessionId, 'Taski OS', perfil);
+  await crearSesionTaski(sessionId, 'Taski OS', perfil, sessionKey);
 }
 
 // Crea una sesion en Hermes si no existe (409 = ya existia, ok). La usa el
 // chat soberano para sus sesiones os-chat-* (una por conversacion del OS).
-export async function crearSesionTaski(sessionId: string, titulo: string, perfilRaw: string = 'vps-default'): Promise<void> {
+export async function crearSesionTaski(
+  sessionId: string,
+  titulo: string,
+  perfilRaw: string = 'vps-default',
+  sessionKey?: string,
+): Promise<void> {
   const perfil = validarPerfil(perfilRaw);
   await taskiFetch(
     '/api/sessions',
     { method: 'POST', body: JSON.stringify({ id: sessionId, title: titulo }) },
     HISTORY_TIMEOUT_MS,
     perfil,
+    sessionKey,
   ).catch(() => undefined);
 }
 
@@ -143,6 +170,216 @@ export async function enviarATaski(message: string, sessionId: string = SESSION_
 
   const data = await res.json();
   return String(data?.message?.content ?? '');
+}
+
+// ---------------------------------------------------------------------------
+// Streaming: POST /api/sessions/{id}/chat/stream
+// ---------------------------------------------------------------------------
+//
+// Mismo cuerpo que /chat ({ message }), pero la respuesta es un text/event-stream
+// con el turno en vivo: deltas del texto y el ciclo de vida de cada herramienta.
+// El OS lo usa para que /chat deje de ser una espera ciega de 1 a 3 minutos.
+//
+// Reglas de robustez (el api_server puede estar en una build sin stream, o con
+// streaming.enabled:false):
+//   - 404/405/501 en el endpoint, o un Content-Type que no sea SSE, degradan a
+//     enviarATaski y se emiten eventos sinteticos para que el llamador no tenga
+//     que saber por que camino se fue.
+//   - El timeout es de INACTIVIDAD, no total: se reinicia con cada evento, asi
+//     un turno de 20 minutos que va reportando herramientas no se corta.
+
+export type TipoEventoHermes =
+  | 'run.started'
+  | 'message.started'
+  | 'assistant.delta'
+  | 'tool.started'
+  | 'tool.progress'
+  | 'tool.completed'
+  | 'tool.failed'
+  | 'message.completed'
+  | 'run.completed'
+  | 'error'
+  /** Sintetico del OS: el endpoint de stream no estaba disponible. */
+  | 'fallback';
+
+export interface EventoHermes {
+  tipo: TipoEventoHermes;
+  /** Texto del delta o del mensaje completo, cuando el evento trae contenido. */
+  texto?: string;
+  /** Nombre de la herramienta en los eventos tool.*. */
+  herramienta?: string;
+  /** Detalle corto y legible (progreso, motivo del error o del fallback). */
+  detalle?: string;
+  /** Payload crudo del evento, por si hace falta mas adelante. */
+  datos?: Record<string, unknown>;
+}
+
+export interface OpcionesStreamTaski {
+  perfil?: PerfilId;
+  sessionKey?: string;
+  /** Timeout de INACTIVIDAD en ms; se reinicia con cada evento recibido. */
+  timeoutMs?: number;
+}
+
+/** Sin eventos durante este tiempo se aborta el stream. */
+export const STREAM_INACTIVIDAD_MS = 240_000;
+
+const TIPOS_EVENTO = new Set<string>([
+  'run.started', 'message.started', 'assistant.delta',
+  'tool.started', 'tool.progress', 'tool.completed', 'tool.failed',
+  'message.completed', 'run.completed', 'error', 'fallback',
+]);
+
+function texto(valor: unknown): string | undefined {
+  return typeof valor === 'string' && valor !== '' ? valor : undefined;
+}
+
+/**
+ * Traduce una trama SSE cruda al evento del OS. Devuelve null para lo que no
+ * nos interesa (keepalives, `[DONE]`, tipos que Hermes agregue en el futuro).
+ *
+ * El tipo sale de `event:`; si el gateway lo manda solo dentro del JSON
+ * (algunas builds emiten todo como `message`), se mira `type`/`event` del
+ * payload. Los nombres de campo se prueban en varios alias a proposito: el
+ * esquema exacto del api_server no esta congelado y no queremos que un rename
+ * upstream deje la burbuja en blanco.
+ */
+export function interpretarEventoHermes(trama: TramaSse): EventoHermes | null {
+  const crudo = trama.datos.trim();
+  if (crudo === '[DONE]') return null;
+
+  let datos: Record<string, unknown> = {};
+  if (crudo.startsWith('{')) {
+    try {
+      const parseado = JSON.parse(crudo);
+      if (parseado && typeof parseado === 'object') datos = parseado as Record<string, unknown>;
+    } catch {
+      // Payload que no es JSON: se trata como texto plano mas abajo.
+    }
+  }
+
+  const candidato = TIPOS_EVENTO.has(trama.evento)
+    ? trama.evento
+    : texto(datos.type) ?? texto(datos.event) ?? '';
+  if (!TIPOS_EVENTO.has(candidato)) return null;
+  const tipo = candidato as TipoEventoHermes;
+
+  const mensaje = (datos.message ?? {}) as Record<string, unknown>;
+  const contenido = texto(datos.delta)
+    ?? texto(datos.text)
+    ?? texto(datos.content)
+    ?? texto(mensaje.content)
+    ?? (crudo.startsWith('{') ? undefined : texto(crudo));
+
+  const herramienta = texto(datos.tool) ?? texto(datos.tool_name) ?? texto(datos.name);
+  const detalle = texto(datos.detail) ?? texto(datos.status) ?? texto(datos.error) ?? texto(datos.message);
+
+  return {
+    tipo,
+    ...(contenido ? { texto: contenido } : {}),
+    ...(herramienta ? { herramienta } : {}),
+    ...(detalle ? { detalle } : {}),
+    ...(Object.keys(datos).length > 0 ? { datos } : {}),
+  };
+}
+
+function esStreamSse(res: Response): boolean {
+  return (res.headers.get('content-type') ?? '').toLowerCase().includes('text/event-stream');
+}
+
+/**
+ * Manda un mensaje y va reportando el turno por onEvento. Devuelve el texto
+ * final del assistant (el de message.completed si vino, si no la suma de los
+ * assistant.delta), igual que enviarATaski, para que el llamador persista una
+ * sola cosa.
+ */
+export async function streamTaski(
+  message: string,
+  sessionId: string = SESSION_ID,
+  opts: OpcionesStreamTaski = {},
+  onEvento: (evento: EventoHermes) => void = () => {},
+): Promise<string> {
+  const perfil = validarPerfil(opts.perfil);
+  const base = basePerfil(perfil);
+  if (!base) throw new Error(`Perfil Hermes no configurado: ${perfil}`);
+  const inactividadMs = opts.timeoutMs ?? STREAM_INACTIVIDAD_MS;
+
+  const ctrl = new AbortController();
+  let vigilante: ReturnType<typeof setTimeout> | null = null;
+  const reiniciarInactividad = () => {
+    if (vigilante) clearTimeout(vigilante);
+    vigilante = setTimeout(() => ctrl.abort(), inactividadMs);
+  };
+  const detener = () => {
+    if (vigilante) clearTimeout(vigilante);
+    vigilante = null;
+  };
+
+  // Degradado: el turno igual se ejecuta, solo que sin verlo en vivo.
+  const porElCaminoViejo = async (motivo: string): Promise<string> => {
+    detener();
+    onEvento({ tipo: 'fallback', detalle: motivo });
+    const respuesta = await enviarATaski(message, sessionId, perfil, Math.max(inactividadMs, CHAT_TIMEOUT_MS));
+    if (respuesta) onEvento({ tipo: 'assistant.delta', texto: respuesta });
+    onEvento({ tipo: 'run.completed' });
+    return respuesta;
+  };
+
+  const pedir = () =>
+    fetch(`${base}/api/sessions/${encodeURIComponent(sessionId)}/chat/stream`, {
+      method: 'POST',
+      headers: { ...taskiHeaders(perfil, opts.sessionKey), Accept: 'text/event-stream' },
+      body: JSON.stringify({ message }),
+      signal: ctrl.signal,
+    });
+
+  reiniciarInactividad();
+  let res: Response;
+  try {
+    res = await pedir();
+    if (res.status === 404) {
+      // Mismo patron que enviarATaski: la sesion propia del OS se autocrea.
+      await asegurarSesion(sessionId, perfil, opts.sessionKey);
+      res = await pedir();
+    }
+  } catch (err) {
+    detener();
+    throw err;
+  }
+
+  if (res.status === 404 || res.status === 405 || res.status === 501) {
+    return porElCaminoViejo(`el api_server no expone /chat/stream (HTTP ${res.status})`);
+  }
+  if (!res.ok) {
+    detener();
+    throw new Error(`Hermes HTTP ${res.status}`);
+  }
+  if (!esStreamSse(res) || !res.body) {
+    return porElCaminoViejo('la respuesta no vino como text/event-stream');
+  }
+
+  let acumulado = '';
+  let completo = '';
+  let ultimoError = '';
+
+  try {
+    await leerSse(res.body, (trama) => {
+      reiniciarInactividad();
+      const evento = interpretarEventoHermes(trama);
+      if (!evento) return;
+      if (evento.tipo === 'assistant.delta' && evento.texto) acumulado += evento.texto;
+      if (evento.tipo === 'message.completed' && evento.texto) completo = evento.texto;
+      if (evento.tipo === 'error') ultimoError = evento.detalle ?? evento.texto ?? 'Hermes reporto un error en el stream';
+      onEvento(evento);
+    });
+  } finally {
+    detener();
+  }
+
+  // message.completed manda: es el texto que Hermes dio por bueno.
+  const final = completo.trim() ? completo : acumulado;
+  if (!final.trim() && ultimoError) throw new Error(ultimoError);
+  return final;
 }
 
 /** De donde nace la conversacion, para las pestanas del selector del OS. */

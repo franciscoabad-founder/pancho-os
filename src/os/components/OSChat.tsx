@@ -1,9 +1,15 @@
 // Chat soberano del OS: experiencia diaria tipo Telegram contra Hermes.
 // Implementa os-chat-telegram-soberano (brain): hilo lineal persistido en el
-// OS, envio async (POST devuelve 202 con el run) y polling del hilo hasta ver
-// la respuesta final. Sin streaming crudo: estados simples + respuesta.
+// OS y la respuesta final guardada del lado del OS, no del agente.
 //
-// Callers: src/routes/chat.tsx. API: /api/chat y /api/chat/:id.
+// F1 (streaming) agrega presentacion en vivo encima de eso, sin cambiar quien
+// manda: el envio va por /api/chat/:id/stream y pinta una burbuja provisional
+// con los deltas y un chip con la herramienta en curso, pero el transcript real
+// se recarga de /api/chat/:id al cerrar el turno. El polling sigue existiendo
+// como red para cuando el stream no llega a abrirse o el hilo se abre con un
+// run ya en vuelo.
+//
+// Callers: src/routes/chat.tsx. API: /api/chat, /api/chat/:id y /api/chat/:id/stream.
 // El Cockpit (/hermes) sigue siendo la vista power user; esto es la diaria.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,6 +25,7 @@ import {
 } from '../../lib/desktopBridge.ts';
 import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 import { etiquetaSesion, fechaSesion, nombreSesion, tooltipSesion } from '../lib/sesiones.ts';
+import { leerSse } from '../lib/sse.ts';
 
 interface Conversacion {
   id: string;
@@ -72,6 +79,29 @@ interface TelegramMensaje {
 
 const POLL_MS = 3000;
 
+// Evento que manda el server por /api/chat/:id/stream (ver EventoHermes en
+// src/server/taski.handlers.ts). El `data:` de cada trama es este objeto.
+interface EventoStream {
+  tipo: string;
+  texto?: string;
+  herramienta?: string;
+  detalle?: string;
+  datos?: Record<string, unknown>;
+}
+
+/** Chip que se muestra encima del input mientras Hermes usa una herramienta. */
+interface HerramientaEnCurso {
+  nombre: string;
+  estado: 'corriendo' | 'ok' | 'fallo';
+  detalle?: string;
+}
+
+function textoHerramienta(h: HerramientaEnCurso): string {
+  if (h.estado === 'corriendo') return `Ejecutando ${h.nombre}`;
+  if (h.estado === 'ok') return `${h.nombre} listo`;
+  return `${h.nombre} fallo`;
+}
+
 // Cada conversacion elige que Hermes la atiende. El del VPS tiene Telegram,
 // memoria canonica y n8n; el de la laptop trabaja con el terminal y los
 // archivos de la laptop; el del HomeLab con la GPU local.
@@ -109,6 +139,13 @@ export default function OSChat() {
   const [cargando, setCargando] = useState(false);
   const finRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Streaming (F1): burbuja provisional con el texto que va llegando y chip de
+  // la herramienta en curso. Nada de esto es la verdad: el transcript real se
+  // recarga de /api/chat/:id cuando el turno cierra.
+  const [parcial, setParcial] = useState('');
+  const [herramienta, setHerramienta] = useState<HerramientaEnCurso | null>(null);
+  const [streamAbierto, setStreamAbierto] = useState(false);
 
   // 'os' = conversacion soberana editable. 'telegram-readonly' = viendo un
   // hilo de Telegram que Hermes ya guardo en el VPS, sin input ni polling.
@@ -282,23 +319,26 @@ export default function OSChat() {
     if (activaId) void cargarHilo(activaId);
   }, [activaId, cargarHilo]);
 
-  // Polling solo mientras hay un run activo: asi el hilo en reposo no gasta red.
+  // Polling solo mientras hay un run activo Y no hay stream abierto. Con
+  // streaming es redundante, pero se queda como red: cubre el stream que se
+  // cae antes del primer evento y el caso de abrir un hilo que ya tenia un run
+  // en vuelo (recarga a mitad de turno, o el turno lo lanzo otro dispositivo).
   useEffect(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
-    if (modo === 'os' && runActivo && activaId) {
+    if (modo === 'os' && runActivo && activaId && !streamAbierto) {
       pollRef.current = setInterval(() => void cargarHilo(activaId), POLL_MS);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [modo, runActivo, activaId, cargarHilo]);
+  }, [modo, runActivo, activaId, streamAbierto, cargarHilo]);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensajes.length, runActivo?.estado, telegramMensajes.length]);
+  }, [mensajes.length, runActivo?.estado, telegramMensajes.length, parcial]);
 
   const [perfilNuevo, setPerfilNuevo] = useState('vps-default');
 
@@ -350,28 +390,97 @@ export default function OSChat() {
     }
   }
 
+  // Envio con streaming: el POST devuelve un text/event-stream y el turno se va
+  // pintando en vivo. Si el stream se cae, el run sigue corriendo en el server
+  // y el polling (que vuelve a activarse al cerrar el stream) trae la respuesta.
   async function enviar() {
     const contenido = texto.trim();
-    if (!contenido || !activaId || runActivo) return;
+    const conversacionId = activaId;
+    if (!contenido || !conversacionId || runActivo || streamAbierto) return;
     setTexto('');
     setError(null);
+    setParcial('');
+    setHerramienta(null);
     // Optimista: el mensaje aparece ya, como en Telegram.
     setMensajes((prev) => [
       ...prev,
       { id: `tmp-${Date.now()}`, rol: 'user', contenido, created_at: new Date().toISOString() },
     ]);
+
+    setStreamAbierto(true);
+    let recargado = false;
     try {
-      const res = await fetch(`/api/chat/${activaId}`, {
+      const res = await fetch(`/api/chat/${conversacionId}/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contenido }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setRunActivo(data.run);
+      if (!res.ok || !res.body) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
       void cargarConversaciones();
+
+      await leerSse(res.body, (trama) => {
+        let evento: EventoStream;
+        try {
+          evento = JSON.parse(trama.datos) as EventoStream;
+        } catch {
+          return;
+        }
+        switch (evento.tipo) {
+          case 'run.started': {
+            const run = evento.datos?.run as Run | undefined;
+            if (run) setRunActivo(run);
+            break;
+          }
+          case 'assistant.delta': {
+            const delta = evento.texto;
+            if (delta) setParcial((prev) => prev + delta);
+            break;
+          }
+          case 'tool.started':
+            setHerramienta({ nombre: evento.herramienta ?? 'una herramienta', estado: 'corriendo', detalle: evento.detalle });
+            break;
+          case 'tool.progress':
+            setHerramienta((prev) => ({
+              nombre: evento.herramienta ?? prev?.nombre ?? 'una herramienta',
+              estado: 'corriendo',
+              detalle: evento.detalle ?? prev?.detalle,
+            }));
+            break;
+          case 'tool.completed':
+            setHerramienta({ nombre: evento.herramienta ?? 'la herramienta', estado: 'ok', detalle: evento.detalle });
+            break;
+          case 'tool.failed':
+            setHerramienta({ nombre: evento.herramienta ?? 'la herramienta', estado: 'fallo', detalle: evento.detalle });
+            break;
+          case 'error':
+            setError(evento.detalle ?? evento.texto ?? 'Hermes reporto un error');
+            break;
+          case 'run.completed':
+            setParcial('');
+            setHerramienta(null);
+            setRunActivo(null);
+            // Una sola recarga por turno: el transcript real vive en el OS.
+            if (!recargado) {
+              recargado = true;
+              void cargarHilo(conversacionId);
+            }
+            break;
+          default:
+            break;
+        }
+      });
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
+      // El turno puede seguir vivo del lado del server: recargar el hilo deja
+      // el run activo a la vista y el polling se encarga del resto.
+      if (!recargado) void cargarHilo(conversacionId);
+    } finally {
+      setStreamAbierto(false);
+      setParcial('');
+      setHerramienta(null);
     }
   }
 
@@ -718,7 +827,30 @@ export default function OSChat() {
               );
             })}
 
-            {runActivo && (
+            {/* Burbuja provisional: el texto que va llegando por el stream.
+                No se guarda en el estado de mensajes; al cerrar el turno se
+                reemplaza por el mensaje real que devuelve /api/chat/:id. */}
+            {parcial && (
+              <div style={{ alignSelf: 'flex-start', maxWidth: '88%' }}>
+                <div
+                  style={{
+                    background: 'var(--os-fill-subtle)',
+                    border: '1px dashed var(--os-line-soft)',
+                    color: 'var(--os-text)',
+                    padding: '10px 14px',
+                    borderRadius: '14px 14px 14px 2px',
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'anywhere',
+                  }}
+                >
+                  {parcial}
+                </div>
+              </div>
+            )}
+
+            {runActivo && !parcial && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--os-muted)', fontSize: 12 }}>
                 <span
                   style={{
@@ -744,6 +876,40 @@ export default function OSChat() {
             )}
             <div ref={finRef} />
           </div>
+
+          {/* Chip de la herramienta en curso, encima del input */}
+          {herramienta && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                margin: '0 1rem',
+                padding: '6px 10px',
+                borderRadius: 999,
+                alignSelf: 'flex-start',
+                fontSize: 12,
+                color: herramienta.estado === 'fallo' ? 'var(--os-error)' : 'var(--os-muted)',
+                background: 'var(--os-fill-subtle)',
+                border: `1px solid ${herramienta.estado === 'fallo' ? 'var(--os-error)' : 'var(--os-line-soft)'}`,
+              }}
+              title={herramienta.detalle ?? undefined}
+            >
+              {herramienta.estado === 'corriendo' && (
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    border: '2px solid var(--os-line)',
+                    borderTopColor: 'var(--os-accent)',
+                    animation: 'taski-spin 0.8s linear infinite',
+                  }}
+                />
+              )}
+              {textoHerramienta(herramienta)}
+            </div>
+          )}
 
           {/* Input */}
           <form
@@ -778,8 +944,8 @@ export default function OSChat() {
             <input
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder={runActivo ? 'Hermes esta trabajando...' : 'Escribe un mensaje'}
-              disabled={!activaId || Boolean(runActivo)}
+              placeholder={runActivo || streamAbierto ? 'Hermes esta trabajando...' : 'Escribe un mensaje'}
+              disabled={!activaId || Boolean(runActivo) || streamAbierto}
               className="os-input"
               style={{ flex: 1 }}
             />
@@ -794,7 +960,7 @@ export default function OSChat() {
                 {isListening ? '🔴' : '🎤'}
               </button>
             )}
-            <button type="submit" className="os-btn os-btn-primary" disabled={!activaId || Boolean(runActivo) || !texto.trim()}>
+            <button type="submit" className="os-btn os-btn-primary" disabled={!activaId || Boolean(runActivo) || streamAbierto || !texto.trim()}>
               Enviar
             </button>
           </form>
