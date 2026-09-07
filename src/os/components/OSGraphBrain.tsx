@@ -727,9 +727,14 @@ export default function OSGraphBrain() {
       const xs = nodes.map((n) => n.x ?? 0);
       const ys = nodes.map((n) => n.y ?? 0);
       if (!xs.length) return;
-      const x0 = Math.min(...xs) - 40, x1 = Math.max(...xs) + 40;
-      const y0 = Math.min(...ys) - 40, y1 = Math.max(...ys) + 40;
-      const sc = Math.min(0.9, W / (x1 - x0), H / (y1 - y0));
+      // El margen contempla las etiquetas, que se extienden bastante mas alla
+      // del centro del nodo. FACTOR_AIRE deja respiro alrededor del grafo para
+      // que se lea de un vistazo, sobre todo al mostrarlo en pantalla ajena.
+      const MARGEN = 110;
+      const FACTOR_AIRE = 0.82;
+      const x0 = Math.min(...xs) - MARGEN, x1 = Math.max(...xs) + MARGEN;
+      const y0 = Math.min(...ys) - MARGEN, y1 = Math.max(...ys) + MARGEN;
+      const sc = Math.min(0.9, W / (x1 - x0), H / (y1 - y0)) * FACTOR_AIRE;
       const tx = (W - sc * (x0 + x1)) / 2;
       const ty = (H - sc * (y0 + y1)) / 2;
       svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(sc));
@@ -877,7 +882,7 @@ export default function OSGraphBrain() {
           <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '520px' }}>
             <svg
               ref={svgRef}
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '8px', background: '#0a1020' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '8px', background: '#0a1020', touchAction: 'none' }}
             />
 
             {/* Node detail panel: wikilinks de la nota enfocada */}
