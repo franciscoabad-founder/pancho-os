@@ -14,6 +14,7 @@ import {
   AUTH_CODE_TTL_MS,
   ErrorScopeInvalido,
   estaExpirado,
+  validarApplicationType,
   generarClientId,
   generarSecretoCliente,
   generarSecretoOpaco,
@@ -71,6 +72,7 @@ export interface AltaCliente {
   grant_types?: string[];
   created_by?: string;
   publico?: boolean; // true = sin client_secret (cliente publico, solo PKCE)
+  application_type?: string; // 'web' (default) | 'native'. Honra SEP-837 en el pre-registro.
 }
 
 export interface ClienteRegistrado {
@@ -87,6 +89,15 @@ export async function registrarCliente(alta: AltaCliente): Promise<ClienteRegist
   if (!clientName) throw new ErrorOauth('invalid_client_metadata', 'client_name requerido');
   const redirectUris = (alta.redirect_uris ?? []).map((u) => String(u).trim()).filter(Boolean);
   if (!redirectUris.length) throw new ErrorOauth('invalid_redirect_uri', 'al menos un redirect_uri requerido');
+
+  // Honra application_type (SEP-837): valida que los redirect_uris sean
+  // coherentes con el tipo (web=https no-localhost, native=loopback/custom).
+  // No se persiste: el match exacto en /authorize es la barrera real.
+  try {
+    validarApplicationType(alta.application_type, redirectUris);
+  } catch (err) {
+    throw new ErrorOauth('invalid_redirect_uri', err instanceof Error ? err.message : String(err));
+  }
 
   const scopes = (alta.scopes?.length ? alta.scopes : ['read']).map((s) => String(s).trim()).filter(Boolean);
   const grantTypes = alta.grant_types?.length ? alta.grant_types : ['authorization_code', 'refresh_token'];

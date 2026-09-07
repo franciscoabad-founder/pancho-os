@@ -97,6 +97,68 @@ export function redirectUriPermitido(uri: unknown, registradas: readonly string[
   return typeof uri === 'string' && uri.length > 0 && registradas.includes(uri);
 }
 
+// --- application_type (pre-registro, SEP-837) --------------------------------
+
+// 2026-07-28 exige que el cliente declare un application_type apropiado al
+// registrarse para evitar conflictos de redirect_uri (OpenID Connect
+// Registration). No hay DCR abierto: esto se "honra" validando, en el
+// pre-registro manual, que los redirect_uris registrados sean coherentes con el
+// tipo. No requiere columna nueva: la barrera real en /authorize sigue siendo el
+// match exacto contra redirect_uris. Por eso no se persiste el tipo.
+export const APPLICATION_TYPES = ['web', 'native'] as const;
+export type ApplicationType = (typeof APPLICATION_TYPES)[number];
+export const APPLICATION_TYPE_POR_DEFECTO: ApplicationType = 'web';
+
+export class ErrorApplicationType extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ErrorApplicationType';
+  }
+}
+
+// Valida un application_type y sus redirect_uris. Reglas (OIDC Registration):
+//   - web:    redirect_uri https, host distinto de localhost/127.0.0.1.
+//   - native: http SOLO contra localhost/127.0.0.1 (loopback), o un esquema
+//             propio no-http (p.ej. com.app:/cb). Nunca https publico.
+// Devuelve el tipo normalizado o lanza ErrorApplicationType.
+export function validarApplicationType(
+  applicationType: string | null | undefined,
+  redirectUris: readonly string[],
+): ApplicationType {
+  const tipo = (applicationType?.trim() || APPLICATION_TYPE_POR_DEFECTO) as ApplicationType;
+  if (!(APPLICATION_TYPES as readonly string[]).includes(tipo)) {
+    throw new ErrorApplicationType(`application_type invalido: ${applicationType}. Use 'web' o 'native'.`);
+  }
+
+  const esLoopback = (host: string) => host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+
+  for (const uri of redirectUris) {
+    let u: URL;
+    try {
+      u = new URL(uri);
+    } catch {
+      throw new ErrorApplicationType(`redirect_uri no es una URL valida: ${uri}`);
+    }
+    if (tipo === 'web') {
+      if (u.protocol !== 'https:') {
+        throw new ErrorApplicationType(`application_type=web exige redirect_uri https: ${uri}`);
+      }
+      if (esLoopback(u.hostname)) {
+        throw new ErrorApplicationType(`application_type=web no admite redirect_uri a localhost: ${uri}. Use application_type=native.`);
+      }
+    } else {
+      // native
+      if (u.protocol === 'https:') {
+        throw new ErrorApplicationType(`application_type=native no admite https publico: ${uri}. Use loopback http o un esquema propio.`);
+      }
+      if (u.protocol === 'http:' && !esLoopback(u.hostname)) {
+        throw new ErrorApplicationType(`application_type=native solo admite http contra loopback (localhost/127.0.0.1): ${uri}`);
+      }
+    }
+  }
+  return tipo;
+}
+
 // --- scope -------------------------------------------------------------------
 
 export class ErrorScopeInvalido extends Error {

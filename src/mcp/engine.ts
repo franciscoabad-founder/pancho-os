@@ -1,7 +1,12 @@
 export interface McpRequestMeta {
+  // Camino legacy (2025-06-18): protocolVersion plano en params (initialize) o
+  // en _meta. Camino moderno (2026-07-28): claves namespaced io.modelcontextprotocol/*.
   protocolVersion?: string;
   clientCapabilities?: Record<string, unknown>;
   inputResponses?: Record<string, unknown>;
+  'io.modelcontextprotocol/protocolVersion'?: string;
+  'io.modelcontextprotocol/clientCapabilities'?: Record<string, unknown>;
+  'io.modelcontextprotocol/clientInfo'?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -501,7 +506,88 @@ export function anotacionesTool(name: string): Record<string, boolean> {
     : { readOnlyHint: false, destructiveHint: true };
 }
 
-// Motor Stateless RPC (spec 2026-07-28)
+// --- Identidad, versiones y capabilities del servidor (spec 2026-07-28) ------
+
+// serverInfo (io.modelcontextprotocol/serverInfo): se reporta en el _meta de
+// cada result y en server/discover. Self-reported, no lo verifica el protocolo.
+export const SERVER_INFO = { name: 'pancho-os', version: '0.0.1' } as const;
+
+// Version actual del protocolo. Se mantiene retrocompat con el handshake legacy
+// 2025-06-18 (Hermes y conectores viejos como el Gemini actual todavia lo hablan);
+// el spec 2026-07-28 permite servidores dual-era.
+export const PROTOCOL_VERSION_ACTUAL = '2026-07-28';
+export const VERSIONES_SOPORTADAS = ['2026-07-28', '2025-06-18'] as const;
+
+// capabilities del servidor. Solo tools, sin cambios en vivo (listChanged:false):
+// por eso NO implementamos subscriptions/listen, ni el GET SSE, ni
+// resources/subscribe (no hay nada que notificar). extensions:{} declara que no
+// anunciamos ninguna extension opcional (minor change 2026-07-28).
+const SERVER_CAPABILITIES = {
+  tools: { listChanged: false },
+  extensions: {},
+} as const;
+
+// Claves reservadas de _meta (prefijo io.modelcontextprotocol/ reservado por MCP).
+const KEY_PROTOCOL_VERSION = 'io.modelcontextprotocol/protocolVersion';
+const KEY_CLIENT_CAPABILITIES = 'io.modelcontextprotocol/clientCapabilities';
+const KEY_SERVER_INFO = 'io.modelcontextprotocol/serverInfo';
+
+// Codigos de error MCP renumerados en 2026-07-28. La spec particiona el rango
+// de errores de servidor de JSON-RPC: -32000..-32019 queda legacy /
+// implementation-defined (grandfathered), -32020..-32099 reservado para la
+// spec. Los tres codigos del draft se movieron a la nueva particion.
+export const CODIGO_HEADER_MISMATCH = -32020;
+export const CODIGO_MISSING_CLIENT_CAPABILITY = -32021; // definido; no lo emitimos: no exigimos capabilities del cliente para las tools del OS.
+export const CODIGO_UNSUPPORTED_PROTOCOL_VERSION = -32022;
+
+// Lee la version de protocolo pedida: primero la clave namespaced moderna del
+// _meta, luego el protocolVersion plano del handshake legacy (initialize).
+function versionPedida(reqBody: McpJsonRpcRequest): string | undefined {
+  const meta = reqBody.params?._meta;
+  const moderna = meta?.[KEY_PROTOCOL_VERSION];
+  if (typeof moderna === 'string') return moderna;
+  const legacyMeta = meta?.protocolVersion;
+  if (typeof legacyMeta === 'string') return legacyMeta;
+  const legacyParams = reqBody.params?.protocolVersion;
+  return typeof legacyParams === 'string' ? legacyParams : undefined;
+}
+
+// Capabilities declaradas por el cliente (para no mandarle inputRequests de un
+// tipo que no soporta, p.ej. elicitation). Namespaced moderno o legacy.
+function capabilitiesCliente(reqBody: McpJsonRpcRequest): Record<string, unknown> {
+  const meta = reqBody.params?._meta;
+  const moderna = meta?.[KEY_CLIENT_CAPABILITIES];
+  if (moderna && typeof moderna === 'object') return moderna as Record<string, unknown>;
+  const legacy = meta?.clientCapabilities;
+  if (legacy && typeof legacy === 'object') return legacy as Record<string, unknown>;
+  const enParams = reqBody.params?.capabilities;
+  return (enParams && typeof enParams === 'object' ? enParams : {}) as Record<string, unknown>;
+}
+
+// Envuelve un result exitoso con resultType:'complete' y el serverInfo en _meta,
+// como pide 2026-07-28 (todo result lleva resultType; el servidor SHOULD
+// identificarse en el _meta de cada result).
+function respuestaComplete(
+  requestId: string | number,
+  result: Record<string, unknown>,
+): Record<string, unknown> {
+  const metaExistente = (result._meta as Record<string, unknown> | undefined) ?? {};
+  return {
+    jsonrpc: '2.0',
+    id: requestId,
+    result: {
+      resultType: 'complete',
+      ...result,
+      _meta: { ...metaExistente, [KEY_SERVER_INFO]: SERVER_INFO },
+    },
+  };
+}
+
+// Motor Stateless RPC (spec 2026-07-28). Sin sesiones (no hay Mcp-Session-Id) ni
+// resumibilidad SSE (no hay Last-Event-ID): cada request trae todo lo que
+// necesita. server/discover y el camino stateless por _meta no dependen de un
+// initialize previo; initialize/notifications/initialized se conservan solo como
+// camino legacy.
 export async function handleMcpStatelessRequest(
   reqBody: McpJsonRpcRequest,
   headers: Headers,
@@ -511,8 +597,56 @@ export async function handleMcpStatelessRequest(
   const method = methodFromHeader || reqBody.method;
   const requestId = reqBody.id ?? 1;
 
-  // Handshake MCP estándar. Hermes inicia toda conexión HTTP con este método
-  // antes de descubrir herramientas, aunque el servidor sea sin estado.
+  // HeaderMismatch (-32020): si vienen ambos, el header Mcp-Method y el method
+  // del body JSON-RPC tienen que coincidir. El transporte 2026-07-28 exige
+  // Mcp-Method en el POST; una discrepancia es un request malformado.
+  if (methodFromHeader && reqBody.method && methodFromHeader !== reqBody.method) {
+    return {
+      jsonrpc: '2.0',
+      id: requestId,
+      error: {
+        code: CODIGO_HEADER_MISMATCH,
+        message: `HeaderMismatch: Mcp-Method '${methodFromHeader}' no coincide con el method del body '${reqBody.method}'.`,
+      },
+    };
+  }
+
+  // Negociacion de version sin handshake: si el request declara una version y no
+  // la soportamos, UnsupportedProtocolVersionError (-32022) con la lista. Si la
+  // omite (clientes que aun no la mandan), se acepta por retrocompat. No se
+  // aplica a initialize (camino legacy) ni a server/discover (que existe
+  // justamente para descubrir las versiones).
+  if (method !== 'initialize' && method !== 'server/discover' && !method?.startsWith('notifications/')) {
+    const version = versionPedida(reqBody);
+    if (version && !(VERSIONES_SOPORTADAS as readonly string[]).includes(version)) {
+      return {
+        jsonrpc: '2.0',
+        id: requestId,
+        error: {
+          code: CODIGO_UNSUPPORTED_PROTOCOL_VERSION,
+          message: 'Unsupported protocol version',
+          data: { supported: [...VERSIONES_SOPORTADAS], requested: version },
+        },
+      };
+    }
+  }
+
+  // server/discover: RPC que 2026-07-28 exige (MUST). Anuncia versiones
+  // soportadas, capabilities e identidad en una sola llamada, sin initialize.
+  if (method === 'server/discover') {
+    return respuestaComplete(requestId, {
+      supportedVersions: [...VERSIONES_SOPORTADAS],
+      capabilities: SERVER_CAPABILITIES,
+      instructions:
+        'Cockpit personal de Pancho OS: agenda, tareas, salud, nutricion, sueno, finanzas, contenido y CRM via herramientas semanticas. Las acciones sensibles (borrar, sincronizar Google, registrar gasto) piden confirmacion MRTR.',
+      ttlMs: 3600000,
+      cacheScope: 'public',
+    });
+  }
+
+  // Handshake MCP legacy (2025-06-18). Se conserva para clientes que abren la
+  // conexion con initialize (Hermes, Gemini viejo). El servidor no depende de
+  // el: el camino moderno pasa la version por _meta y no lo llama.
   if (method === 'initialize') {
     return {
       jsonrpc: '2.0',
@@ -521,35 +655,33 @@ export async function handleMcpStatelessRequest(
         protocolVersion: typeof reqBody.params?.protocolVersion === 'string'
           ? reqBody.params.protocolVersion
           : '2025-06-18',
-        capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'pancho-os', version: '0.0.1' },
+        capabilities: SERVER_CAPABILITIES,
+        serverInfo: SERVER_INFO,
       },
     };
   }
 
-  // Un cliente MCP envía esta notificación tras initialize. La ruta HTTP
-  // siempre devuelve JSON, por lo que confirmamos la recepción vacía.
+  // Notificacion legacy tras initialize. La ruta HTTP la corta con 202 sin
+  // cuerpo; aca se confirma vacio por si se invoca el motor directo.
   if (method === 'notifications/initialized') {
     return { jsonrpc: '2.0', result: {} };
   }
 
-  // 1. tools/list: Retorna catálogo cacheable con ttlMs y cacheScope
+  // 1. tools/list: catalogo cacheable (CacheableResult: ttlMs + cacheScope).
   if (method === 'tools/list') {
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      result: {
-        tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => ({
-          ...tool,
-          annotations: { title: tool.name, ...anotacionesTool(tool.name) },
-        })),
-        ttlMs: 300000, // 5 min: con 1h cada fix de catálogo tardaba una hora en verse
-        // 'global' no es un valor valido del spec (Hermes lo rechaza con
-        // Pydantic: solo 'public'/'private'). El catalogo es identico para
-        // cualquier token valido, no depende del usuario -> 'public'.
-        cacheScope: 'public',
-      },
-    };
+    return respuestaComplete(requestId, {
+      // Orden determinista (el de SEMANTIC_TOOLS) para habilitar cache del
+      // cliente y mejorar el prompt-cache del LLM (SHOULD de 2026-07-28).
+      tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => ({
+        ...tool,
+        annotations: { title: tool.name, ...anotacionesTool(tool.name) },
+      })),
+      ttlMs: 300000, // 5 min: con 1h cada fix de catálogo tardaba una hora en verse
+      // 'global' no es un valor valido del spec (Hermes lo rechaza con
+      // Pydantic: solo 'public'/'private'). El catalogo es identico para
+      // cualquier token valido, no depende del usuario -> 'public'.
+      cacheScope: 'public',
+    });
   }
 
   // 2. tools/call: Ejecuta herramienta indicada
@@ -557,6 +689,19 @@ export async function handleMcpStatelessRequest(
     const toolName = headers.get('Mcp-Name') || reqBody.params?.name;
     const toolArgs = reqBody.params?.arguments || {};
     const meta = reqBody.params?._meta || {};
+
+    // HeaderMismatch (-32020) tambien para Mcp-Name vs params.name.
+    const nameFromHeader = headers.get('Mcp-Name');
+    if (nameFromHeader && reqBody.params?.name && nameFromHeader !== reqBody.params.name) {
+      return {
+        jsonrpc: '2.0',
+        id: requestId,
+        error: {
+          code: CODIGO_HEADER_MISMATCH,
+          message: `HeaderMismatch: Mcp-Name '${nameFromHeader}' no coincide con params.name '${reqBody.params.name}'.`,
+        },
+      };
+    }
 
     if (!toolName) {
       return {
@@ -568,18 +713,62 @@ export async function handleMcpStatelessRequest(
 
     const toolDef = SEMANTIC_TOOLS.find((t) => t.name === toolName);
 
-    // Verificación MRTR (Multi Round-Trip Request) para acciones sensibles
+    // Verificación MRTR (Multi Round-Trip Request) para acciones sensibles.
     const isGenericDelete = toolName === 'os_api_request' && String(toolArgs.method ?? '').toUpperCase() === 'DELETE';
     const isGenericGoogleSync = toolName === 'os_api_request' && String(toolArgs.module ?? '') === 'agenda/sync' && String(toolArgs.method ?? '').toUpperCase() === 'POST';
     if (toolDef?.requiresMRTR || isGenericDelete || isGenericGoogleSync) {
-      const inputResponses = meta.inputResponses || toolArgs.inputResponses;
-      const confirmado = (inputResponses as Record<string, unknown> | undefined)?.confirm === true || toolArgs.confirm === true;
+      // Confirmacion aceptada por cualquiera de los tres caminos: confirm:true
+      // plano (Hermes historico), inputResponses.confirm:true, o la respuesta a
+      // la elicitation con clave 'confirmacion' (accept). La retry MRTR llega
+      // como un request independiente con la info pedida.
+      const inputResponses = (meta.inputResponses || toolArgs.inputResponses) as Record<string, unknown> | undefined;
+      const elicit = inputResponses?.confirmacion as { action?: string } | undefined;
+      const confirmado =
+        inputResponses?.confirm === true ||
+        toolArgs.confirm === true ||
+        elicit?.action === 'accept';
       if (!confirmado) {
         const prompt = `[Confirmación de Seguridad MRTR] ¿Estás seguro de que deseas ejecutar la acción sensible '${toolName}'?`;
+
+        // requestState: string opaco que el cliente devuelve tal cual en la
+        // retry. Aca no gobierna autorizacion (la puerta real es confirm===true),
+        // asi que -segun /patterns/mrtr, req. 4- la proteccion de integridad
+        // puede omitirse: manipularlo no puede causar nada peor que fallar la
+        // request. El cliente NO debe interpretarlo.
+        const requestState = Buffer.from(
+          JSON.stringify({ tool: toolName, needsConfirm: true }),
+        ).toString('base64url');
+
+        // inputRequests: SOLO si el cliente declaro soporte de elicitation
+        // (2026-07-28 /patterns/mrtr req. 7: prohibido mandar un inputRequest de
+        // un tipo no declarado). Si no lo declaro, el InputRequiredResult va con
+        // requestState + content, que ya cumple "al menos uno de los dos".
+        const caps = capabilitiesCliente(reqBody);
+        const soportaElicitation = Boolean(caps.elicitation);
+        const inputRequests = soportaElicitation
+          ? {
+              confirmacion: {
+                method: 'elicitation/create',
+                params: {
+                  mode: 'form',
+                  message: prompt,
+                  requestedSchema: {
+                    type: 'object',
+                    properties: {
+                      confirm: { type: 'boolean', description: 'true para proceder con la accion sensible' },
+                    },
+                    required: ['confirm'],
+                  },
+                },
+              },
+            }
+          : undefined;
+
         return {
           jsonrpc: '2.0',
           id: requestId,
           result: {
+            resultType: 'input_required',
             // `content` es lo unico que renderizan los clientes MCP estandar
             // (Claude, Cursor, etc.). Sin este bloque el agente veia "sin
             // output" y no tenia forma de saber que debia confirmar.
@@ -592,7 +781,10 @@ export async function handleMcpStatelessRequest(
                 como_confirmar: `Vuelve a llamar '${toolName}' con los mismos argumentos y ademas confirm: true (o inputResponses: { confirm: true }).`,
               }, null, 2),
             }],
-            resultType: 'input_required',
+            ...(inputRequests ? { inputRequests } : {}),
+            requestState,
+            // Campos extra utiles para Hermes y clientes propios (el result MAY
+            // llevar cualquier estructura). No reemplazan a inputRequests/requestState.
             prompt,
             fields: [
               {
@@ -601,6 +793,7 @@ export async function handleMcpStatelessRequest(
                 description: 'Establecer en true para proceder',
               },
             ],
+            _meta: { [KEY_SERVER_INFO]: SERVER_INFO },
           },
         };
       }
@@ -650,16 +843,12 @@ export async function handleMcpStatelessRequest(
         if (executeTool) {
           try {
             const data = await executeTool(toolName, toolArgs);
-            return {
-              jsonrpc: '2.0',
-              id: requestId,
-              result: {
-                content: [{
-                  type: 'text',
-                  text: JSON.stringify({ ...data, tool: toolName }, null, 2),
-                }],
-              },
-            };
+            return respuestaComplete(requestId, {
+              content: [{
+                type: 'text',
+                text: JSON.stringify({ ...data, tool: toolName }, null, 2),
+              }],
+            });
           } catch (err) {
             return {
               jsonrpc: '2.0',
@@ -668,24 +857,20 @@ export async function handleMcpStatelessRequest(
             };
           }
         }
-        return {
-          jsonrpc: '2.0',
-          id: requestId,
-          result: {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  status: 'success',
-                  tool: toolName,
-                  execution: 'Stateless HTTP 2026-07-28',
-                  receivedArgs: toolArgs,
-                  timestamp: new Date().toISOString(),
-                }, null, 2),
-              },
-            ],
-          },
-        };
+        return respuestaComplete(requestId, {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                status: 'success',
+                tool: toolName,
+                execution: 'Stateless HTTP 2026-07-28',
+                receivedArgs: toolArgs,
+                timestamp: new Date().toISOString(),
+              }, null, 2),
+            },
+          ],
+        });
       }
 
       default:

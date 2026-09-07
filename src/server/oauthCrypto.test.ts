@@ -15,6 +15,9 @@ import {
   igualSeguro,
   ErrorScopeInvalido,
   SCOPE_POR_DEFECTO,
+  validarApplicationType,
+  ErrorApplicationType,
+  APPLICATION_TYPE_POR_DEFECTO,
 } from './oauthCrypto.ts';
 
 // --- PKCE S256 ---------------------------------------------------------------
@@ -103,6 +106,29 @@ test('estaExpirado distingue pasado, futuro e invalido', () => {
   assert.equal(estaExpirado(new Date('2026-09-06T12:00:01Z').toISOString(), ahora), false);
   assert.equal(estaExpirado(null, ahora), true);
   assert.equal(estaExpirado('no-es-fecha', ahora), true);
+});
+
+// --- application_type (SEP-837) ----------------------------------------------
+
+test('validarApplicationType default es web y exige https no-localhost', () => {
+  assert.equal(APPLICATION_TYPE_POR_DEFECTO, 'web');
+  assert.equal(validarApplicationType(undefined, ['https://gemini.google.com/callback']), 'web');
+  assert.equal(validarApplicationType('web', ['https://app.example.com/cb']), 'web');
+  // web no admite http ni localhost.
+  assert.throws(() => validarApplicationType('web', ['http://app.example.com/cb']), ErrorApplicationType);
+  assert.throws(() => validarApplicationType('web', ['https://localhost:3000/cb']), ErrorApplicationType);
+});
+
+test('validarApplicationType native admite loopback http y esquema propio, no https publico', () => {
+  assert.equal(validarApplicationType('native', ['http://localhost:8080/cb']), 'native');
+  assert.equal(validarApplicationType('native', ['http://127.0.0.1:1234/cb']), 'native');
+  assert.equal(validarApplicationType('native', ['com.pancho.app:/oauth']), 'native');
+  assert.throws(() => validarApplicationType('native', ['https://app.example.com/cb']), ErrorApplicationType);
+  assert.throws(() => validarApplicationType('native', ['http://app.example.com/cb']), ErrorApplicationType);
+});
+
+test('validarApplicationType rechaza un tipo desconocido', () => {
+  assert.throws(() => validarApplicationType('service', ['https://x.example.com/cb']), ErrorApplicationType);
 });
 
 // --- hash / comparacion ------------------------------------------------------

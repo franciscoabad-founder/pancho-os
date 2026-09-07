@@ -29,6 +29,18 @@ export const PROTECTED_RESOURCE_METADATA = {
 // a proposito: no exponemos registro dinamico de clientes (los clientes se
 // pre-registran a mano con scripts/mcp-oauth-register.ts). Solo S256, solo code
 // como response_type, y los dos grants que implementamos.
+//
+// authorization_response_iss_parameter_supported:true (RFC 9207): declaramos que
+// /authorize devuelve el parametro `iss` en la respuesta, para que el cliente lo
+// valide contra el issuer registrado antes de canjear el code (defensa contra
+// mix-up). Ver src/routes/api/oauth/authorize.ts.
+//
+// Pendiente (2026-07-28): Client ID Metadata Documents
+// (draft-ietf-oauth-client-id-metadata-document-00) es ahora el mecanismo
+// preferido sobre DCR para el registro de clientes. NO lo implementamos todavia;
+// seguimos con pre-registro manual (DCR abierto queda deliberadamente apagado).
+// Cuando se adopte, el cliente usaria una URL HTTPS como client_id y este
+// servidor buscaria su metadata ahi.
 export const AUTHORIZATION_SERVER_METADATA = {
   issuer: OAUTH_ISSUER,
   authorization_endpoint: `${OAUTH_ISSUER}/api/oauth/authorize`,
@@ -39,6 +51,7 @@ export const AUTHORIZATION_SERVER_METADATA = {
   grant_types_supported: ['authorization_code', 'refresh_token'],
   code_challenge_methods_supported: ['S256'],
   token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic', 'none'],
+  authorization_response_iss_parameter_supported: true,
 } as const;
 
 export const RUTA_PROTECTED_RESOURCE = '/.well-known/oauth-protected-resource';

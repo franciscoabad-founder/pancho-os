@@ -18,7 +18,7 @@ test('responde initialize con las capacidades MCP que Hermes necesita para descu
     id: 'initialize-1',
     result: {
       protocolVersion: '2025-06-18',
-      capabilities: { tools: { listChanged: false } },
+      capabilities: { tools: { listChanged: false }, extensions: {} },
       serverInfo: { name: 'pancho-os', version: '0.0.1' },
     },
   });
@@ -176,10 +176,13 @@ test('ejecuta una herramienta mediante el ejecutor real en vez de responder un m
     jsonrpc: '2.0',
     id: 'tareas-1',
     result: {
+      // 2026-07-28: todo result lleva resultType y el serverInfo en _meta.
+      resultType: 'complete',
       content: [{
         type: 'text',
         text: JSON.stringify({ tareas: [{ id: 'real-task', titulo: 'Tarea real' }], tool: 'tareas_list' }, null, 2),
       }],
+      _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'pancho-os', version: '0.0.1' } },
     },
   });
 });

@@ -18,6 +18,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { tieneSesionOs, origenPermitido } from '../../../server/osAuth.ts';
 import { obtenerCliente, emitirCodigo, ErrorOauth } from '../../../server/oauth.handlers.ts';
 import { redirectUriPermitido, resolverScope, ErrorScopeInvalido } from '../../../server/oauthCrypto.ts';
+import { OAUTH_ISSUER } from '../../../server/oauthMetadata.ts';
 
 function escapeHtml(v: string): string {
   return v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -34,11 +35,13 @@ function paginaError(mensaje: string, status = 400): Response {
 }
 
 // Redirige al cliente con un error OAuth en el query (solo si el redirect_uri ya
-// se valido como registrado).
+// se valido como registrado). Incluye `iss` (RFC 9207): la validacion del issuer
+// aplica tambien a las respuestas de error.
 function redirigirConError(redirectUri: string, error: string, state: string | null): Response {
   const url = new URL(redirectUri);
   url.searchParams.set('error', error);
   if (state) url.searchParams.set('state', state);
+  url.searchParams.set('iss', OAUTH_ISSUER);
   return new Response(null, { status: 302, headers: { Location: url.toString() } });
 }
 
@@ -192,6 +195,10 @@ export const Route = createFileRoute('/api/oauth/authorize')({
           const url = new URL(redirectUri);
           url.searchParams.set('code', code);
           if (state) url.searchParams.set('state', state);
+          // iss (RFC 9207): el cliente lo compara contra el issuer registrado
+          // antes de canjear el code. Lo anunciamos en la AS metadata con
+          // authorization_response_iss_parameter_supported:true.
+          url.searchParams.set('iss', OAUTH_ISSUER);
           return new Response(null, { status: 302, headers: { Location: url.toString(), 'Cache-Control': 'no-store' } });
         } catch (err) {
           if (err instanceof ErrorScopeInvalido) return redirigirConError(redirectUri, 'invalid_scope', state);

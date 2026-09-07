@@ -150,6 +150,8 @@ test('POST approve emite un code y redirige al redirect_uri con code y state', a
     assert.equal(`${loc.origin}${loc.pathname}`, REDIRECT);
     assert.ok(loc.searchParams.get('code'), 'debe traer code');
     assert.equal(loc.searchParams.get('state'), 'xyz-state');
+    // iss (RFC 9207) en la respuesta de autorizacion.
+    assert.equal(loc.searchParams.get('iss'), 'https://os.franciscoabad.com');
     // Se guardo exactamente un codigo (hasheado).
     assert.equal(db[TABLA_CODES].length, 1);
     assert.match(String(db[TABLA_CODES][0]!.code_hash), /^[0-9a-f]{64}$/);
@@ -166,5 +168,7 @@ test('POST deny redirige con error access_denied', async () => {
     assert.equal(res.status, 302);
     const loc = new URL(res.headers.get('location') ?? '');
     assert.equal(loc.searchParams.get('error'), 'access_denied');
+    // La validacion de iss aplica tambien a las respuestas de error.
+    assert.equal(loc.searchParams.get('iss'), 'https://os.franciscoabad.com');
   });
 });

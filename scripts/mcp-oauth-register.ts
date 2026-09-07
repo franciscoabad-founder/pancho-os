@@ -18,6 +18,7 @@
 //     --scopes <a,b>            scopes permitidos (default: read)
 //     --grant-types <a,b>       default: authorization_code,refresh_token
 //     --public                  cliente publico (solo PKCE, sin client_secret)
+//     --application-type <t>    web (default) | native. Valida los redirect_uri.
 //     --created-by <texto>      etiqueta de auditoria (default: cli)
 //
 // Requiere en el entorno: SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.
@@ -30,6 +31,7 @@ interface Args {
   scopes?: string[];
   grantTypes?: string[];
   publico: boolean;
+  applicationType?: string;
   createdBy?: string;
 }
 
@@ -44,6 +46,7 @@ function parseArgs(argv: string[]): Args {
       case '--scopes': out.scopes = val().split(',').map((s) => s.trim()).filter(Boolean); break;
       case '--grant-types': out.grantTypes = val().split(',').map((s) => s.trim()).filter(Boolean); break;
       case '--public': out.publico = true; break;
+      case '--application-type': out.applicationType = val(); break;
       case '--created-by': out.createdBy = val(); break;
       case '--help': case '-h': out.name = undefined; return out;
       default:
@@ -56,7 +59,7 @@ function parseArgs(argv: string[]): Args {
 
 const uso = `Uso: node --env-file=.env --experimental-strip-types scripts/mcp-oauth-register.ts \\
   --name "<nombre>" --redirect-uri "<url>" [--redirect-uri "<url2>"] \\
-  [--scopes read,write] [--grant-types authorization_code,refresh_token] [--public] [--created-by <texto>]`;
+  [--scopes read,write] [--grant-types authorization_code,refresh_token] [--public] [--application-type web|native] [--created-by <texto>]`;
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -78,6 +81,7 @@ async function main() {
     grant_types: args.grantTypes,
     created_by: args.createdBy,
     publico: args.publico,
+    application_type: args.applicationType,
   });
 
   console.log('\nCliente OAuth registrado. Guarda estos valores (el secret NO se vuelve a mostrar):\n');
