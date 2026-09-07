@@ -14,9 +14,11 @@ import {
   enviarMensaje,
   listarConversaciones,
   obtenerHilo,
+  renombrarConversacion,
   setClienteSupabaseChat,
   setCrearSesionHermesChat,
   setEnviarAHermesChat,
+  setRenombrarSesionHermesChat,
   type Run,
 } from './chat.handlers.ts';
 
@@ -123,6 +125,7 @@ beforeEach(() => {
   setClienteSupabaseChat(() => crearClienteFake(estado));
   setEnviarAHermesChat(async () => 'respuesta de hermes');
   setCrearSesionHermesChat(async () => undefined);
+  setRenombrarSesionHermesChat(async () => true);
 });
 
 test('crearConversacion asigna sesion de Hermes propia', async () => {
@@ -199,4 +202,41 @@ test('titulo automatico con el primer mensaje', async () => {
   await enviarMensaje(conv.id, 'revisa mi agenda de la semana');
   const c = estado.conversaciones[0];
   assert.equal(c.titulo, 'revisa mi agenda de la semana');
+});
+
+test('renombrar una conversacion la deja con el nombre puesto a mano', async () => {
+  const conv = await crearConversacion();
+  const renombrada = await renombrarConversacion(conv.id, '  Legal IESS  ');
+  assert.equal(renombrada.titulo, 'Legal IESS');
+  // El titulo automatico solo pisa 'Nueva conversacion', asi que el nombre
+  // puesto a mano sobrevive al primer mensaje.
+  await enviarMensaje(conv.id, 'hola');
+  assert.equal(estado.conversaciones[0].titulo, 'Legal IESS');
+});
+
+test('renombrar replica el nombre a la sesion de Hermes', async () => {
+  const vistos: Array<[string, string]> = [];
+  setRenombrarSesionHermesChat(async (sessionId, titulo) => {
+    vistos.push([sessionId, titulo]);
+    return true;
+  });
+  const conv = await crearConversacion();
+  await renombrarConversacion(conv.id, 'Compras enero');
+  assert.deepEqual(vistos, [[String(conv.hermes_session_id), 'Compras enero']]);
+});
+
+test('renombrar no revienta si Hermes rechaza el PATCH', async () => {
+  setRenombrarSesionHermesChat(async () => {
+    throw new Error('405 Method Not Allowed');
+  });
+  const conv = await crearConversacion();
+  const renombrada = await renombrarConversacion(conv.id, 'Sigue funcionando');
+  assert.equal(renombrada.titulo, 'Sigue funcionando');
+});
+
+test('validaciones de renombrado', async () => {
+  const conv = await crearConversacion();
+  await assert.rejects(() => renombrarConversacion(conv.id, '   '), /requerido/);
+  await assert.rejects(() => renombrarConversacion(conv.id, 'x'.repeat(200)), /demasiado largo/);
+  await assert.rejects(() => renombrarConversacion(randomUUID(), 'x'), /no encontrada/);
 });

@@ -16,7 +16,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServer } from './supabase.ts';
-import { crearSesionTaski, enviarATaski, validarPerfil, MAX_LARGO_MENSAJE } from './taski.handlers.ts';
+import { crearSesionTaski, enviarATaski, renombrarSesionHermes, validarPerfil, MAX_LARGO_MENSAJE } from './taski.handlers.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -37,6 +37,13 @@ let crearSesionActual: CrearSesion = crearSesionTaski;
 
 export function setCrearSesionHermesChat(fn: CrearSesion | null): void {
   crearSesionActual = fn ?? crearSesionTaski;
+}
+
+type RenombrarSesion = (sessionId: string, titulo: string, perfil: string) => Promise<boolean>;
+let renombrarSesionActual: RenombrarSesion = renombrarSesionHermes;
+
+export function setRenombrarSesionHermesChat(fn: RenombrarSesion | null): void {
+  renombrarSesionActual = fn ?? renombrarSesionHermes;
 }
 
 // Hermes puede tardar minutos; el run se declara muerto pasado esto.
@@ -111,6 +118,38 @@ export async function crearConversacion(tituloRaw?: unknown, perfilRaw?: unknown
     .single();
   if (err2) fallar(`asignar sesion hermes: ${err2.message}`);
   return conData as Conversacion;
+}
+
+export const MAX_LARGO_TITULO = 120;
+
+/**
+ * Renombra una conversacion del OS.
+ *
+ * El titulo automatico solo pisa el valor por defecto 'Nueva conversacion'
+ * (ver enviarMensaje), asi que un nombre puesto a mano sobrevive al primer
+ * mensaje sin necesidad de una bandera extra. Ademas se replica el nombre a la
+ * sesion de Hermes (PATCH /api/sessions/{id}) para que el mismo hilo se vea
+ * igual desde la burbuja y el cockpit; si Hermes no acepta el PATCH, el OS se
+ * queda con su propio titulo y no se rompe nada.
+ */
+export async function renombrarConversacion(conversacionId: string, tituloRaw: unknown): Promise<Conversacion> {
+  const titulo = String(tituloRaw ?? '').trim();
+  if (!titulo) fallar('Titulo requerido');
+  if (titulo.length > MAX_LARGO_TITULO) fallar(`Titulo demasiado largo (max ${MAX_LARGO_TITULO})`);
+
+  const sb = clienteActual();
+  const { data, error } = await sb
+    .from('chat_conversaciones')
+    .update({ titulo, updated_at: new Date().toISOString() })
+    .eq('id', conversacionId)
+    .select('*')
+    .single();
+  if (error || !data) fallar('Conversacion no encontrada');
+
+  const conv = data as Conversacion;
+  const sessionId = conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
+  await renombrarSesionActual(sessionId, titulo, conv.perfil).catch(() => false);
+  return conv;
 }
 
 export interface Hilo {

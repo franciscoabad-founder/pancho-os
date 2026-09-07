@@ -9,7 +9,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { isOsAuthorized, json } from '../../../server/osAuth.ts';
-import { enviarMensaje, obtenerHilo } from '../../../server/chat.handlers.ts';
+import { enviarMensaje, obtenerHilo, renombrarConversacion } from '../../../server/chat.handlers.ts';
 
 const noAutorizado = () => json({ error: 'Unauthorized' }, 401);
 
@@ -45,6 +45,25 @@ export const Route = createFileRoute('/api/chat/$conversacionId')({
         }
         try {
           return json(await enviarMensaje(params.conversacionId, contenido), 202);
+        } catch (err) {
+          const { texto, status } = aError(err);
+          return json({ error: texto }, status);
+        }
+      },
+
+      // PATCH -> renombrar la conversacion ({ titulo }). El nombre tambien se
+      // replica a la sesion de Hermes para que se vea igual en la burbuja.
+      PATCH: async ({ request, params }) => {
+        if (!(await isOsAuthorized(request))) return noAutorizado();
+        let titulo: unknown;
+        try {
+          const body = (await request.json()) as Record<string, unknown>;
+          titulo = body.titulo ?? body.title;
+        } catch {
+          return json({ error: 'JSON invalido' }, 400);
+        }
+        try {
+          return json({ conversacion: await renombrarConversacion(params.conversacionId, titulo) });
         } catch (err) {
           const { texto, status } = aError(err);
           return json({ error: texto }, status);
