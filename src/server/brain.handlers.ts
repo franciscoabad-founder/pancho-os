@@ -12,6 +12,9 @@ import { createGbrainClient } from '../os/lib/gbrain.ts';
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 30;
 
+// Tipos internos del pipeline de gbrain que no son notas de conocimiento.
+const EXCLUDED_TYPES_LISTADO = new Set(['atom', 'extract_receipt']);
+
 export interface NotaBrain {
   slug: string;
   titulo: string;
@@ -46,7 +49,11 @@ export async function listarNotasBrain(
 
   const brain = createGbrainClient(token);
 
-  const allPages = await brain.listAllPages({ sort: 'updated_desc', ...(tag ? { tag } : {}) });
+  const crudas = await brain.listAllPages({ sort: 'updated_desc', ...(tag ? { tag } : {}) });
+  // Los atomos y recibos de extraccion son artefactos internos del pipeline de
+  // gbrain, no notas de conocimiento. Sin filtrarlos el contador y el listado
+  // del Cerebro muestran cientos de fragmentos que Pancho nunca escribio.
+  const allPages = crudas.filter((p) => !EXCLUDED_TYPES_LISTADO.has(p.type));
   const total = allPages.length;
   const pages = Math.max(Math.ceil(total / limit), 1);
   const offset = (Math.min(page, pages) - 1) * limit;

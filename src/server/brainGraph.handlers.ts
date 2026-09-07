@@ -24,6 +24,12 @@ const TOP_N = 180;
 // Slugs que nunca se dibujan: la pagina hub "canon" y el canon deprecado.
 const EXCLUDED_SLUGS = new Set(['canon', 'growth-os-canon']);
 
+// Tipos que nunca se dibujan: los atomos y recibos de extraccion son artefactos
+// internos del pipeline de gbrain, no notas de conocimiento. Sin este filtro el
+// grafo pide getPage + getLinks por cada uno (mas de 900 paginas, casi 2000
+// llamadas extra) y la ruta muere por timeout devolviendo 502.
+const EXCLUDED_TYPES = new Set(['atom', 'extract_receipt']);
+
 // Mapeo tag -> grupo por prioridad. Una pagina toma el PRIMER tag de esta
 // lista que tenga (no el orden de sus propios tags). Proyectos primero,
 // luego areas, luego tags de sistema (que colapsan todos en "sistema").
@@ -180,7 +186,7 @@ export async function obtenerGrafoBrain(wantAll: boolean): Promise<DatosGrafo> {
   // Todas las paginas vivas: el server capa list_pages a 100 por llamada, asi
   // que listAllPages pagina por offset hasta traer el corpus completo.
   const allPages = await brain.listAllPages({ sort: 'updated_desc' });
-  const pages = allPages.filter((p) => !EXCLUDED_SLUGS.has(p.slug));
+  const pages = allPages.filter((p) => !EXCLUDED_SLUGS.has(p.slug) && !EXCLUDED_TYPES.has(p.type));
   const slugSet = new Set(pages.map((p) => p.slug));
 
   // Paginas completas (tags), wikilinks reales y fuentes en paralelo, con
