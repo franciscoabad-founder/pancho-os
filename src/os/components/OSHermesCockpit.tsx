@@ -160,7 +160,10 @@ export default function OSHermesCockpit() {
     try {
       const res = await fetch('/api/taski/perfiles');
       const data = await res.json();
-      if (data.perfiles?.length) setPerfiles(data.perfiles);
+      // Esta vista es por NODO (VPS, HomeLab, Laptop), asi que lee `nodos`.
+      // Desde F2 `perfiles` son los agentes reales (Alfred, Arazza, ...), que
+      // es otro eje y lo consume el chat, no el cockpit.
+      if (data.nodos?.length) setPerfiles(data.nodos);
     } catch {
       // ignore
     }

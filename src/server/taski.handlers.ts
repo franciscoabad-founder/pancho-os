@@ -12,18 +12,37 @@
 
 import { readEnv } from '../lib/env.ts';
 import { leerSse, type TramaSse } from '../os/lib/sse.ts';
+import {
+  IDS_PERFILES_HERMES,
+  PERFILES_HERMES,
+  etiquetaPerfilHermes,
+  validarPerfilHermes,
+  type PerfilHermesId,
+} from '../os/lib/perfilesHermes.ts';
 
 const TASKI_BASE = 'https://brain.franciscoabad.com/taski';
 export const SESSION_ID = 'pancho-os';
-export type PerfilId = 'vps-default' | 'homelab-local' | 'laptop-local';
 
-function basePerfil(perfil: PerfilId): string | undefined {
+// NODO = donde corre Hermes. Es lo que el OS venia llamando "perfil" desde el
+// principio, y lo que guarda chat_conversaciones.perfil y la PK de
+// chat_sesiones_alias. PerfilId se conserva como alias para no romper los
+// imports existentes; el nombre honesto es NodoId.
+export type NodoId = 'vps-default' | 'homelab-local' | 'laptop-local';
+export type PerfilId = NodoId;
+
+// PERFIL DE HERMES = que agente atiende (Alfred, Arazza, Nerio, Rafik, Taskr).
+// Eje distinto del nodo: se re-exporta aca para que quien ya importa de este
+// modulo no tenga que saber que el catalogo vive en os/lib.
+export type { PerfilHermesId };
+export { PERFILES_HERMES, IDS_PERFILES_HERMES, validarPerfilHermes };
+
+function basePerfil(perfil: NodoId): string | undefined {
   if (perfil === 'vps-default') return readEnv('TASKI_BASE_URL') || TASKI_BASE;
   if (perfil === 'homelab-local') return readEnv('TASKI_BASE_HOMELAB');
   return readEnv('TASKI_BASE_LAPTOP');
 }
 
-export function validarPerfil(perfil: string | undefined): PerfilId {
+export function validarPerfil(perfil: string | undefined): NodoId {
   if (perfil === 'homelab-local' || perfil === 'laptop-local') return perfil;
   return 'vps-default';
 }
@@ -38,10 +57,60 @@ export const MAX_LARGO_MENSAJE = 4000;
 // Token por perfil: cada gateway de Hermes tiene su propia API_SERVER_KEY.
 // Los perfiles nuevos usan TASKI_TOKEN_LAPTOP / TASKI_TOKEN_HOMELAB; si faltan
 // se cae al TASKI_TOKEN historico (que es el del VPS).
-function tokenPerfil(perfil: PerfilId): string | undefined {
+function tokenPerfil(perfil: NodoId): string | undefined {
   if (perfil === 'laptop-local') return readEnv('TASKI_TOKEN_LAPTOP') || readEnv('TASKI_TOKEN');
   if (perfil === 'homelab-local') return readEnv('TASKI_TOKEN_HOMELAB') || readEnv('TASKI_TOKEN');
   return readEnv('TASKI_TOKEN');
+}
+
+// ---------------------------------------------------------------------------
+// A donde se le habla: nodo + perfil de Hermes
+// ---------------------------------------------------------------------------
+//
+// El perfil 'default' (Alfred) es el historico: su base y su token salen del
+// nodo, tal como venia funcionando. Los otros cuatro tienen su propio
+// api_server publicado por Caddy (/taski-arazza, /taski-nerio, /taski-rafik,
+// /taski-taskr) y se configuran con su propio par de variables:
+//   TASKI_BASE_ARAZZA / TASKI_TOKEN_ARAZZA, y asi con los demas.
+//
+// Si a un perfil le falta la base, resolverDestino devuelve undefined y el
+// perfil se reporta como NO CONFIGURADO. No lanza: mientras el VPS termina de
+// habilitarlos, el OS tiene que seguir funcionando con Alfred y mostrar a los
+// otros en gris, no reventar.
+
+export interface DestinoHermes {
+  base: string;
+  token: string;
+}
+
+export function resolverDestino(
+  perfil: PerfilHermesId = 'default',
+  nodo: NodoId = 'vps-default',
+): DestinoHermes | undefined {
+  if (perfil === 'default') {
+    const base = basePerfil(nodo);
+    if (!base) return undefined;
+    return { base, token: tokenPerfil(nodo) ?? '' };
+  }
+  const sufijo = perfil.toUpperCase();
+  const base = readEnv(`TASKI_BASE_${sufijo}`);
+  if (!base) return undefined;
+  // El token propio manda; si no esta, se cae al TASKI_TOKEN historico (mismo
+  // criterio que homelab-local / laptop-local).
+  const token = readEnv(`TASKI_TOKEN_${sufijo}`) || readEnv('TASKI_TOKEN');
+  if (!token) return undefined;
+  return { base, token };
+}
+
+function motivoDestinoFaltante(perfilHermes: PerfilHermesId, nodo: NodoId): string {
+  if (perfilHermes === 'default') return `Perfil Hermes no configurado: ${nodo}`;
+  const sufijo = perfilHermes.toUpperCase();
+  return `Perfil de Hermes no configurado: ${etiquetaPerfilHermes(perfilHermes)} (faltan TASKI_BASE_${sufijo} / TASKI_TOKEN_${sufijo})`;
+}
+
+/** Parametro opcional al final de las funciones que hablan con Hermes. */
+export interface OpcionesDestino {
+  perfilHermes?: PerfilHermesId;
 }
 
 // La session key (X-Hermes-Session-Key) es el scope de memoria del lado de
@@ -49,9 +118,9 @@ function tokenPerfil(perfil: PerfilId): string | undefined {
 // usa para que un tema tenga memoria propia, y en F3 para engancharse a la
 // misma key que usa un topic de Telegram. Solo se manda si viene: sin ella el
 // api_server se comporta exactamente como antes.
-function taskiHeaders(perfil: PerfilId = 'vps-default', sessionKey?: string): Record<string, string> {
+function taskiHeaders(destino: DestinoHermes, sessionKey?: string): Record<string, string> {
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${tokenPerfil(perfil)}`,
+    Authorization: `Bearer ${destino.token}`,
     'Content-Type': 'application/json',
   };
   const key = (sessionKey ?? '').trim();
@@ -63,19 +132,20 @@ async function taskiFetch(
   path: string,
   init: RequestInit,
   timeoutMs: number,
-  perfil: PerfilId = 'vps-default',
+  perfil: NodoId = 'vps-default',
   sessionKey?: string,
+  perfilHermes: PerfilHermesId = 'default',
 ): Promise<Response> {
-  const base = basePerfil(perfil);
-  if (!base) throw new Error(`Perfil Hermes no configurado: ${perfil}`);
+  const destino = resolverDestino(perfilHermes, perfil);
+  if (!destino) throw new Error(motivoDestinoFaltante(perfilHermes, perfil));
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(`${base}${path}`, {
+    return await fetch(`${destino.base}${path}`, {
       ...init,
       // Las cabeceras propias del llamador (Accept, por ejemplo) mandan sobre
       // las de base; el Authorization sigue saliendo de taskiHeaders.
-      headers: { ...taskiHeaders(perfil, sessionKey), ...((init.headers as Record<string, string> | undefined) ?? {}) },
+      headers: { ...taskiHeaders(destino, sessionKey), ...((init.headers as Record<string, string> | undefined) ?? {}) },
       signal: ctrl.signal,
     });
   } finally {
@@ -83,11 +153,16 @@ async function taskiFetch(
   }
 }
 
-async function asegurarSesion(sessionId: string, perfil: PerfilId = 'vps-default', sessionKey?: string): Promise<void> {
+async function asegurarSesion(
+  sessionId: string,
+  perfil: NodoId = 'vps-default',
+  sessionKey?: string,
+  perfilHermes: PerfilHermesId = 'default',
+): Promise<void> {
   // Solo la sesion propia del OS se autocrea. Las sesiones de Telegram son de
   // Hermes: si una ya no existe (borrada, etc.) no hay que resucitarla aca.
   if (sessionId !== SESSION_ID) return;
-  await crearSesionTaski(sessionId, 'Taski OS', perfil, sessionKey);
+  await crearSesionTaski(sessionId, 'Taski OS', perfil, sessionKey, { perfilHermes });
 }
 
 // Crea una sesion en Hermes si no existe (409 = ya existia, ok). La usa el
@@ -97,6 +172,7 @@ export async function crearSesionTaski(
   titulo: string,
   perfilRaw: string = 'vps-default',
   sessionKey?: string,
+  opts: OpcionesDestino = {},
 ): Promise<void> {
   const perfil = validarPerfil(perfilRaw);
   await taskiFetch(
@@ -105,6 +181,7 @@ export async function crearSesionTaski(
     HISTORY_TIMEOUT_MS,
     perfil,
     sessionKey,
+    validarPerfilHermes(opts.perfilHermes),
   ).catch(() => undefined);
 }
 
@@ -127,12 +204,17 @@ export function taskiConfigurado(): boolean {
   return Boolean(readEnv('TASKI_TOKEN'));
 }
 
-export async function historialTaski(sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default'): Promise<MensajeTaski[]> {
+export async function historialTaski(
+  sessionId: string = SESSION_ID,
+  perfilRaw: string = 'vps-default',
+  opts: OpcionesDestino = {},
+): Promise<MensajeTaski[]> {
   const perfil = validarPerfil(perfilRaw);
-  let res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
+  const perfilHermes = validarPerfilHermes(opts.perfilHermes);
+  let res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, perfilHermes);
   if (res.status === 404) {
-    await asegurarSesion(sessionId, perfil);
-    res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
+    await asegurarSesion(sessionId, perfil, undefined, perfilHermes);
+    res = await taskiFetch(`/api/sessions/${sessionId}/messages`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, perfilHermes);
   }
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
 
@@ -151,19 +233,28 @@ export async function historialTaski(sessionId: string = SESSION_ID, perfilRaw: 
     .slice(-MAX_MENSAJES);
 }
 
-export async function enviarATaski(message: string, sessionId: string = SESSION_ID, perfilRaw: string = 'vps-default', timeoutMs: number = CHAT_TIMEOUT_MS): Promise<string> {
+export async function enviarATaski(
+  message: string,
+  sessionId: string = SESSION_ID,
+  perfilRaw: string = 'vps-default',
+  timeoutMs: number = CHAT_TIMEOUT_MS,
+  opts: OpcionesDestino = {},
+): Promise<string> {
   const perfil = validarPerfil(perfilRaw);
+  const perfilHermes = validarPerfilHermes(opts.perfilHermes);
   const enviar = () =>
     taskiFetch(
       `/api/sessions/${sessionId}/chat`,
       { method: 'POST', body: JSON.stringify({ message }) },
       timeoutMs,
       perfil,
+      undefined,
+      perfilHermes,
     );
 
   let res = await enviar();
   if (res.status === 404) {
-    await asegurarSesion(sessionId, perfil);
+    await asegurarSesion(sessionId, perfil, undefined, perfilHermes);
     res = await enviar();
   }
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
@@ -215,7 +306,10 @@ export interface EventoHermes {
 }
 
 export interface OpcionesStreamTaski {
-  perfil?: PerfilId;
+  /** Nodo donde corre Hermes (vps-default por defecto). */
+  perfil?: NodoId;
+  /** Perfil real del agente (Alfred por defecto). */
+  perfilHermes?: PerfilHermesId;
   sessionKey?: string;
   /** Timeout de INACTIVIDAD en ms; se reinicia con cada evento recibido. */
   timeoutMs?: number;
@@ -300,8 +394,9 @@ export async function streamTaski(
   onEvento: (evento: EventoHermes) => void = () => {},
 ): Promise<string> {
   const perfil = validarPerfil(opts.perfil);
-  const base = basePerfil(perfil);
-  if (!base) throw new Error(`Perfil Hermes no configurado: ${perfil}`);
+  const perfilHermes = validarPerfilHermes(opts.perfilHermes);
+  const destino = resolverDestino(perfilHermes, perfil);
+  if (!destino) throw new Error(motivoDestinoFaltante(perfilHermes, perfil));
   const inactividadMs = opts.timeoutMs ?? STREAM_INACTIVIDAD_MS;
 
   const ctrl = new AbortController();
@@ -319,16 +414,16 @@ export async function streamTaski(
   const porElCaminoViejo = async (motivo: string): Promise<string> => {
     detener();
     onEvento({ tipo: 'fallback', detalle: motivo });
-    const respuesta = await enviarATaski(message, sessionId, perfil, Math.max(inactividadMs, CHAT_TIMEOUT_MS));
+    const respuesta = await enviarATaski(message, sessionId, perfil, Math.max(inactividadMs, CHAT_TIMEOUT_MS), { perfilHermes });
     if (respuesta) onEvento({ tipo: 'assistant.delta', texto: respuesta });
     onEvento({ tipo: 'run.completed' });
     return respuesta;
   };
 
   const pedir = () =>
-    fetch(`${base}/api/sessions/${encodeURIComponent(sessionId)}/chat/stream`, {
+    fetch(`${destino.base}/api/sessions/${encodeURIComponent(sessionId)}/chat/stream`, {
       method: 'POST',
-      headers: { ...taskiHeaders(perfil, opts.sessionKey), Accept: 'text/event-stream' },
+      headers: { ...taskiHeaders(destino, opts.sessionKey), Accept: 'text/event-stream' },
       body: JSON.stringify({ message }),
       signal: ctrl.signal,
     });
@@ -339,7 +434,7 @@ export async function streamTaski(
     res = await pedir();
     if (res.status === 404) {
       // Mismo patron que enviarATaski: la sesion propia del OS se autocrea.
-      await asegurarSesion(sessionId, perfil, opts.sessionKey);
+      await asegurarSesion(sessionId, perfil, opts.sessionKey, perfilHermes);
       res = await pedir();
     }
   } catch (err) {
@@ -452,7 +547,7 @@ function mapearSesion(cruda: Record<string, unknown>): SesionTaski {
 // api_server acepta hasta 200.
 const LIMITE_SESIONES = 120;
 
-async function obtenerSesionGeneral(perfil: PerfilId = 'vps-default'): Promise<SesionTaski> {
+async function obtenerSesionGeneral(perfil: NodoId = 'vps-default', perfilHermes: PerfilHermesId = 'default'): Promise<SesionTaski> {
   const vacia: SesionTaski = {
     id: SESSION_ID,
     source: 'api_server',
@@ -463,7 +558,7 @@ async function obtenerSesionGeneral(perfil: PerfilId = 'vps-default'): Promise<S
     lastActive: null,
     model: null,
   };
-  const res = await taskiFetch(`/api/sessions/${SESSION_ID}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil).catch(() => null);
+  const res = await taskiFetch(`/api/sessions/${SESSION_ID}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, perfilHermes).catch(() => null);
   if (!res || !res.ok) return vacia; // 404 = primer uso, todavia no se creo sola
   const data = await res.json();
   return data?.session ? mapearSesion(data.session) : vacia;
@@ -486,11 +581,13 @@ async function obtenerSesionGeneral(perfil: PerfilId = 'vps-default'): Promise<S
 export async function listarSesionesTaski(
   perfilRaw: string = 'vps-default',
   filtro: FiltroOrigen = 'todas',
+  opts: OpcionesDestino = {},
 ): Promise<SesionTaski[]> {
   const perfil = validarPerfil(perfilRaw);
+  const perfilHermes = validarPerfilHermes(opts.perfilHermes);
   const [general, res] = await Promise.all([
-    obtenerSesionGeneral(perfil),
-    taskiFetch(`/api/sessions?limit=${LIMITE_SESIONES}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil),
+    obtenerSesionGeneral(perfil, perfilHermes),
+    taskiFetch(`/api/sessions?limit=${LIMITE_SESIONES}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, perfilHermes),
   ]);
   if (!res.ok) throw new Error(`Hermes HTTP ${res.status}`);
 
@@ -626,7 +723,7 @@ export function aplanarOpcionesModelo(payload: Record<string, unknown>): ModeloH
 }
 
 /** Modelo bloqueado en una sesion concreta (campo `model` de la sesion). */
-export async function modeloDeSesion(sessionId: string, perfil: PerfilId): Promise<string | null> {
+export async function modeloDeSesion(sessionId: string, perfil: NodoId): Promise<string | null> {
   try {
     const res = await taskiFetch(`/api/sessions/${encodeURIComponent(sessionId)}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
     if (!res.ok) return null;
@@ -719,6 +816,7 @@ export async function cambiarModeloHermes(
   sessionId: string = SESSION_ID,
   perfilRaw: string = 'vps-default',
   providerRaw?: string,
+  opts: OpcionesDestino = {},
 ): Promise<{ ok: boolean; model: string; provider?: string }> {
   const perfil = validarPerfil(perfilRaw);
   const partido = partirModelo(model);
@@ -730,6 +828,8 @@ export async function cambiarModeloHermes(
     { method: 'POST', body: JSON.stringify(provider ? { model: modelId, provider } : { model: modelId }) },
     HISTORY_TIMEOUT_MS,
     perfil,
+    undefined,
+    validarPerfilHermes(opts.perfilHermes),
   );
 
   if (!res.ok) {
@@ -749,7 +849,12 @@ export async function cambiarModeloHermes(
  * desplegada no soporta el metodo o el perfil no responde: el llamador se
  * queda con el alias local del OS.
  */
-export async function renombrarSesionHermes(sessionId: string, titulo: string, perfilRaw: string = 'vps-default'): Promise<boolean> {
+export async function renombrarSesionHermes(
+  sessionId: string,
+  titulo: string,
+  perfilRaw: string = 'vps-default',
+  opts: OpcionesDestino = {},
+): Promise<boolean> {
   const perfil = validarPerfil(perfilRaw);
   try {
     const res = await taskiFetch(
@@ -757,6 +862,8 @@ export async function renombrarSesionHermes(sessionId: string, titulo: string, p
       { method: 'PATCH', body: JSON.stringify({ title: titulo }) },
       HISTORY_TIMEOUT_MS,
       perfil,
+      undefined,
+      validarPerfilHermes(opts.perfilHermes),
     );
     return res.ok;
   } catch {
@@ -765,10 +872,14 @@ export async function renombrarSesionHermes(sessionId: string, titulo: string, p
 }
 
 // ---------------------------------------------------------------------------
-// Perfiles de ejecucion (VPS, HomeLab, Laptop)
+// Nodos de ejecucion (VPS, HomeLab, Laptop)
 // ---------------------------------------------------------------------------
+//
+// Esto sigue siendo el eje "donde corre Hermes", que es lo que consume el
+// cockpit tecnico. El eje "que agente atiende" (Alfred, Arazza, ...) vive mas
+// abajo, en listarPerfilesHermes.
 
-export interface PerfilHermes {
+export interface NodoHermes {
   id: string;
   nombre: string;
   tipo: 'vps' | 'homelab' | 'laptop';
@@ -785,6 +896,9 @@ export interface PerfilHermes {
   puerto: number;
 }
 
+/** Alias historico: antes de F2 un "perfil" del OS era un nodo. */
+export type PerfilHermes = NodoHermes;
+
 // Puerto del api_server de Hermes. Antes decia 9120 para HomeLab y Laptop:
 // 9120 es `hermes serve` (backend del Desktop), no el api_server HTTP, asi que
 // era un dato falso en la UI. El api_server siempre es 8642.
@@ -800,8 +914,8 @@ function motivoNoDisponible(configurado: boolean, online: boolean, nodo: string)
   return null;
 }
 
-export async function listarPerfilesHermes(): Promise<PerfilHermes[]> {
-  const health = async (perfil: PerfilId): Promise<boolean> => {
+export async function listarNodosHermes(): Promise<NodoHermes[]> {
+  const health = async (perfil: NodoId): Promise<boolean> => {
     if (!basePerfil(perfil)) return false;
     try {
       const res = await taskiFetch('/api/sessions?limit=1', { method: 'GET' }, 5000, perfil);
@@ -856,6 +970,61 @@ export async function listarPerfilesHermes(): Promise<PerfilHermes[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Perfiles REALES de Hermes (Alfred, Arazza, Nerio, Rafik, Taskr)
+// ---------------------------------------------------------------------------
+//
+// Uno por agente, no por maquina. El health se pregunta igual que a los nodos
+// (GET /api/sessions?limit=1) pero contra el destino que resuelve
+// resolverDestino, asi que un perfil sin sus TASKI_BASE_* / TASKI_TOKEN_* sale
+// como `configurado: false` con el motivo puesto, nunca como error.
+
+export interface EstadoPerfilHermes {
+  id: PerfilHermesId;
+  etiqueta: string;
+  /** El health check contesto. */
+  online: boolean;
+  /** false = faltan las variables de entorno del perfil. */
+  configurado: boolean;
+  /** Por que no esta disponible (tooltip de la UI). null si esta operativo. */
+  motivo: string | null;
+}
+
+export async function listarPerfilesHermes(): Promise<EstadoPerfilHermes[]> {
+  const estado = async ({ id, etiqueta }: { id: PerfilHermesId; etiqueta: string }): Promise<EstadoPerfilHermes> => {
+    const destino = resolverDestino(id);
+    if (!destino) {
+      const sufijo = id.toUpperCase();
+      return {
+        id,
+        etiqueta,
+        online: false,
+        configurado: false,
+        motivo:
+          id === 'default'
+            ? 'Falta configurar el Hermes canonico en el .env del OS (TASKI_BASE_URL / TASKI_TOKEN).'
+            : `Perfil sin configurar en el .env del OS: faltan TASKI_BASE_${sufijo} y TASKI_TOKEN_${sufijo}. El VPS todavia puede no tener su api_server publicado.`,
+      };
+    }
+    let online = false;
+    try {
+      const res = await taskiFetch('/api/sessions?limit=1', { method: 'GET' }, 5000, 'vps-default', undefined, id);
+      online = res.ok;
+    } catch {
+      online = false;
+    }
+    return {
+      id,
+      etiqueta,
+      online,
+      configurado: true,
+      motivo: online ? null : `${etiqueta} no responde el health check. Revisa que su api_server este arriba y publicado en Caddy.`,
+    };
+  };
+
+  return Promise.all(PERFILES_HERMES.map(estado));
+}
+
+// ---------------------------------------------------------------------------
 // Kanban y Tareas de Hermes
 // ---------------------------------------------------------------------------
 
@@ -868,10 +1037,10 @@ export interface TareaHermes {
   detalle?: string;
 }
 
-export async function listarJobsHermes(perfilRaw: string = 'vps-default'): Promise<TareaHermes[]> {
+export async function listarJobsHermes(perfilRaw: string = 'vps-default', opts: OpcionesDestino = {}): Promise<TareaHermes[]> {
   const perfil = validarPerfil(perfilRaw);
   try {
-    const res = await taskiFetch('/api/jobs', { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
+    const res = await taskiFetch('/api/jobs', { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, validarPerfilHermes(opts.perfilHermes));
     if (res.ok) {
       const data = await res.json();
       const jobs = Array.isArray(data?.jobs ?? data?.data) ? (data.jobs ?? data.data) : [];

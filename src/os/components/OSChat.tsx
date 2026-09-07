@@ -26,12 +26,25 @@ import {
 import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 import { etiquetaSesion, fechaSesion, nombreSesion, tooltipSesion } from '../lib/sesiones.ts';
 import { leerSse } from '../lib/sse.ts';
+import { PERFILES_HERMES, etiquetaPerfilHermes } from '../lib/perfilesHermes.ts';
 
 interface Conversacion {
   id: string;
   titulo: string;
+  /** Nodo donde corre Hermes. */
   perfil: string;
+  /** Agente real que atiende el tema (default/Alfred, arazza, ...). */
+  perfil_hermes?: string;
   updated_at: string;
+}
+
+/** Estado de salud de un perfil real, tal como lo da /api/taski/perfiles. */
+interface EstadoPerfilHermes {
+  id: string;
+  etiqueta: string;
+  online: boolean;
+  configurado: boolean;
+  motivo: string | null;
 }
 
 interface Mensaje {
@@ -102,9 +115,10 @@ function textoHerramienta(h: HerramientaEnCurso): string {
   return `${h.nombre} fallo`;
 }
 
-// Cada conversacion elige que Hermes la atiende. El del VPS tiene Telegram,
+// Cada conversacion elige en que NODO corre Hermes. El del VPS tiene Telegram,
 // memoria canonica y n8n; el de la laptop trabaja con el terminal y los
-// archivos de la laptop; el del HomeLab con la GPU local.
+// archivos de la laptop; el del HomeLab con la GPU local. Que AGENTE atiende
+// (Alfred, Arazza, ...) es el otro eje, y sale de PERFILES_HERMES.
 const PERFILES: Array<{ id: string; etiqueta: string }> = [
   { id: 'vps-default', etiqueta: 'Hermes VPS' },
   { id: 'laptop-local', etiqueta: 'Hermes Laptop' },
@@ -160,6 +174,8 @@ export default function OSChat() {
   // por ultima actividad: antes el proxy filtraba source=telegram y las
   // conversaciones del propio OS (os-chat-*) no aparecian nunca.
   const [origenHermes, setOrigenHermes] = useState<FiltroOrigen>('todas');
+  // Salud de los perfiles reales, para el puntito de cada grupo del panel.
+  const [saludPerfiles, setSaludPerfiles] = useState<EstadoPerfilHermes[]>([]);
 
   // Renombrado inline de una conversacion del OS.
   const [renombrandoId, setRenombrandoId] = useState<string | null>(null);
@@ -272,12 +288,28 @@ export default function OSChat() {
     }
   }, []);
 
+  // Salud de los perfiles reales de Hermes. Si el endpoint falla, la lista
+  // queda vacia y los grupos se pintan sin punto: es informacion adicional,
+  // no puede romper el panel.
+  const cargarSaludPerfiles = useCallback(async () => {
+    try {
+      const res = await fetch('/api/taski/perfiles');
+      if (!res.ok) return;
+      const data = await res.json();
+      setSaludPerfiles((data.perfiles ?? []) as EstadoPerfilHermes[]);
+    } catch {
+      // sin salud: el panel funciona igual
+    }
+  }, []);
+
   // El filtro por origen lo hace el server (?origen=), que ya devuelve la
-  // lista ordenada por ultima actividad.
-  const cargarSesionesHermes = useCallback(async (origen: FiltroOrigen) => {
+  // lista ordenada por ultima actividad. El nodo ya no va fijo a vps-default:
+  // se consulta el del tema abierto, que es el Hermes que el usuario esta
+  // mirando.
+  const cargarSesionesHermes = useCallback(async (origen: FiltroOrigen, nodo: string) => {
     setTelegramCargandoLista(true);
     try {
-      const res = await fetch(`/api/taski/sesiones?profile_id=vps-default&origen=${origen}`);
+      const res = await fetch(`/api/taski/sesiones?profile_id=${encodeURIComponent(nodo)}&origen=${origen}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setTelegramSesiones((data.sesiones ?? []) as SesionHermes[]);
@@ -288,13 +320,13 @@ export default function OSChat() {
     }
   }, []);
 
-  const abrirHiloHermes = useCallback(async (id: string) => {
+  const abrirHiloHermes = useCallback(async (id: string, nodo: string) => {
     setModo('telegram-readonly');
     setTelegramActivaId(id);
     setTelegramCargandoHilo(true);
     setError(null);
     try {
-      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(id)}&profile_id=vps-default`);
+      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(id)}&profile_id=${encodeURIComponent(nodo)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setTelegramMensajes(data.mensajes ?? []);
@@ -313,7 +345,8 @@ export default function OSChat() {
         setActivaId(lista[0].id);
       }
     })();
-  }, [cargarConversaciones]);
+    void cargarSaludPerfiles();
+  }, [cargarConversaciones, cargarSaludPerfiles]);
 
   useEffect(() => {
     if (activaId) void cargarHilo(activaId);
@@ -341,6 +374,21 @@ export default function OSChat() {
   }, [mensajes.length, runActivo?.estado, telegramMensajes.length, parcial]);
 
   const [perfilNuevo, setPerfilNuevo] = useState('vps-default');
+  const [perfilHermesNuevo, setPerfilHermesNuevo] = useState('default');
+
+  // Nodo del tema abierto: es contra el que se consultan las sesiones crudas
+  // de Hermes de la seccion de solo lectura. Antes iba fijo a vps-default.
+  const conversacionActiva = conversaciones.find((c) => c.id === activaId);
+  const nodoActivo = conversacionActiva?.perfil ?? 'vps-default';
+
+  // Panel lateral agrupado por agente: el orden de los grupos es el del
+  // catalogo (Alfred primero) y adentro manda updated_at, que es como ya venia
+  // ordenada la lista del server.
+  const grupos = PERFILES_HERMES.map((p) => ({
+    perfil: p,
+    salud: saludPerfiles.find((s) => s.id === p.id) ?? null,
+    conversaciones: conversaciones.filter((c) => (c.perfil_hermes ?? 'default') === p.id),
+  })).filter((g) => g.conversaciones.length > 0);
 
   // Renombrar una conversacion del OS. El titulo automatico solo pisa
   // 'Nueva conversacion', asi que un nombre puesto a mano sobrevive; el server
@@ -374,7 +422,7 @@ export default function OSChat() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ perfil: perfilNuevo }),
+        body: JSON.stringify({ perfil: perfilNuevo, perfil_hermes: perfilHermesNuevo }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -492,12 +540,28 @@ export default function OSChat() {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 260px) 1fr', gap: '1rem', minHeight: '70vh' }}>
       {/* Lista de conversaciones */}
       <div className="os-card-2" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {/* Dos ejes distintos: QUE agente atiende y DONDE corre. */}
+        <select
+          value={perfilHermesNuevo}
+          onChange={(e) => setPerfilHermesNuevo(e.target.value)}
+          className="os-input"
+          style={{ fontSize: 12 }}
+          title="Que agente de Hermes atiende el tema nuevo (cada uno tiene su propia memoria)"
+        >
+          {PERFILES_HERMES.map((p) => {
+            const salud = saludPerfiles.find((s) => s.id === p.id);
+            const sufijo = salud && !salud.configurado ? ' (sin configurar)' : salud && !salud.online ? ' (sin responder)' : '';
+            return (
+              <option key={p.id} value={p.id}>{`${p.etiqueta}${sufijo}`}</option>
+            );
+          })}
+        </select>
         <select
           value={perfilNuevo}
           onChange={(e) => setPerfilNuevo(e.target.value)}
           className="os-input"
           style={{ fontSize: 12 }}
-          title="Que Hermes atiende la conversacion nueva"
+          title="En que nodo corre el Hermes que atiende el tema nuevo"
         >
           {PERFILES.map((p) => (
             <option key={p.id} value={p.id}>{p.etiqueta}</option>
@@ -506,10 +570,38 @@ export default function OSChat() {
         <button type="button" className="os-btn os-btn-primary" onClick={() => void nuevaConversacion()} disabled={cargando}>
           Nueva conversacion
         </button>
-        {/* Cada conversacion: `Nombre - dd/mm HH:mm` (ultima actividad) y un
-            boton de renombrar. El formato es el mismo de la burbuja y el
-            cockpit (src/os/lib/sesiones.ts). */}
-        {conversaciones.map((c) => {
+        {/* Temas agrupados por agente. El encabezado lleva un punto de estado
+            tomado de /api/taski/perfiles: verde responde, gris no. Cada
+            conversacion se pinta como `Nombre - dd/mm HH:mm` (ultima
+            actividad) con boton de renombrar, mismo formato que la burbuja y
+            el cockpit (src/os/lib/sesiones.ts). */}
+        {grupos.map((g) => (
+          <div key={g.perfil.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+            <div
+              title={g.salud?.motivo ?? `${g.perfil.etiqueta} responde`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 10,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--os-muted)',
+                padding: '0 4px',
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  flexShrink: 0,
+                  background: g.salud?.online ? '#22c55e' : 'var(--os-line)',
+                }}
+              />
+              {g.perfil.etiqueta}
+            </div>
+            {g.conversaciones.map((c) => {
           const fecha = fechaSesion(new Date(c.updated_at).getTime());
           if (renombrandoId === c.id) {
             return (
@@ -604,7 +696,9 @@ export default function OSChat() {
               </button>
             </div>
           );
-        })}
+            })}
+          </div>
+        ))}
 
         {/* Seccion colapsable de solo lectura: sesiones que Hermes guarda en
             el VPS. Pestanas Telegram / OS / Todas (default Todas). */}
@@ -614,7 +708,7 @@ export default function OSChat() {
           onClick={() => {
             const abrir = !telegramAbierto;
             setTelegramAbierto(abrir);
-            if (abrir && telegramSesiones.length === 0) void cargarSesionesHermes(origenHermes);
+            if (abrir && telegramSesiones.length === 0) void cargarSesionesHermes(origenHermes, nodoActivo);
           }}
           style={{ justifyContent: 'space-between', fontSize: 12, marginTop: 8 }}
         >
@@ -630,7 +724,7 @@ export default function OSChat() {
                   type="button"
                   onClick={() => {
                     setOrigenHermes(op);
-                    void cargarSesionesHermes(op);
+                    void cargarSesionesHermes(op, nodoActivo);
                   }}
                   title={
                     op === 'telegram'
@@ -681,7 +775,7 @@ export default function OSChat() {
                 <button
                   type="button"
                   className="os-btn"
-                  onClick={() => void abrirHiloHermes(s.id)}
+                  onClick={() => void abrirHiloHermes(s.id, nodoActivo)}
                   style={{
                     flex: 1,
                     minWidth: 0,
@@ -783,7 +877,11 @@ export default function OSChat() {
         <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
           {activaId && (
             <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <span>{etiquetaPerfil(conversaciones.find((c) => c.id === activaId)?.perfil ?? 'vps-default')}</span>
+              <span>
+                {etiquetaPerfilHermes(conversacionActiva?.perfil_hermes ?? 'default')}
+                {' · '}
+                {etiquetaPerfil(conversacionActiva?.perfil ?? 'vps-default')}
+              </span>
               {desktop && (
                 <span title="Estado de Ollama local">
                   {ollama
