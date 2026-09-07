@@ -23,6 +23,7 @@
     "test:contenido": "node --experimental-strip-types --test src/organs/contenido/domain/*.test.ts",
     "test:radar": "node --experimental-strip-types --test src/organs/contenido/domain/radar/*.test.ts",
     "test:mcp": "node --experimental-strip-types --test src/mcp/*.test.ts",
+    "test:oauth": "node --experimental-strip-types --test src/server/oauthCrypto.test.ts src/server/oauth.handlers.test.ts src/mcp/mcpAuth.test.ts src/mcp/oauth-mcp.test.ts src/routes/api/oauth/authorize.test.ts",
     "test:auth": "node --experimental-strip-types --test src/lib/osTokens.test.ts src/server/*.test.ts",
     "test:qr": "node --experimental-strip-types --test src/lib/qr.test.ts",
     "test:journal": "node --experimental-strip-types --test src/server/journal.handlers.test.ts",
