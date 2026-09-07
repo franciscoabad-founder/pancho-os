@@ -10,8 +10,10 @@ import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
+  claveSesionTema,
   crearConversacion,
   enviarMensaje,
+  enviarMensajeStream,
   listarConversaciones,
   obtenerHilo,
   renombrarConversacion,
@@ -19,8 +21,11 @@ import {
   setCrearSesionHermesChat,
   setEnviarAHermesChat,
   setRenombrarSesionHermesChat,
+  setStreamHermesChat,
+  type Conversacion,
   type Run,
 } from './chat.handlers.ts';
+import { leerSse } from '../os/lib/sse.ts';
 
 type Fila = Record<string, unknown>;
 interface Estado {
@@ -124,6 +129,7 @@ beforeEach(() => {
   estado = { conversaciones: [], mensajes: [], runs: [] };
   setClienteSupabaseChat(() => crearClienteFake(estado));
   setEnviarAHermesChat(async () => 'respuesta de hermes');
+  setStreamHermesChat(null);
   setCrearSesionHermesChat(async () => undefined);
   setRenombrarSesionHermesChat(async () => true);
 });
@@ -239,4 +245,123 @@ test('validaciones de renombrado', async () => {
   await assert.rejects(() => renombrarConversacion(conv.id, '   '), /requerido/);
   await assert.rejects(() => renombrarConversacion(conv.id, 'x'.repeat(200)), /demasiado largo/);
   await assert.rejects(() => renombrarConversacion(randomUUID(), 'x'), /no encontrada/);
+});
+
+// --- Streaming (F1) ---------------------------------------------------------
+//
+// El seam setStreamHermesChat reemplaza a streamTaski: el doble decide que
+// eventos emite y que texto final devuelve, asi que aca se prueba lo que de
+// verdad importa del camino con streaming (que el cliente vea los deltas y que
+// la persistencia NO dependa de que el cliente siga escuchando).
+
+interface EventoLeido {
+  tipo: string;
+  texto?: string;
+  herramienta?: string;
+  datos?: Record<string, unknown>;
+}
+
+async function leerEventos(stream: ReadableStream<Uint8Array>): Promise<EventoLeido[]> {
+  const eventos: EventoLeido[] = [];
+  await leerSse(stream, (trama) => eventos.push(JSON.parse(trama.datos) as EventoLeido));
+  return eventos;
+}
+
+test('enviarMensajeStream emite los deltas y persiste el mensaje final', async () => {
+  const llamadas: Array<{ sessionId: string; sessionKey?: string }> = [];
+  setStreamHermesChat(async (_mensaje, sessionId, opts, onEvento) => {
+    llamadas.push({ sessionId, sessionKey: opts.sessionKey });
+    onEvento({ tipo: 'message.started' });
+    onEvento({ tipo: 'assistant.delta', texto: 'Reviso ' });
+    onEvento({ tipo: 'tool.started', herramienta: 'terminal' });
+    onEvento({ tipo: 'assistant.delta', texto: 'la agenda ' });
+    onEvento({ tipo: 'assistant.delta', texto: 'de hoy.' });
+    // El run.completed de Hermes se filtra: el server emite el suyo despues de
+    // guardar, para que el cliente no recargue el hilo antes de tiempo.
+    onEvento({ tipo: 'run.completed' });
+    return 'Reviso la agenda de hoy.';
+  });
+
+  const conv = (await crearConversacion('Agenda')) as Conversacion;
+  const eventos = await leerEventos(await enviarMensajeStream(conv.id, 'que tengo hoy'));
+
+  assert.deepEqual(eventos.map((e) => e.tipo), [
+    'run.started',
+    'message.started',
+    'assistant.delta',
+    'tool.started',
+    'assistant.delta',
+    'assistant.delta',
+    'run.completed',
+  ]);
+  assert.equal(
+    eventos.filter((e) => e.tipo === 'assistant.delta').map((e) => e.texto).join(''),
+    'Reviso la agenda de hoy.',
+  );
+  assert.equal(eventos[3].herramienta, 'terminal');
+  // El primer frame trae el run recien creado, para poder caer al polling.
+  assert.equal(typeof (eventos[0].datos?.run as Run | undefined)?.id, 'string');
+  assert.equal(eventos[6].datos?.estado, 'completado');
+
+  // Persistencia: el hilo real es el del OS, no el stream.
+  const hilo = await obtenerHilo(conv.id);
+  assert.equal(hilo.runActivo, null);
+  assert.deepEqual(hilo.mensajes.map((m) => m.rol), ['user', 'assistant']);
+  assert.equal(hilo.mensajes[1].contenido, 'Reviso la agenda de hoy.');
+  const runFinal = estado.runs[0] as unknown as Run;
+  assert.equal(runFinal.estado, 'completado');
+  assert.equal((runFinal.evidencia as Record<string, unknown>).streaming, true);
+
+  // Session key del tema: no depende del titulo, asi renombrar no borra memoria.
+  assert.equal(llamadas.length, 1);
+  assert.equal(llamadas[0].sessionId, conv.hermes_session_id);
+  assert.equal(llamadas[0].sessionKey, `os:default:${conv.id.slice(0, 8)}`);
+  assert.equal(claveSesionTema(conv), llamadas[0].sessionKey);
+});
+
+test('si el cliente cancela el stream, el turno sigue y la respuesta se guarda', async () => {
+  const control: { seguir?: () => void } = {};
+  setStreamHermesChat(async (_mensaje, _sessionId, _opts, onEvento) => {
+    onEvento({ tipo: 'assistant.delta', texto: 'voy a mitad' });
+    await new Promise<void>((resolver) => {
+      control.seguir = resolver;
+    });
+    return 'respuesta completa';
+  });
+
+  const conv = await crearConversacion();
+  const stream = await enviarMensajeStream(conv.id, 'hola');
+  const lector = stream.getReader();
+  await lector.read();
+  await lector.cancel(); // el navegador se fue
+
+  control.seguir?.();
+  await new Promise((r) => setTimeout(r, 20));
+
+  const hilo = await obtenerHilo(conv.id);
+  assert.deepEqual(hilo.mensajes.map((m) => m.rol), ['user', 'assistant']);
+  assert.equal(hilo.mensajes[1].contenido, 'respuesta completa');
+  assert.equal((estado.runs[0] as unknown as Run).estado, 'completado');
+});
+
+test('si el stream falla, el run queda fallido y el cliente recibe el error', async () => {
+  setStreamHermesChat(async () => {
+    throw new Error('Hermes HTTP 502');
+  });
+  const conv = await crearConversacion();
+  const eventos = await leerEventos(await enviarMensajeStream(conv.id, 'hola'));
+
+  assert.deepEqual(eventos.map((e) => e.tipo), ['run.started', 'error', 'run.completed']);
+  assert.equal(eventos[2].datos?.estado, 'fallido');
+  const runFinal = estado.runs[0] as unknown as Run;
+  assert.equal(runFinal.estado, 'fallido');
+  assert.match(String(runFinal.error), /502/);
+  assert.equal(estado.mensajes.filter((m) => m.rol === 'assistant').length, 0);
+});
+
+test('el stream respeta el candado de un run por conversacion', async () => {
+  setEnviarAHermesChat(() => new Promise((r) => setTimeout(() => r('tarde'), 200)));
+  const conv = await crearConversacion();
+  await enviarMensaje(conv.id, 'primero');
+  await assert.rejects(enviarMensajeStream(conv.id, 'segundo'), /sigue trabajando/);
 });
