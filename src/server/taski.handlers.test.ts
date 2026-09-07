@@ -14,10 +14,13 @@ import {
   aMilisegundos,
   aplanarOpcionesModelo,
   clasificarOrigen,
+  listarPerfilesHermes,
   partirModelo,
+  resolverDestino,
   validarOrigen,
 } from './taski.handlers.ts';
 import { etiquetaSesion, fechaSesion, nombreSesion } from '../os/lib/sesiones.ts';
+import { validarPerfilHermes } from '../os/lib/perfilesHermes.ts';
 
 test('aplanarOpcionesModelo arma la lista real de proveedor/modelo', () => {
   const modelos = aplanarOpcionesModelo({
@@ -131,4 +134,114 @@ test('nombreSesion inventa un rotulo util cuando Hermes no dio titulo', () => {
   assert.equal(nombreSesion({ id: 'zzz', title: null, origen: 'telegram' }), 'Conversacion de Telegram');
   assert.equal(nombreSesion({ id: 'os-chat-ab12cd34', title: null }), 'Conversacion del OS');
   assert.equal(nombreSesion({ id: 'algo-muy-largo-de-verdad', title: '   ' }), 'algo-muy-lar');
+});
+
+// --- Perfiles reales de Hermes (F2) ----------------------------------------
+//
+// Nodo (donde corre) y perfil (que agente atiende) son ejes distintos.
+// resolverDestino es el unico lugar que sabe traducirlos a base + token, y
+// tiene que devolver undefined (no lanzar) cuando a un perfil le faltan sus
+// variables: el VPS todavia esta habilitando los api_server por perfil.
+
+const VARIABLES_PERFILES = [
+  'TASKI_BASE_URL', 'TASKI_TOKEN', 'TASKI_BASE_HOMELAB', 'TASKI_BASE_LAPTOP',
+  'TASKI_BASE_ARAZZA', 'TASKI_TOKEN_ARAZZA', 'TASKI_BASE_NERIO', 'TASKI_TOKEN_NERIO',
+  'TASKI_BASE_RAFIK', 'TASKI_TOKEN_RAFIK', 'TASKI_BASE_TASKR', 'TASKI_TOKEN_TASKR',
+];
+
+/** Corre `fn` con las variables de Hermes en un estado conocido. */
+async function conEntorno(valores: Record<string, string>, fn: () => Promise<void> | void): Promise<void> {
+  const previo = new Map(VARIABLES_PERFILES.map((k) => [k, process.env[k]]));
+  for (const k of VARIABLES_PERFILES) delete process.env[k];
+  Object.assign(process.env, valores);
+  try {
+    await fn();
+  } finally {
+    for (const [k, v] of previo) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+test('resolverDestino: el perfil default sale del nodo, como antes de F2', async () => {
+  await conEntorno({ TASKI_TOKEN: 'tok-vps' }, () => {
+    // Sin TASKI_BASE_URL se usa la base canonica de Caddy.
+    assert.deepEqual(resolverDestino('default'), {
+      base: 'https://brain.franciscoabad.com/taski',
+      token: 'tok-vps',
+    });
+    // Un nodo sin base configurada no tiene a donde preguntar.
+    assert.equal(resolverDestino('default', 'homelab-local'), undefined);
+  });
+});
+
+test('resolverDestino: un perfil sin sus variables queda no configurado, no revienta', async () => {
+  await conEntorno({ TASKI_TOKEN: 'tok-vps' }, () => {
+    assert.equal(resolverDestino('arazza'), undefined);
+    assert.equal(resolverDestino('nerio'), undefined);
+    assert.equal(resolverDestino('rafik'), undefined);
+    assert.equal(resolverDestino('taskr'), undefined);
+  });
+});
+
+test('resolverDestino: un perfil configurado usa su base y su token propios', async () => {
+  await conEntorno(
+    {
+      TASKI_TOKEN: 'tok-vps',
+      TASKI_BASE_RAFIK: 'https://brain.franciscoabad.com/taski-rafik',
+      TASKI_TOKEN_RAFIK: 'tok-rafik',
+      // Arazza sin token propio: se cae al TASKI_TOKEN historico.
+      TASKI_BASE_ARAZZA: 'https://brain.franciscoabad.com/taski-arazza',
+    },
+    () => {
+      assert.deepEqual(resolverDestino('rafik'), {
+        base: 'https://brain.franciscoabad.com/taski-rafik',
+        token: 'tok-rafik',
+      });
+      assert.deepEqual(resolverDestino('arazza'), {
+        base: 'https://brain.franciscoabad.com/taski-arazza',
+        token: 'tok-vps',
+      });
+      // El nodo no altera el destino de un perfil que no es el default.
+      assert.deepEqual(resolverDestino('rafik', 'laptop-local'), resolverDestino('rafik'));
+    },
+  );
+});
+
+test('listarPerfilesHermes devuelve los 5 agentes y explica los que faltan', async () => {
+  const fetchOriginal = globalThis.fetch;
+  // Health check doblado: aca no se prueba la red, se prueba el reporte.
+  globalThis.fetch = (async () => new Response('{}', { status: 500 })) as typeof globalThis.fetch;
+  try {
+    await conEntorno({ TASKI_TOKEN: 'tok-vps' }, async () => {
+      const perfiles = await listarPerfilesHermes();
+      assert.deepEqual(perfiles.map((p) => p.id), ['default', 'arazza', 'nerio', 'rafik', 'taskr']);
+      assert.deepEqual(perfiles.map((p) => p.etiqueta), ['Alfred', 'Arazza', 'Nerio', 'Rafik', 'Taskr']);
+
+      // Alfred siempre tiene base (la canonica), asi que esta configurado; el
+      // health doblado responde 500, asi que sale offline con motivo.
+      assert.equal(perfiles[0].configurado, true);
+      assert.equal(perfiles[0].online, false);
+      assert.match(String(perfiles[0].motivo), /health check/);
+
+      // Los otros cuatro sin variables: no configurados, y el motivo dice
+      // exactamente que falta en el .env.
+      for (const p of perfiles.slice(1)) {
+        assert.equal(p.configurado, false);
+        assert.equal(p.online, false);
+        assert.match(String(p.motivo), new RegExp(`TASKI_BASE_${p.id.toUpperCase()}`));
+      }
+    });
+  } finally {
+    globalThis.fetch = fetchOriginal;
+  }
+});
+
+test('validarPerfilHermes cae a default ante cualquier basura', () => {
+  assert.equal(validarPerfilHermes('rafik'), 'rafik');
+  assert.equal(validarPerfilHermes('taskr'), 'taskr');
+  assert.equal(validarPerfilHermes(undefined), 'default');
+  assert.equal(validarPerfilHermes('vps-default'), 'default');
+  assert.equal(validarPerfilHermes('; drop table'), 'default');
 });

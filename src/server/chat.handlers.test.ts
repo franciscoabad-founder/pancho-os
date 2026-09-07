@@ -47,6 +47,9 @@ function crearClienteFake(estado: Estado): SupabaseClient {
     if (nombre === 'chat_conversaciones') {
       return {
         id: randomUUID(), titulo: 'Nueva conversacion', perfil: 'vps-default',
+        // Defaults de la migracion 20260908000100_temas_hermes.sql.
+        perfil_hermes: 'default', session_key: null, topic_telegram: null,
+        estado: 'activo', ultimo_evento: {},
         hermes_session_id: null, archivada: false, created_at: ahora, updated_at: ahora,
       };
     }
@@ -139,6 +142,66 @@ test('crearConversacion asigna sesion de Hermes propia', async () => {
   assert.equal(conv.titulo, 'Planes');
   assert.match(String(conv.hermes_session_id), /^os-chat-/);
   assert.equal((await listarConversaciones()).length, 1);
+});
+
+test('crearConversacion persiste el perfil real y su session_key (F2)', async () => {
+  const conv = await crearConversacion('Legal', 'vps-default', 'rafik');
+  assert.equal(conv.perfil_hermes, 'rafik');
+  // El nodo sigue siendo el otro eje y no se toca.
+  assert.equal(conv.perfil, 'vps-default');
+  // La clave de memoria lleva el perfil real, no el nodo.
+  assert.equal(conv.session_key, `os:rafik:${conv.id.slice(0, 8)}`);
+  assert.equal(claveSesionTema(conv), conv.session_key);
+});
+
+test('crearConversacion sin perfil real cae a Alfred, como antes de F2', async () => {
+  const conv = await crearConversacion('Sin perfil');
+  assert.equal(conv.perfil_hermes, 'default');
+  assert.equal(conv.session_key, `os:default:${conv.id.slice(0, 8)}`);
+});
+
+test('un perfil real invalido no crea el tema con basura: cae a default', async () => {
+  const conv = await crearConversacion('Raro', 'vps-default', '; drop table');
+  assert.equal(conv.perfil_hermes, 'default');
+});
+
+test('claveSesionTema respeta la clave guardada y la recalcula en filas viejas', async () => {
+  const conv = await crearConversacion('Con clave', 'vps-default', 'nerio');
+  assert.equal(claveSesionTema(conv), `os:nerio:${conv.id.slice(0, 8)}`);
+  // Conversacion anterior a la migracion: session_key nula.
+  const vieja = { ...conv, session_key: null };
+  assert.equal(claveSesionTema(vieja), `os:nerio:${conv.id.slice(0, 8)}`);
+});
+
+test('el turno le habla al perfil real del tema, no al default', async () => {
+  const vistos: Array<string | undefined> = [];
+  const creadas: Array<string | undefined> = [];
+  setStreamHermesChat(async (_m, _s, opts) => {
+    vistos.push(opts.perfilHermes);
+    return 'listo';
+  });
+  setCrearSesionHermesChat(async (_id, _titulo, _perfil, _key, opts) => {
+    creadas.push(opts?.perfilHermes);
+  });
+
+  const conv = await crearConversacion('Contratos', 'vps-default', 'rafik');
+  await leerEventos(await enviarMensajeStream(conv.id, 'revisa esto'));
+
+  assert.deepEqual(vistos, ['rafik']);
+  assert.deepEqual(creadas, ['rafik']);
+  const runFinal = estado.runs[0] as unknown as Run;
+  assert.equal((runFinal.evidencia as Record<string, unknown>).perfil_hermes, 'rafik');
+});
+
+test('renombrar avisa al perfil real dueno de la sesion', async () => {
+  const vistos: Array<string | undefined> = [];
+  setRenombrarSesionHermesChat(async (_id, _titulo, _perfil, opts) => {
+    vistos.push(opts?.perfilHermes);
+    return true;
+  });
+  const conv = await crearConversacion('Tema', 'vps-default', 'taskr');
+  await renombrarConversacion(conv.id, 'Tema nuevo');
+  assert.deepEqual(vistos, ['taskr']);
 });
 
 test('enviarMensaje guarda el mensaje, crea run y procesarRun lo completa', async () => {

@@ -31,9 +31,11 @@ import {
   validarPerfil,
   MAX_LARGO_MENSAJE,
   type EventoHermes,
+  type OpcionesDestino,
   type OpcionesStreamTaski,
 } from './taski.handlers.ts';
 import { formatearSse } from '../os/lib/sse.ts';
+import { validarPerfilHermes, type PerfilHermesId } from '../os/lib/perfilesHermes.ts';
 
 let clienteActual: () => SupabaseClient = getSupabaseServer;
 
@@ -42,7 +44,13 @@ export function setClienteSupabaseChat(fn: (() => SupabaseClient) | null): void 
 }
 
 // Seam para tests: reemplaza la llamada real a Hermes.
-type EnviarAHermes = (mensaje: string, sessionId: string, perfil: string, timeoutMs?: number) => Promise<string>;
+type EnviarAHermes = (
+  mensaje: string,
+  sessionId: string,
+  perfil: string,
+  timeoutMs?: number,
+  opts?: OpcionesDestino,
+) => Promise<string>;
 let enviarAHermesActual: EnviarAHermes = enviarATaski;
 
 export function setEnviarAHermesChat(fn: EnviarAHermes | null): void {
@@ -63,14 +71,20 @@ export function setStreamHermesChat(fn: StreamAHermes | null): void {
   streamAHermesActual = fn ?? streamTaski;
 }
 
-type CrearSesion = (sessionId: string, titulo: string, perfil: string, sessionKey?: string) => Promise<void>;
+type CrearSesion = (
+  sessionId: string,
+  titulo: string,
+  perfil: string,
+  sessionKey?: string,
+  opts?: OpcionesDestino,
+) => Promise<void>;
 let crearSesionActual: CrearSesion = crearSesionTaski;
 
 export function setCrearSesionHermesChat(fn: CrearSesion | null): void {
   crearSesionActual = fn ?? crearSesionTaski;
 }
 
-type RenombrarSesion = (sessionId: string, titulo: string, perfil: string) => Promise<boolean>;
+type RenombrarSesion = (sessionId: string, titulo: string, perfil: string, opts?: OpcionesDestino) => Promise<boolean>;
 let renombrarSesionActual: RenombrarSesion = renombrarSesionHermes;
 
 export function setRenombrarSesionHermesChat(fn: RenombrarSesion | null): void {
@@ -84,8 +98,17 @@ export { MAX_LARGO_MENSAJE };
 export interface Conversacion {
   id: string;
   titulo: string;
+  /** NODO donde corre Hermes (vps-default | homelab-local | laptop-local). */
   perfil: string;
+  /** PERFIL real del agente (default/Alfred, arazza, nerio, rafik, taskr). */
+  perfil_hermes: string;
+  /** Scope de memoria en Hermes; se fija al crear y no cambia al renombrar. */
+  session_key: string | null;
   hermes_session_id: string | null;
+  /** Topic de Telegram enganchado a este tema (F3). */
+  topic_telegram?: string | null;
+  estado?: string;
+  ultimo_evento?: Record<string, unknown>;
   archivada: boolean;
   created_at: string;
   updated_at: string;
@@ -127,13 +150,26 @@ export async function listarConversaciones(): Promise<Conversacion[]> {
   return (data ?? []) as Conversacion[];
 }
 
-export async function crearConversacion(tituloRaw?: unknown, perfilRaw?: unknown): Promise<Conversacion> {
+/**
+ * Crea un tema del chat del OS.
+ *
+ * `perfilRaw` es el NODO (compatibilidad: asi se llamaba antes de F2) y
+ * `perfilHermesRaw` el PERFIL real del agente que lo atiende. Los dos son
+ * opcionales y caen a vps-default / default, asi que las llamadas viejas
+ * siguen funcionando igual.
+ */
+export async function crearConversacion(
+  tituloRaw?: unknown,
+  perfilRaw?: unknown,
+  perfilHermesRaw?: unknown,
+): Promise<Conversacion> {
   const sb = clienteActual();
   const titulo = String(tituloRaw ?? '').trim() || 'Nueva conversacion';
   const perfil = validarPerfil(typeof perfilRaw === 'string' ? perfilRaw : undefined);
+  const perfilHermes = validarPerfilHermes(perfilHermesRaw);
   const { data, error } = await sb
     .from('chat_conversaciones')
-    .insert({ titulo, perfil })
+    .insert({ titulo, perfil, perfil_hermes: perfilHermes })
     .select('*')
     .single();
   if (error) fallar(`crear conversacion: ${error.message}`);
@@ -141,9 +177,16 @@ export async function crearConversacion(tituloRaw?: unknown, perfilRaw?: unknown
   // La sesion de Hermes es una por conversacion del OS: contexto continuo del
   // lado del agente, hilos separados del lado del usuario. Prefijo os-chat-
   // para distinguirla de la sesion legacy 'pancho-os' del cockpit.
+  //
+  // La session_key se persiste aca (y no se recalcula en cada turno) para que
+  // sea estable aunque manana cambie la formula: es la memoria del tema del
+  // lado de Hermes y perderla es perder el contexto acumulado.
   const { data: conData, error: err2 } = await sb
     .from('chat_conversaciones')
-    .update({ hermes_session_id: `os-chat-${conv.id.slice(0, 8)}` })
+    .update({
+      hermes_session_id: `os-chat-${conv.id.slice(0, 8)}`,
+      session_key: `os:${perfilHermes}:${conv.id.slice(0, 8)}`,
+    })
     .eq('id', conv.id)
     .select('*')
     .single();
@@ -178,8 +221,9 @@ export async function renombrarConversacion(conversacionId: string, tituloRaw: u
   if (error || !data) fallar('Conversacion no encontrada');
 
   const conv = data as Conversacion;
-  const sessionId = conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
-  await renombrarSesionActual(sessionId, titulo, conv.perfil).catch(() => false);
+  await renombrarSesionActual(sesionDeConversacion(conv), titulo, conv.perfil, {
+    perfilHermes: perfilHermesDe(conv),
+  }).catch(() => false);
   return conv;
 }
 
@@ -307,19 +351,27 @@ export async function enviarMensaje(conversacionId: string, contenidoRaw: unknow
   return { mensaje: turno.mensaje, run: turno.run };
 }
 
+/** Perfil real del agente del tema, tolerando filas anteriores a F2. */
+export function perfilHermesDe(conv: Conversacion): PerfilHermesId {
+  return validarPerfilHermes(conv.perfil_hermes);
+}
+
 /**
  * Scope de memoria del tema en Hermes (cabecera X-Hermes-Session-Key).
  *
- * En F1 el perfil de Hermes es siempre el default: el OS todavia no modela
- * "perfil de Hermes" aparte de "nodo" (eso es F2), y la clave no depende del
- * titulo a proposito, para que renombrar una conversacion no le borre la
- * memoria al agente.
+ * Desde F2 la clave se guarda en chat_conversaciones.session_key al crear el
+ * tema y esta funcion solo la lee. El calculo sigue aca como respaldo para las
+ * conversaciones creadas antes de la migracion, que tienen session_key nula.
+ * La clave nunca depende del titulo, a proposito: renombrar una conversacion
+ * no le puede borrar la memoria al agente.
  */
 export function claveSesionTema(conv: Conversacion): string {
-  return `os:default:${conv.id.slice(0, 8)}`;
+  const guardada = (conv.session_key ?? '').trim();
+  if (guardada) return guardada;
+  return `os:${perfilHermesDe(conv)}:${conv.id.slice(0, 8)}`;
 }
 
-function sesionDeConversacion(conv: Conversacion): string {
+export function sesionDeConversacion(conv: Conversacion): string {
   return conv.hermes_session_id || `os-chat-${conv.id.slice(0, 8)}`;
 }
 
@@ -331,11 +383,12 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
 
   try {
     const sessionId = sesionDeConversacion(conv);
+    const perfilHermes = perfilHermesDe(conv);
     // Hermes solo acepta chat sobre sesiones existentes: crearla es idempotente
     // (409 = ya estaba) y barato, asi que se asegura en cada run.
-    await crearSesionActual(sessionId, conv.titulo, conv.perfil, claveSesionTema(conv));
+    await crearSesionActual(sessionId, conv.titulo, conv.perfil, claveSesionTema(conv), { perfilHermes });
     // 4 min de presupuesto: el run corre en background, no bloquea a nadie.
-    const respuesta = await enviarAHermesActual(contenido, sessionId, conv.perfil, 240_000);
+    const respuesta = await enviarAHermesActual(contenido, sessionId, conv.perfil, 240_000, { perfilHermes });
     const texto = respuesta.trim() || '(Hermes devolvio una respuesta vacia)';
 
     const { data: msgA, error: eA } = await sb
@@ -355,6 +408,7 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
           duracion_ms: Date.now() - inicio,
           hermes_session_id: sessionId,
           perfil: conv.perfil,
+          perfil_hermes: perfilHermes,
         },
       })
       .eq('id', runId);
@@ -405,14 +459,15 @@ export async function procesarRunStream(
 
   const sessionId = sesionDeConversacion(conv);
   const sessionKey = claveSesionTema(conv);
+  const perfilHermes = perfilHermesDe(conv);
 
   try {
-    await crearSesionActual(sessionId, conv.titulo, conv.perfil, sessionKey);
+    await crearSesionActual(sessionId, conv.titulo, conv.perfil, sessionKey, { perfilHermes });
 
     const respuesta = await streamAHermesActual(
       contenido,
       sessionId,
-      { perfil: validarPerfil(conv.perfil), sessionKey, timeoutMs: 240_000 },
+      { perfil: validarPerfil(conv.perfil), perfilHermes, sessionKey, timeoutMs: 240_000 },
       // El run.completed de Hermes se filtra: el cliente lo usa como senal de
       // "recarga el hilo", y si lo reemitieramos tal cual llegaria ANTES de que
       // el mensaje del assistant este guardado. El OS emite el suyo al final.
@@ -441,6 +496,7 @@ export async function procesarRunStream(
           hermes_session_id: sessionId,
           session_key: sessionKey,
           perfil: conv.perfil,
+          perfil_hermes: perfilHermes,
           streaming: true,
         },
       })
