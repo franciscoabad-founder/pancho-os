@@ -472,6 +472,35 @@ export const SEMANTIC_TOOLS: McpToolDefinition[] = [
   },
 ];
 
+// Herramientas de solo lectura. El resto (crear/modificar/borrar) se anota como
+// destructiva. Los clientes MCP estandar (Gemini, ChatGPT) usan readOnlyHint /
+// destructiveHint para decidir cuando pedir confirmacion al usuario: esto
+// reemplaza, de cara a esos clientes, el MRTR propio del OS (que se conserva
+// para Hermes). Tambien lo usa el MCP para negarle herramientas destructivas a
+// un token OAuth de solo lectura (scope sin write).
+//
+// os_api_request queda como destructiva a proposito: puede hacer POST/DELETE, y
+// un token de solo lectura no deberia poder usarla ni para GET.
+const TOOLS_SOLO_LECTURA: ReadonlySet<string> = new Set([
+  'agenda_get_eventos', 'tareas_list', 'tareas_detalle',
+  'nutricion_buscar_alimentos', 'nutricion_resumen_dia',
+  'sueno_hoy', 'biometricas_listar', 'inbox_listar', 'aprobaciones_listar',
+  'contenido_listar', 'journal_listar', 'prioridades_semana', 'semana_diseno',
+  'crm_listar_leads', 'finanzas_listar_gastos', 'gfit_dia_hoy', 'gfit_consultar_progreso',
+]);
+
+export function esHerramientaSoloLectura(name: string): boolean {
+  return TOOLS_SOLO_LECTURA.has(name);
+}
+
+// Anotaciones MCP estandar de una herramienta. Read-only lleva readOnlyHint;
+// todo lo demas lleva destructiveHint para que el cliente pida confirmacion.
+export function anotacionesTool(name: string): Record<string, boolean> {
+  return esHerramientaSoloLectura(name)
+    ? { readOnlyHint: true }
+    : { readOnlyHint: false, destructiveHint: true };
+}
+
 // Motor Stateless RPC (spec 2026-07-28)
 export async function handleMcpStatelessRequest(
   reqBody: McpJsonRpcRequest,
@@ -510,7 +539,10 @@ export async function handleMcpStatelessRequest(
       jsonrpc: '2.0',
       id: requestId,
       result: {
-        tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => tool),
+        tools: SEMANTIC_TOOLS.map(({ requiresMRTR, ...tool }) => ({
+          ...tool,
+          annotations: { title: tool.name, ...anotacionesTool(tool.name) },
+        })),
         ttlMs: 300000, // 5 min: con 1h cada fix de catálogo tardaba una hora en verse
         // 'global' no es un valor valido del spec (Hermes lo rechaza con
         // Pydantic: solo 'public'/'private'). El catalogo es identico para

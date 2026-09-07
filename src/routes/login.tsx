@@ -14,15 +14,22 @@ import { createFileRoute } from '@tanstack/react-router';
 // como number 1). Si lo normalizaramos a string, el router detectaria que el
 // search serializado no coincide con la URL y responderia un 307 a
 // /login?error="1" antes de renderizar.
-type LoginSearch = { error?: string | number | boolean };
+type LoginSearch = { error?: string | number | boolean; next?: string };
 
 export const Route = createFileRoute('/login')({
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
+    const out: LoginSearch = {};
     const error = search.error;
     if (typeof error === 'string' || typeof error === 'number' || typeof error === 'boolean') {
-      return { error };
+      out.error = error;
     }
-    return {};
+    // next: destino post-login (p.ej. el flujo OAuth). Solo ruta relativa del
+    // propio OS; el chequeo real de seguridad vive en /api/os-auth, esto es
+    // higiene para no reflejar basura en el form.
+    if (typeof search.next === 'string' && search.next.startsWith('/') && !search.next.startsWith('//')) {
+      out.next = search.next;
+    }
+    return out;
   },
   head: () => ({
     meta: [
@@ -147,7 +154,7 @@ const css = `
 `;
 
 function LoginPage() {
-  const { error } = Route.useSearch();
+  const { error, next } = Route.useSearch();
 
   return (
     <div className="os-login">
@@ -161,6 +168,7 @@ function LoginPage() {
         <p className="sub">Sistema operativo personal. Solo para uso del titular.</p>
         {error ? <p className="error-msg">Contrasena incorrecta. Intenta de nuevo.</p> : null}
         <form method="POST" action="/api/os-auth">
+          {next ? <input type="hidden" name="next" value={next} /> : null}
           <label className="field-label" htmlFor="password">
             Contrasena
           </label>

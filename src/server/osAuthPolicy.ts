@@ -18,7 +18,10 @@ import { tieneSesionOs } from './osAuth.ts';
 //   (sin la confirmacion de Pancho responde "esperando"), y el token que
 //   entrega sale una unica vez. Ver src/routes/pair/$id.tsx.
 // - /login y estaticos de PWA.
-export const PUBLIC_PREFIXES = ['/api/', '/pair/'];
+// - /.well-known/*: descubrimiento OAuth 2.1 (oauth-protected-resource y
+//   oauth-authorization-server). Un conector estandar los pide sin credencial
+//   antes de arrancar el flujo. No exponen nada sensible: son metadata publica.
+export const PUBLIC_PREFIXES = ['/api/', '/pair/', '/.well-known/'];
 export const PUBLIC_EXACT = new Set([
   '/login',
   '/sw.js',

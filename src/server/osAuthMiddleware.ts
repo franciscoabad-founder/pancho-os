@@ -12,6 +12,7 @@
 
 import { createMiddleware } from '@tanstack/react-start';
 import { decidirAccesoOs } from './osAuthPolicy.ts';
+import { respuestaMetadataOauth } from './oauthMetadata.ts';
 
 // Assets internos del dev server de Vite (/@vite/client, /@fs/..., /src/...) y
 // la puerta de QA local (las paginas /qa-* no se commitean). En produccion
@@ -29,6 +30,14 @@ export const osAuthRequestMiddleware = createMiddleware({ type: 'request' }).ser
     if (import.meta.env.DEV && DEV_PREFIXES.some((p) => pathname.startsWith(p))) {
       return next();
     }
+
+    // Documentos de descubrimiento OAuth. Se sirven desde aca para no depender
+    // de como Nitro trate el static serving de public/.well-known (dotfiles).
+    // En produccion, si Nitro ya los sirvio como estaticos, esta rama ni corre
+    // (los estaticos se resuelven antes del handler de Start); en dev y como
+    // respaldo, responde el mismo JSON. Ver src/server/oauthMetadata.ts.
+    const metadata = respuestaMetadataOauth(pathname);
+    if (metadata) return metadata;
 
     return decidirAccesoOs({ pathname, request, handlerType }) ?? next();
   },

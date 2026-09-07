@@ -112,6 +112,33 @@ export function setVerificadorDispositivo(fn: VerificadorDispositivo | null): vo
   verificadorActual = fn ?? verificadorPorDefecto;
 }
 
+// --- Cuarto camino de identidad: bearer OAuth del MCP ------------------------
+//
+// Un token OAuth (mcp_oauth_tokens) mapea a su client_name como actor. Mismo
+// motivo que el seam de dispositivos para el import dinamico: osAuth.ts esta en
+// el grafo de src/start.ts (que SI se bundlea al cliente), y oauth.handlers.ts
+// arrastra @supabase/supabase-js. El import dinamico queda como chunk aparte que
+// el navegador nunca pide, y le da a los tests una forma de inyectar un doble.
+//
+// OJO: esto NO autoriza (isOsAuthorized no consulta OAuth: el bearer OAuth solo
+// abre el MCP, que valida su propio token en src/mcp/mcpAuth.ts). Solo sirve
+// para ATRIBUIR la autoria si alguna vez identidadCliente ve un request con un
+// bearer OAuth directo.
+export type ResolvedorOAuth = (token: string) => Promise<string | null>;
+
+const resolvedorOAuthPorDefecto: ResolvedorOAuth = async (token) => {
+  const { resolverAccessToken } = await import('./oauth.handlers.ts');
+  const identidad = await resolverAccessToken(token);
+  return identidad?.actor ?? null;
+};
+
+let resolvedorOAuthActual: ResolvedorOAuth = resolvedorOAuthPorDefecto;
+
+/** Solo para tests: inyecta un doble del lookup de mcp_oauth_tokens. */
+export function setResolvedorOAuth(fn: ResolvedorOAuth | null): void {
+  resolvedorOAuthActual = fn ?? resolvedorOAuthPorDefecto;
+}
+
 // Falla en silencio hacia "no autorizado por este camino". Si la migracion
 // 20260823000000 todavia no se aplico, Supabase responde 42P01 (relation does
 // not exist) y eso NO puede romper la cookie ni OS_API_TOKENS, que siguen
@@ -185,6 +212,16 @@ export async function identidadCliente(request: Request): Promise<IdentidadClien
     if (apiToken && token === apiToken) return { actor: 'hermes', tipo: 'agente' };
     const nombre = nombrePorToken(listaTokens, token);
     if (nombre) return { actor: nombre, tipo: 'agente' };
+  }
+
+  // Bearer OAuth: el actor es el client_name del cliente registrado.
+  for (const token of tokens) {
+    try {
+      const clientName = await resolvedorOAuthActual(token);
+      if (clientName) return { actor: clientName, tipo: 'agente' };
+    } catch {
+      continue;
+    }
   }
 
   for (const token of tokens) {

@@ -14,12 +14,23 @@ function redirigir(location: string, cookie?: string): Response {
   return new Response(null, { status: 302, headers });
 }
 
+// Destino post-login. Solo se acepta una ruta relativa del propio OS (empieza
+// con '/' y no con '//' ni '/\', que abrirían un redirect a otro host). Sirve
+// para que el flujo OAuth (/api/oauth/authorize) vuelva a su lugar despues de
+// que Pancho se loguea. Ante cualquier cosa rara, cae a '/'.
+function destinoSeguro(next: unknown): string {
+  if (typeof next !== 'string' || !next) return '/';
+  if (!next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return '/';
+  return next;
+}
+
 export const Route = createFileRoute('/api/os-auth')({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const data = await request.formData();
         const password = data.get('password');
+        const next = destinoSeguro(data.get('next'));
         const expectedPassword = readEnv('OS_PASSWORD');
         const token = readEnv('OS_AUTH_TOKEN');
 
@@ -33,10 +44,12 @@ export const Route = createFileRoute('/api/os-auth')({
         }
 
         if (password === expectedPassword) {
-          return redirigir('/', cookieSesionOs(token));
+          return redirigir(next, cookieSesionOs(token));
         }
 
-        return redirigir('/login?error=1');
+        // Se conserva el next en el reintento para no perder el destino OAuth.
+        const errorUrl = next === '/' ? '/login?error=1' : `/login?error=1&next=${encodeURIComponent(next)}`;
+        return redirigir(errorUrl);
       },
 
       GET: ({ request }) => {
