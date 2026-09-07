@@ -2,10 +2,15 @@
 // Visible en todo el OS (montada desde OSLayout). Historial del servidor al
 // abrir + optimistic UI al enviar.
 //
-// Elegir sesion: ademas de la conversacion propia del OS ("pancho-os"), Taski
-// ya guarda una sesion real por cada conversacion de Telegram. El selector
-// del header cambia entre ellas sin salir de la burbuja; cambiar de sesion
-// recarga el historial de esa conversacion puntual.
+// Elegir sesion: ademas de la conversacion propia del OS ("pancho-os"), el
+// selector del header lista las conversaciones de Telegram Y las de /chat
+// (os-chat-*), agrupadas por origen. Antes solo veia Telegram porque el proxy
+// filtraba source=telegram. Cambiar de sesion recarga el historial y el modelo
+// bloqueado de esa conversacion puntual.
+//
+// Formato del nombre: `Nombre · dd/mm HH:mm` (ultima actividad), compartido
+// con /chat y el cockpit en src/os/lib/sesiones.ts. El conteo de mensajes va
+// en el tooltip, no pegado al nombre.
 //
 // Z-index: bottom-nav movil = 150, drawer = 200, Sheet = 300.
 // Burbuja en 170 y panel en 190: encima del bottom-nav, debajo del drawer.
@@ -13,6 +18,7 @@ import type { CSSProperties, KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
 import { useDraggableBubble } from '../hooks/useDraggableBubble.ts';
+import { etiquetaSesion, tooltipSesion, SESION_OS_ID } from '../lib/sesiones.ts';
 
 interface Turno {
   role: 'user' | 'assistant' | 'error';
@@ -22,19 +28,23 @@ interface Turno {
 interface SesionTaski {
   id: string;
   source: string;
+  origen: 'telegram' | 'os';
   title: string | null;
   preview: string | null;
   messageCount: number;
+  /** Epoch en milisegundos, ya normalizado por el server. */
   lastActive: number | null;
+  alias?: boolean;
+  tituloHermes?: string | null;
 }
 
 interface ModeloTaski {
   id: string;
   name: string;
   provider?: string;
+  /** Aviso del proveedor (por ejemplo, sin credencial activa en Hermes). */
+  description?: string;
 }
-
-const SESION_OS_ID = 'pancho-os';
 
 // Clampea la posicion vertical de la pestana de restaurar para que nunca
 // quede pegada arriba/abajo del todo, aunque la burbuja se haya ocultado
@@ -44,11 +54,6 @@ function clampPestana(y: number, size: number): number {
   const min = 12;
   const max = window.innerHeight - size - 12;
   return Math.min(Math.max(y, min), max);
-}
-
-function etiquetaSesion(s: SesionTaski): string {
-  if (s.id === SESION_OS_ID) return s.title || 'Taski (OS)';
-  return s.title || (s.source === 'telegram' ? 'Conversacion sin titulo' : s.source);
 }
 
 function useEsDesktop(): boolean {
@@ -87,12 +92,14 @@ export default function TaskiBubble() {
   // Arranca con la sesion del OS como unica opcion para que el selector nunca
   // este vacio mientras /api/taski/sesiones todavia no responde.
   const [sesiones, setSesiones] = useState<SesionTaski[]>([
-    { id: SESION_OS_ID, source: 'api_server', title: 'Taski (OS)', preview: null, messageCount: 0, lastActive: null },
+    { id: SESION_OS_ID, source: 'api_server', origen: 'os', title: 'Taski (OS)', preview: null, messageCount: 0, lastActive: null },
   ]);
   const [sesionActual, setSesionActual] = useState(SESION_OS_ID);
   const [modelos, setModelos] = useState<ModeloTaski[]>([]);
   const [modeloActual, setModeloActual] = useState('deepseek/deepseek-v4-flash');
   const [cambiandoModelo, setCambiandoModelo] = useState(false);
+  // Aviso discreto cuando el catalogo de modelos viene degradado.
+  const [avisoModelos, setAvisoModelos] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -139,9 +146,12 @@ export default function TaskiBubble() {
     setCargandoHistorial(false);
   }
 
+  // origen=todas: la burbuja ahora ve tambien las conversaciones de /chat
+  // (os-chat-*), que antes quedaban fuera porque el proxy filtraba
+  // source=telegram. Se agrupan por origen en el <select>.
   async function cargarSesiones() {
     try {
-      const res = await fetch('/api/taski/sesiones');
+      const res = await fetch('/api/taski/sesiones?origen=todas');
       const data: { sesiones?: SesionTaski[]; error?: string } = await res.json();
       if (data.sesiones?.length) setSesiones(data.sesiones);
     } catch {
@@ -149,20 +159,25 @@ export default function TaskiBubble() {
     }
   }
 
-  async function cargarModelos() {
+  // Catalogo real de Hermes (/api/model/options via el proxy). `fuente` dice
+  // si la lista es el catalogo bueno o un fallback; `modeloActivo` es el que
+  // esa sesion tiene bloqueado.
+  async function cargarModelos(sessionId: string) {
     try {
-      const res = await fetch('/api/taski/modelos');
-      const data: { modelos?: ModeloTaski[] } = await res.json();
+      const res = await fetch(`/api/taski/modelos?session_id=${encodeURIComponent(sessionId)}`);
+      const data: { modelos?: ModeloTaski[]; aviso?: string | null; modeloActivo?: string | null } = await res.json();
       if (data.modelos?.length) setModelos(data.modelos);
+      setAvisoModelos(data.aviso ?? null);
+      if (data.modeloActivo) setModeloActual(data.modeloActivo);
     } catch {
-      // ignore
+      setAvisoModelos('No se pudo consultar el catalogo de modelos de Hermes.');
     }
   }
 
   function abrir() {
     setAbierto(true);
     if (sesiones.length <= 1) void cargarSesiones();
-    if (!modelos.length) void cargarModelos();
+    if (!modelos.length) void cargarModelos(sesionActual);
     if (!historialListo && !cargandoHistorial) void cargarHistorial(sesionActual);
     setTimeout(() => inputRef.current?.focus(), 60);
   }
@@ -171,19 +186,28 @@ export default function TaskiBubble() {
     if (id === sesionActual || pensando) return;
     setSesionActual(id);
     void cargarHistorial(id);
+    // El modelo se bloquea POR SESION, asi que el selector tiene que
+    // recargarse: si no, mostraria el modelo de la sesion anterior.
+    void cargarModelos(id);
   }
 
   async function cambiarModelo(nuevoModelo: string) {
     setModeloActual(nuevoModelo);
     setCambiandoModelo(true);
     try {
-      await fetch('/api/taski/modelos', {
+      const res = await fetch('/api/taski/modelos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: nuevoModelo, session_id: sesionActual }),
+        body: JSON.stringify({
+          model: nuevoModelo,
+          provider: modelos.find((m) => m.id === nuevoModelo)?.provider,
+          session_id: sesionActual,
+        }),
       });
+      const data = (await res.json()) as { error?: string };
+      setAvisoModelos(res.ok ? null : `No se pudo cambiar el modelo: ${data.error ?? `HTTP ${res.status}`}`);
     } catch {
-      // ignore
+      setAvisoModelos('No se pudo cambiar el modelo: Hermes no respondio.');
     } finally {
       setCambiandoModelo(false);
     }
@@ -414,11 +438,22 @@ export default function TaskiBubble() {
                   cursor: pensando ? 'default' : 'pointer',
                 }}
               >
-                {sesiones.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {etiquetaSesion(s)}
-                  </option>
-                ))}
+                {/* Agrupadas por origen: las del OS (chat propio + Taski) y
+                    las de Telegram, en vez de una lista plana revuelta. */}
+                <optgroup label="OS">
+                  {sesiones.filter((s) => s.origen !== 'telegram').map((s) => (
+                    <option key={s.id} value={s.id} title={tooltipSesion(s)}>
+                      {etiquetaSesion(s)}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Telegram">
+                  {sesiones.filter((s) => s.origen === 'telegram').map((s) => (
+                    <option key={s.id} value={s.id} title={tooltipSesion(s)}>
+                      {etiquetaSesion(s)}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
 
               <button
@@ -478,13 +513,37 @@ export default function TaskiBubble() {
                     cursor: pensando || cambiandoModelo ? 'default' : 'pointer',
                   }}
                 >
+                  {/* Si la sesion tiene bloqueado un modelo que no esta en el
+                      catalogo, se muestra igual: mentir con otro seleccionado
+                      seria peor que ensenar el que de verdad esta corriendo. */}
+                  {!modelos.some((m) => m.id === modeloActual) && modeloActual && (
+                    <option value={modeloActual}>{modeloActual} (activo)</option>
+                  )}
                   {modelos.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <option key={m.id} value={m.id} title={m.description}>
                       {m.name}
                     </option>
                   ))}
                 </select>
               </div>
+            )}
+
+            {/* Aviso discreto: catalogo degradado o cambio rechazado. */}
+            {avisoModelos && (
+              <p
+                title={avisoModelos}
+                style={{
+                  margin: 0,
+                  fontSize: 9,
+                  lineHeight: 1.3,
+                  color: 'var(--os-warning, #b45309)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {avisoModelos}
+              </p>
             )}
           </div>
 

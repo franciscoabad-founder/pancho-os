@@ -18,6 +18,7 @@ import {
   type OllamaStatus,
 } from '../../lib/desktopBridge.ts';
 import { useVoiceDictation } from '../hooks/useVoiceDictation.ts';
+import { etiquetaSesion, fechaSesion, nombreSesion, tooltipSesion } from '../lib/sesiones.ts';
 
 interface Conversacion {
   id: string;
@@ -40,22 +41,33 @@ interface Run {
   iniciado_at: string;
 }
 
-// Sesiones de Telegram que Hermes ya guarda en el VPS. Vista de solo lectura:
-// no hay envio, no hay polling, solo se listan y se leen. El campo de datos
-// es role/content/timestamp, distinto de rol/contenido/created_at del OS.
-interface TelegramSesion {
+// Sesiones que Hermes ya guarda en el VPS. Vista de solo lectura: no hay
+// envio, no hay polling, solo se listan y se leen. El campo de datos es
+// role/content/timestamp, distinto de rol/contenido/created_at del OS.
+//
+// Ya no son solo las de Telegram: el proxy dejo de filtrar source=telegram, y
+// `origen` separa las de Telegram de las nacidas en el OS. Las pestanas
+// Telegram / OS / Todas viven en `origenHermes`.
+interface SesionHermes {
   id: string;
   source: string;
+  origen: 'telegram' | 'os';
   title: string | null;
   preview: string | null;
   messageCount: number;
-  lastActive: string;
+  /** Epoch en milisegundos, ya normalizado por el server. */
+  lastActive: number | null;
+  alias?: boolean;
+  tituloHermes?: string | null;
 }
+
+type FiltroOrigen = 'telegram' | 'os' | 'todas';
 
 interface TelegramMensaje {
   role: 'user' | 'assistant' | 'sistema';
   content: string;
-  timestamp: string;
+  /** Epoch en milisegundos (el proxy ya normaliza los segundos de Hermes). */
+  timestamp: number | null;
 }
 
 const POLL_MS = 3000;
@@ -73,9 +85,15 @@ function etiquetaPerfil(id: string): string {
   return PERFILES.find((p) => p.id === id)?.etiqueta ?? id;
 }
 
-function horaCorta(iso: string): string {
+// Acepta ISO (mensajes propios del OS) o epoch en milisegundos (mensajes que
+// vienen de Hermes). Antes solo aceptaba ISO y los de Hermes, que son
+// numericos, se pintaban como horas de 1970.
+function horaCorta(valor: string | number | null | undefined): string {
+  if (valor === null || valor === undefined || valor === '') return '';
   try {
-    return new Date(iso).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
@@ -96,11 +114,20 @@ export default function OSChat() {
   // hilo de Telegram que Hermes ya guardo en el VPS, sin input ni polling.
   const [modo, setModo] = useState<'os' | 'telegram-readonly'>('os');
   const [telegramAbierto, setTelegramAbierto] = useState(false);
-  const [telegramSesiones, setTelegramSesiones] = useState<TelegramSesion[]>([]);
+  const [telegramSesiones, setTelegramSesiones] = useState<SesionHermes[]>([]);
   const [telegramCargandoLista, setTelegramCargandoLista] = useState(false);
   const [telegramActivaId, setTelegramActivaId] = useState<string | null>(null);
   const [telegramMensajes, setTelegramMensajes] = useState<TelegramMensaje[]>([]);
   const [telegramCargandoHilo, setTelegramCargandoHilo] = useState(false);
+  // Pestanas de la seccion de sesiones de Hermes. Por defecto todas, ordenadas
+  // por ultima actividad: antes el proxy filtraba source=telegram y las
+  // conversaciones del propio OS (os-chat-*) no aparecian nunca.
+  const [origenHermes, setOrigenHermes] = useState<FiltroOrigen>('todas');
+
+  // Renombrado inline de una conversacion del OS.
+  const [renombrandoId, setRenombrandoId] = useState<string | null>(null);
+  const [nombreNuevo, setNombreNuevo] = useState('');
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
 
   // --- Bridge nativo (solo app de escritorio, Tauri) -----------------------
   const desktop = isDesktop();
@@ -208,25 +235,23 @@ export default function OSChat() {
     }
   }, []);
 
-  const cargarSesionesTelegram = useCallback(async () => {
+  // El filtro por origen lo hace el server (?origen=), que ya devuelve la
+  // lista ordenada por ultima actividad.
+  const cargarSesionesHermes = useCallback(async (origen: FiltroOrigen) => {
     setTelegramCargandoLista(true);
     try {
-      const res = await fetch('/api/taski/sesiones?profile_id=vps-default');
+      const res = await fetch(`/api/taski/sesiones?profile_id=vps-default&origen=${origen}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const lista: TelegramSesion[] = (data.sesiones ?? []).filter(
-        (s: TelegramSesion) => s.source === 'telegram',
-      );
-      lista.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
-      setTelegramSesiones(lista);
+      setTelegramSesiones((data.sesiones ?? []) as SesionHermes[]);
     } catch (e) {
-      setError(`No se pudo cargar Telegram: ${String(e)}`);
+      setError(`No se pudieron cargar las sesiones de Hermes: ${String(e)}`);
     } finally {
       setTelegramCargandoLista(false);
     }
   }, []);
 
-  const abrirHiloTelegram = useCallback(async (id: string) => {
+  const abrirHiloHermes = useCallback(async (id: string) => {
     setModo('telegram-readonly');
     setTelegramActivaId(id);
     setTelegramCargandoHilo(true);
@@ -276,6 +301,32 @@ export default function OSChat() {
   }, [mensajes.length, runActivo?.estado, telegramMensajes.length]);
 
   const [perfilNuevo, setPerfilNuevo] = useState('vps-default');
+
+  // Renombrar una conversacion del OS. El titulo automatico solo pisa
+  // 'Nueva conversacion', asi que un nombre puesto a mano sobrevive; el server
+  // ademas lo replica a la sesion de Hermes para que se vea igual en la
+  // burbuja y el cockpit.
+  async function guardarNombre(conversacionId: string) {
+    const titulo = nombreNuevo.trim();
+    if (!titulo) return;
+    setGuardandoNombre(true);
+    try {
+      const res = await fetch(`/api/chat/${conversacionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setRenombrandoId(null);
+      setError(null);
+      await cargarConversaciones();
+    } catch (e) {
+      setError(`No se pudo renombrar: ${String(e)}`);
+    } finally {
+      setGuardandoNombre(false);
+    }
+  }
 
   async function nuevaConversacion() {
     setCargando(true);
@@ -346,71 +397,223 @@ export default function OSChat() {
         <button type="button" className="os-btn os-btn-primary" onClick={() => void nuevaConversacion()} disabled={cargando}>
           Nueva conversacion
         </button>
-        {conversaciones.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className="os-btn"
-            onClick={() => {
-              setModo('os');
-              setActivaId(c.id);
-            }}
-            style={{
-              justifyContent: 'flex-start',
-              textAlign: 'left',
-              fontSize: 12,
-              background: modo === 'os' && c.id === activaId ? 'var(--os-fill-subtle)' : undefined,
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
-            title={c.titulo}
-          >
-            {c.titulo}
-          </button>
-        ))}
+        {/* Cada conversacion: `Nombre - dd/mm HH:mm` (ultima actividad) y un
+            boton de renombrar. El formato es el mismo de la burbuja y el
+            cockpit (src/os/lib/sesiones.ts). */}
+        {conversaciones.map((c) => {
+          const fecha = fechaSesion(new Date(c.updated_at).getTime());
+          if (renombrandoId === c.id) {
+            return (
+              <div key={c.id} style={{ display: 'flex', gap: 4 }}>
+                <input
+                  autoFocus
+                  className="os-input"
+                  value={nombreNuevo}
+                  disabled={guardandoNombre}
+                  onChange={(e) => setNombreNuevo(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void guardarNombre(c.id);
+                    if (e.key === 'Escape') setRenombrandoId(null);
+                  }}
+                  placeholder="Nombre de la conversacion"
+                  style={{ fontSize: 12, padding: '2px 6px', height: 28, flex: 1, minWidth: 0 }}
+                />
+                <button
+                  type="button"
+                  className="os-btn"
+                  disabled={guardandoNombre}
+                  onClick={() => void guardarNombre(c.id)}
+                  style={{ fontSize: 11, padding: '2px 8px', height: 28 }}
+                >
+                  OK
+                </button>
+                <button
+                  type="button"
+                  className="os-btn"
+                  onClick={() => setRenombrandoId(null)}
+                  style={{ fontSize: 11, padding: '2px 8px', height: 28 }}
+                >
+                  X
+                </button>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={c.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                background: modo === 'os' && c.id === activaId ? 'var(--os-fill-subtle)' : undefined,
+                borderRadius: 'var(--os-r-md, 8px)',
+              }}
+            >
+              <button
+                type="button"
+                className="os-btn"
+                onClick={() => {
+                  setModo('os');
+                  setActivaId(c.id);
+                }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  justifyContent: 'flex-start',
+                  textAlign: 'left',
+                  fontSize: 12,
+                  background: 'transparent',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                }}
+                title={`${c.titulo}${fecha ? ` - ultima actividad ${fecha}` : ''}`}
+              >
+                {c.titulo}
+                {fecha && <span style={{ color: 'var(--os-muted)' }}> · {fecha}</span>}
+              </button>
+              <button
+                type="button"
+                title="Renombrar esta conversacion"
+                aria-label={`Renombrar ${c.titulo}`}
+                onClick={() => {
+                  setRenombrandoId(c.id);
+                  setNombreNuevo(c.titulo);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--os-muted)',
+                  padding: '0 4px',
+                  lineHeight: 1,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
+                  edit
+                </span>
+              </button>
+            </div>
+          );
+        })}
 
-        {/* Seccion colapsable de solo lectura: hilos que Hermes ya guardo de Telegram */}
+        {/* Seccion colapsable de solo lectura: sesiones que Hermes guarda en
+            el VPS. Pestanas Telegram / OS / Todas (default Todas). */}
         <button
           type="button"
           className="os-btn"
           onClick={() => {
             const abrir = !telegramAbierto;
             setTelegramAbierto(abrir);
-            if (abrir && telegramSesiones.length === 0) void cargarSesionesTelegram();
+            if (abrir && telegramSesiones.length === 0) void cargarSesionesHermes(origenHermes);
           }}
           style={{ justifyContent: 'space-between', fontSize: 12, marginTop: 8 }}
         >
-          <span>Telegram</span>
+          <span>Sesiones de Hermes</span>
           <span>{telegramAbierto ? '▾' : '▸'}</span>
         </button>
         {telegramAbierto && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {(['todas', 'telegram', 'os'] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => {
+                    setOrigenHermes(op);
+                    void cargarSesionesHermes(op);
+                  }}
+                  title={
+                    op === 'telegram'
+                      ? 'Chats y topics de Telegram atendidos por Hermes'
+                      : op === 'os'
+                        ? 'Conversaciones nacidas en el OS (/chat y la burbuja Taski)'
+                        : 'Todas, ordenadas por ultima actividad'
+                  }
+                  style={{
+                    flex: 1,
+                    padding: '3px 6px',
+                    fontSize: 11,
+                    borderRadius: 'var(--os-r-md, 8px)',
+                    cursor: 'pointer',
+                    background: origenHermes === op ? 'rgba(59,78,217,0.12)' : 'var(--os-fill-subtle)',
+                    border: origenHermes === op ? '1px solid var(--os-accent)' : '1px solid var(--os-line-soft)',
+                    color: origenHermes === op ? 'var(--os-accent-light)' : 'var(--os-text-2, var(--os-muted))',
+                  }}
+                >
+                  {op === 'todas' ? 'Todas' : op === 'telegram' ? 'Telegram' : 'OS'}
+                </button>
+              ))}
+            </div>
             {telegramCargandoLista && (
               <span style={{ fontSize: 11, color: 'var(--os-muted)', padding: '2px 6px' }}>Cargando...</span>
             )}
             {!telegramCargandoLista && telegramSesiones.length === 0 && (
-              <span style={{ fontSize: 11, color: 'var(--os-muted)', padding: '2px 6px' }}>Sin hilos de Telegram.</span>
+              <span style={{ fontSize: 11, color: 'var(--os-muted)', padding: '2px 6px' }}>
+                Sin sesiones para este filtro.
+              </span>
             )}
+            {/* `Nombre - dd/mm HH:mm` y el conteo en un chip aparte: antes se
+                pegaba al titulo como `(83)`, que se leia como no leidos y no
+                lo son (son mensajes acumulados, turnos de herramientas
+                incluidos). */}
             {telegramSesiones.map((s) => (
-              <button
+              <div
                 key={s.id}
-                type="button"
-                className="os-btn"
-                onClick={() => void abrirHiloTelegram(s.id)}
                 style={{
-                  justifyContent: 'flex-start',
-                  textAlign: 'left',
-                  fontSize: 11,
-                  background: modo === 'telegram-readonly' && s.id === telegramActivaId ? 'var(--os-fill-subtle)' : undefined,
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  background:
+                    modo === 'telegram-readonly' && s.id === telegramActivaId ? 'var(--os-fill-subtle)' : undefined,
+                  borderRadius: 'var(--os-r-md, 8px)',
                 }}
-                title={s.title ?? s.id}
               >
-                {(s.title ?? s.id.slice(0, 12)) + ` (${s.messageCount})`}
-              </button>
+                <button
+                  type="button"
+                  className="os-btn"
+                  onClick={() => void abrirHiloHermes(s.id)}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    justifyContent: 'flex-start',
+                    textAlign: 'left',
+                    fontSize: 11,
+                    background: 'transparent',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={tooltipSesion(s)}
+                >
+                  {etiquetaSesion(s)}
+                </button>
+                <span
+                  title={`${s.messageCount} mensajes acumulados (incluye turnos de herramientas)`}
+                  style={{
+                    fontSize: 10,
+                    padding: '1px 5px',
+                    borderRadius: 4,
+                    background: 'var(--os-bg-sunken)',
+                    color: 'var(--os-muted)',
+                    flexShrink: 0,
+                  }}
+                >
+                  {s.messageCount}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    padding: '1px 5px',
+                    borderRadius: 4,
+                    background: s.origen === 'telegram' ? 'rgba(56,189,248,0.15)' : 'var(--os-bg-sunken)',
+                    color: s.origen === 'telegram' ? '#38bdf8' : 'var(--os-muted)',
+                    flexShrink: 0,
+                  }}
+                >
+                  {s.origen === 'telegram' ? 'TG' : 'OS'}
+                </span>
+              </div>
             ))}
           </div>
         )}
@@ -420,7 +623,12 @@ export default function OSChat() {
       {modo === 'telegram-readonly' ? (
         <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
           <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-accent)', background: 'var(--os-fill-subtle)' }}>
-            Vista de solo lectura - conversacion de Telegram
+            Vista de solo lectura -{' '}
+            {(() => {
+              const s = telegramSesiones.find((x) => x.id === telegramActivaId);
+              if (!s) return 'sesion de Hermes';
+              return `${s.origen === 'telegram' ? 'conversacion de Telegram' : 'sesion del OS'}: ${nombreSesion(s)}`;
+            })()}
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {telegramCargandoHilo && (
