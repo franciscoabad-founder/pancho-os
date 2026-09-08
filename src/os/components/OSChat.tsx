@@ -325,22 +325,29 @@ export default function OSChat() {
     }
   }, []);
 
+  // Lectura cruda del transcript de una sesion de Hermes. Unico punto de
+  // fetch: lo usan la vista de solo lectura y el bloque de contexto del topic
+  // vinculado (F3), asi no hay dos formas de leer lo mismo.
+  const leerHistorialHermes = useCallback(async (id: string, nodo: string): Promise<TelegramMensaje[]> => {
+    const res = await fetch(`/api/taski?session_id=${encodeURIComponent(id)}&profile_id=${encodeURIComponent(nodo)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return (data.mensajes ?? []) as TelegramMensaje[];
+  }, []);
+
   const abrirHiloHermes = useCallback(async (id: string, nodo: string) => {
     setModo('telegram-readonly');
     setTelegramActivaId(id);
     setTelegramCargandoHilo(true);
     setError(null);
     try {
-      const res = await fetch(`/api/taski?session_id=${encodeURIComponent(id)}&profile_id=${encodeURIComponent(nodo)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setTelegramMensajes(data.mensajes ?? []);
+      setTelegramMensajes(await leerHistorialHermes(id, nodo));
     } catch (e) {
       setError(`No se pudo cargar el hilo de Telegram: ${String(e)}`);
     } finally {
       setTelegramCargandoHilo(false);
     }
-  }, []);
+  }, [leerHistorialHermes]);
 
   // Arranque: lista + abrir la mas reciente (o crear la primera).
   useEffect(() => {
@@ -422,9 +429,47 @@ export default function OSChat() {
   }
 
   // F3: vincular / desvincular el tema abierto con un topic de Telegram.
-  // Vincular no mueve mensajes: lo que se comparte es la memoria del agente,
-  // porque el tema pasa a usar la misma session key que usa el topic.
+  // El vinculo es una REFERENCIA de agrupacion (mismo asunto en los dos
+  // lados), no un puente de memoria: los transcripts siguen separados y cada
+  // sesion conserva su propio contexto del lado de Hermes. Lo que si da el
+  // vinculo es poder leer el contexto reciente del topic desde el tema.
   const [vinculando, setVinculando] = useState(false);
+
+  // Bloque colapsable de solo lectura con los ultimos mensajes del topic
+  // vinculado. Es informativo para el humano: nada de esto se le inyecta a
+  // Hermes en la conversacion.
+  const [contextoAbierto, setContextoAbierto] = useState(false);
+  const [contextoMensajes, setContextoMensajes] = useState<TelegramMensaje[]>([]);
+  const [contextoCargando, setContextoCargando] = useState(false);
+  const [contextoAviso, setContextoAviso] = useState<string | null>(null);
+
+  // Del topic solo se guardan las coordenadas (<chat_id>:<thread_id>), asi que
+  // hay que resolver el id de la sesion de Hermes por la lista de sesiones.
+  const cargarContextoTopic = useCallback(async (topic: string, nodo: string) => {
+    setContextoCargando(true);
+    setContextoAviso(null);
+    try {
+      const [chatId, threadId] = topic.split(':');
+      const res = await fetch(`/api/taski/sesiones?profile_id=${encodeURIComponent(nodo)}&origen=telegram`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const sesion = ((data.sesiones ?? []) as SesionHermes[]).find(
+        (x) => String(x.chatId ?? '') === chatId && String(x.threadId ?? '') === threadId,
+      );
+      if (!sesion) {
+        setContextoMensajes([]);
+        setContextoAviso('Hermes no reporta ese topic entre sus sesiones de Telegram.');
+        return;
+      }
+      setContextoMensajes((await leerHistorialHermes(sesion.id, nodo)).slice(-10));
+    } catch (e) {
+      // Que falle la lectura no rompe el tema: solo se avisa.
+      setContextoMensajes([]);
+      setContextoAviso(`No se pudo leer el contexto del topic: ${String(e)}`);
+    } finally {
+      setContextoCargando(false);
+    }
+  }, [leerHistorialHermes]);
 
   async function cambiarTopic(conversacionId: string, topic: string | null) {
     setVinculando(true);
@@ -959,16 +1004,18 @@ export default function OSChat() {
       ) : (
         <div className="os-card-2" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
           {activaId && (
+            <>
             <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--os-line-soft)', fontSize: 11, color: 'var(--os-muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
               <span>
                 {etiquetaPerfilHermes(conversacionActiva?.perfil_hermes ?? 'default')}
                 {' · '}
                 {etiquetaPerfil(conversacionActiva?.perfil ?? 'vps-default')}
-                {/* F3: chip del topic vinculado. Memoria compartida con ese
-                    topic de Telegram; los transcripts siguen separados. */}
+                {/* F3: chip del topic vinculado. Es una referencia de
+                    agrupacion: mismo asunto en los dos lados, memorias y
+                    transcripts separados. */}
                 {conversacionActiva?.topic_telegram ? (
                   <span
-                    title={`Comparte memoria con el topic de Telegram ${conversacionActiva.topic_telegram}`}
+                    title={`Referencia al topic de Telegram ${conversacionActiva.topic_telegram}. No comparte memoria: cada sesion mantiene su propio contexto.`}
                     style={{
                       marginLeft: 8,
                       fontSize: 10,
@@ -981,12 +1028,12 @@ export default function OSChat() {
                       gap: 6,
                     }}
                   >
-                    Telegram · topic {conversacionActiva.topic_telegram.split(':')[1]}
+                    Vinculado a Telegram · topic {conversacionActiva.topic_telegram.split(':')[1]}
                     <button
                       type="button"
                       disabled={vinculando}
                       onClick={() => void cambiarTopic(conversacionActiva.id, null)}
-                      title="Desvincular el topic y devolverle al tema su memoria propia"
+                      title="Quitar la referencia al topic de Telegram"
                       style={{
                         background: 'none',
                         border: 'none',
@@ -1012,6 +1059,56 @@ export default function OSChat() {
                 </span>
               )}
             </div>
+            {/* Contexto del topic vinculado: solo lectura, colapsado por
+                defecto. Se lee bajo demanda para no pegarle a Hermes en cada
+                apertura del tema, y si falla solo se avisa. */}
+            {conversacionActiva?.topic_telegram ? (
+              <div style={{ borderBottom: '1px solid var(--os-line-soft)', padding: '0 1rem 0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const abrir = !contextoAbierto;
+                    setContextoAbierto(abrir);
+                    if (abrir && conversacionActiva.topic_telegram) {
+                      void cargarContextoTopic(conversacionActiva.topic_telegram, nodoActivo);
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--os-muted)',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    padding: '2px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>{contextoAbierto ? '▾' : '▸'}</span>
+                  <span>Contexto del topic de Telegram</span>
+                </button>
+                {contextoAbierto && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto', paddingBottom: 4 }}>
+                    {contextoCargando && <span style={{ fontSize: 11, color: 'var(--os-muted)' }}>Leyendo el topic...</span>}
+                    {!contextoCargando && contextoAviso && (
+                      <span style={{ fontSize: 11, color: 'var(--os-muted)' }}>{contextoAviso}</span>
+                    )}
+                    {!contextoCargando && !contextoAviso && contextoMensajes.length === 0 && (
+                      <span style={{ fontSize: 11, color: 'var(--os-muted)' }}>El topic todavia no tiene mensajes.</span>
+                    )}
+                    {contextoMensajes.map((m, i) => (
+                      <div key={`${m.timestamp ?? 0}-${i}`} style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--os-muted)' }}>
+                        <strong style={{ color: 'var(--os-text)' }}>{m.role === 'user' ? 'Pancho' : 'Hermes'}</strong>
+                        {': '}
+                        <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{m.content}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+            </>
           )}
           <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {!activaId && (
