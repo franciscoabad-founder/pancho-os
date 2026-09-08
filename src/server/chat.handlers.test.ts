@@ -335,6 +335,33 @@ test('si el reintento tambien queda huerfano, se marca fallido sin un tercer int
   assert.equal((estado.runs.find((r) => r.id === runId) as Fila).estado, 'fallido');
 });
 
+test('respuesta sincronica "Operation interrupted" de Hermes dispara el mismo reintento', async () => {
+  // Verificado el 8 sep 2026 contra el VPS: un `systemctl restart` a mitad de
+  // turno no siempre cuelga la conexion. A veces Hermes devuelve 200 en
+  // segundos con este texto de relleno (prefijo fijo de su codigo). Nunca pasa
+  // por sembrarRunHuerfano/obtenerHilo (el run no llega a viejo), asi que hace
+  // falta esta prueba aparte, disparada dentro de procesarRun.
+  let llamadas = 0;
+  setEnviarAHermesChat(async () => {
+    llamadas += 1;
+    return llamadas === 1 ? 'Operation interrupted: waiting for model response (0.4s elapsed).' : 'listo de verdad';
+  });
+  const conv = await crearConversacion();
+  await enviarMensaje(conv.id, 'corre el reporte');
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.equal(llamadas, 2, 'se reintento una vez');
+  assert.equal(estado.runs.length, 2);
+  const [original, reintento] = estado.runs as unknown as Run[];
+  assert.equal(original.estado, 'fallido');
+  assert.equal((original.evidencia as Record<string, unknown>).interrumpido, true);
+  assert.equal(reintento.estado, 'completado');
+  assert.equal((reintento.evidencia as Record<string, unknown>).reintento_de, original.id);
+  const respuestas = estado.mensajes.filter((m) => m.rol === 'assistant');
+  assert.equal(respuestas.length, 1, 'el texto de relleno no se guarda como respuesta');
+  assert.equal(respuestas[0].contenido, 'listo de verdad');
+});
+
 test('un run vivo dentro del timeout no se toca ni se reintenta', async () => {
   const conv = await crearConversacion();
   const msg = { id: randomUUID(), conversacion_id: conv.id, rol: 'user', contenido: 'x', created_at: new Date().toISOString() };
