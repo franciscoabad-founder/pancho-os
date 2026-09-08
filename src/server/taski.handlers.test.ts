@@ -15,6 +15,7 @@ import {
   aplanarOpcionesModelo,
   clasificarOrigen,
   listarPerfilesHermes,
+  listarSesionesTaski,
   partirModelo,
   resolverDestino,
   validarOrigen,
@@ -244,4 +245,56 @@ test('validarPerfilHermes cae a default ante cualquier basura', () => {
   assert.equal(validarPerfilHermes(undefined), 'default');
   assert.equal(validarPerfilHermes('vps-default'), 'default');
   assert.equal(validarPerfilHermes('; drop table'), 'default');
+});
+
+
+// F3: el OS necesita las coordenadas del topic para poder engancharle un tema.
+// Antes el mapeo las tiraba y no habia forma de saber a que topic pertenecia
+// una sesion de Telegram.
+test('listarSesionesTaski expone chat_id, thread_id y session_key del topic', async () => {
+  const fetchOriginal = globalThis.fetch;
+  globalThis.fetch = (async (url: string | URL | Request) => {
+    const ruta = String(url instanceof Request ? url.url : url);
+    // La sesion legacy del OS se pide aparte; aca no interesa.
+    if (ruta.includes('/api/sessions/pancho-os')) return new Response('{}', { status: 404 });
+    return new Response(
+      JSON.stringify({
+        data: [
+          {
+            id: 'tg-51',
+            source: 'telegram',
+            title: 'Pancho HQ / Ideas',
+            last_active: 1_757_000_000,
+            chat_id: -1004384794270,
+            thread_id: 51,
+            session_key: 'agent:main:telegram:forum:-1004384794270:51',
+          },
+          // Sesion del OS: no tiene coordenadas y no debe inventarlas.
+          { id: 'os-chat-abc', source: 'api_server', title: 'Tema del OS' },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  }) as typeof globalThis.fetch;
+
+  try {
+    await conEntorno({ TASKI_TOKEN: 'tok-vps' }, async () => {
+      const sesiones = await listarSesionesTaski('vps-default', 'todas');
+      const tg = sesiones.find((s) => s.id === 'tg-51');
+      assert.ok(tg);
+      assert.equal(tg.origen, 'telegram');
+      // chat_id viaja como string: los ids de grupo son enteros muy grandes.
+      assert.equal(tg.chatId, '-1004384794270');
+      assert.equal(tg.threadId, 51);
+      assert.equal(tg.sessionKey, 'agent:main:telegram:forum:-1004384794270:51');
+
+      const os = sesiones.find((s) => s.id === 'os-chat-abc');
+      assert.ok(os);
+      assert.equal(os.chatId, null);
+      assert.equal(os.threadId, null);
+      assert.equal(os.sessionKey, null);
+    });
+  } finally {
+    globalThis.fetch = fetchOriginal;
+  }
 });

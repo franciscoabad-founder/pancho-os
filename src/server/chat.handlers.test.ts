@@ -11,6 +11,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   claveSesionTema,
+  claveSesionTopic,
+  desvincularTopic,
+  parsearTopicTelegram,
+  vincularTopic,
   crearConversacion,
   enviarMensaje,
   enviarMensajeStream,
@@ -83,6 +87,20 @@ function crearClienteFake(estado: Estado): SupabaseClient {
 
       if (modo === 'update') {
         const coincidencias = filas.filter((f) => filtros.every((fn) => fn(f)));
+        // Indice unico parcial (perfil_hermes, topic_telegram) de la migracion
+        // 20260908000100. Se simula aca porque F3 depende de que el choque
+        // llegue como error 23505 y no como un update silencioso.
+        if (nombre === 'chat_conversaciones' && updateValues.topic_telegram) {
+          const choque = filas.some(
+            (f) =>
+              !coincidencias.includes(f) &&
+              f.topic_telegram === updateValues.topic_telegram &&
+              f.perfil_hermes === (coincidencias[0]?.perfil_hermes ?? null),
+          );
+          if (choque) {
+            return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
+          }
+        }
         for (const f of coincidencias) Object.assign(f, updateValues);
         if (single) {
           return coincidencias[0]
@@ -427,4 +445,59 @@ test('el stream respeta el candado de un run por conversacion', async () => {
   const conv = await crearConversacion();
   await enviarMensaje(conv.id, 'primero');
   await assert.rejects(enviarMensajeStream(conv.id, 'segundo'), /sigue trabajando/);
+});
+
+
+// ---------------------------------------------------------------------------
+// F3: vinculacion con topics de Telegram
+// ---------------------------------------------------------------------------
+
+test('vincularTopic arma la clave del topic para el perfil default', async () => {
+  const conv = await crearConversacion('HQ', 'vps-default');
+  const vinculada = await vincularTopic(conv.id, '-1004384794270', 51);
+
+  assert.equal(vinculada.topic_telegram, '-1004384794270:51');
+  // Del lado de Hermes el perfil default se llama 'main'.
+  assert.equal(vinculada.session_key, 'agent:main:telegram:forum:-1004384794270:51');
+  // Y el turno usa esa clave, que es lo que hace que compartan memoria.
+  assert.equal(claveSesionTema(vinculada), 'agent:main:telegram:forum:-1004384794270:51');
+});
+
+test('vincularTopic arma la clave con el perfil real cuando no es default', async () => {
+  const conv = await crearConversacion('Legal', 'vps-default', 'rafik');
+  const vinculada = await vincularTopic(conv.id, '-1004384794270', 77);
+  assert.equal(vinculada.session_key, 'agent:rafik:telegram:forum:-1004384794270:77');
+  assert.equal(claveSesionTopic('rafik', '-1004384794270', 77), vinculada.session_key);
+});
+
+test('desvincularTopic devuelve la clave propia del tema', async () => {
+  const conv = await crearConversacion('Nerio', 'vps-default', 'nerio');
+  await vincularTopic(conv.id, '-1004384794270', 12);
+  const suelta = await desvincularTopic(conv.id);
+
+  assert.equal(suelta.topic_telegram, null);
+  assert.equal(suelta.session_key, `os:nerio:${conv.id.slice(0, 8)}`);
+  assert.equal(claveSesionTema(suelta), suelta.session_key);
+});
+
+test('dos temas del mismo agente no pueden tomar el mismo topic', async () => {
+  const a = await crearConversacion('A', 'vps-default');
+  const b = await crearConversacion('B', 'vps-default');
+  await vincularTopic(a.id, '-1004384794270', 51);
+  await assert.rejects(vincularTopic(b.id, '-1004384794270', 51), /ya esta vinculado/);
+});
+
+test('vincularTopic rechaza coordenadas invalidas', async () => {
+  const conv = await crearConversacion('X', 'vps-default');
+  await assert.rejects(vincularTopic(conv.id, 'abc', 51), /invalido/);
+  await assert.rejects(vincularTopic(conv.id, '-1004384794270', 0), /invalido/);
+  await assert.rejects(vincularTopic(conv.id, '-1004384794270', -3), /invalido/);
+});
+
+test('parsearTopicTelegram acepta solo el formato <chat_id>:<thread_id>', () => {
+  assert.deepEqual(parsearTopicTelegram('-1004384794270:51'), { chatId: '-1004384794270', threadId: 51 });
+  assert.deepEqual(parsearTopicTelegram('123:4'), { chatId: '123', threadId: 4 });
+  for (const malo of ['', '51', ':51', '123:', 'abc:1', '123:0', '123:-1', '123:1:2', '0123:1', ' 123:1 x']) {
+    assert.equal(parsearTopicTelegram(malo), null, `deberia rechazar: ${malo}`);
+  }
 });

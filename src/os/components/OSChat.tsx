@@ -35,6 +35,8 @@ interface Conversacion {
   perfil: string;
   /** Agente real que atiende el tema (default/Alfred, arazza, ...). */
   perfil_hermes?: string;
+  /** Topic de Telegram enganchado al tema (F3), como '<chat_id>:<thread_id>'. */
+  topic_telegram?: string | null;
   updated_at: string;
 }
 
@@ -79,6 +81,9 @@ interface SesionHermes {
   lastActive: number | null;
   alias?: boolean;
   tituloHermes?: string | null;
+  /** Coordenadas del topic de Telegram (F3); solo vienen si origen === 'telegram'. */
+  chatId?: string | null;
+  threadId?: number | null;
 }
 
 type FiltroOrigen = 'telegram' | 'os' | 'todas';
@@ -413,6 +418,70 @@ export default function OSChat() {
       setError(`No se pudo renombrar: ${String(e)}`);
     } finally {
       setGuardandoNombre(false);
+    }
+  }
+
+  // F3: vincular / desvincular el tema abierto con un topic de Telegram.
+  // Vincular no mueve mensajes: lo que se comparte es la memoria del agente,
+  // porque el tema pasa a usar la misma session key que usa el topic.
+  const [vinculando, setVinculando] = useState(false);
+
+  async function cambiarTopic(conversacionId: string, topic: string | null) {
+    setVinculando(true);
+    try {
+      const res = await fetch(`/api/chat/${conversacionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic_telegram: topic }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setError(null);
+      await cargarConversaciones();
+      return true;
+    } catch (e) {
+      setError(`No se pudo ${topic ? 'vincular' : 'desvincular'} el topic: ${String(e)}`);
+      return false;
+    } finally {
+      setVinculando(false);
+    }
+  }
+
+  /**
+   * Crea un tema del OS ya enganchado a un topic de Telegram, en dos pasos
+   * (POST /api/chat y despues el PATCH del topic). Se deja asi a proposito:
+   * el endpoint de creacion no aprende un campo nuevo y si el vinculo falla
+   * (por ejemplo el topic ya estaba tomado) queda un tema normal y el error
+   * visible, en vez de una creacion a medias.
+   */
+  async function abrirComoTema(s: SesionHermes) {
+    if (!s.chatId || !s.threadId) {
+      setError('Esa sesion de Telegram no reporta chat_id / thread_id, no se puede enganchar.');
+      return;
+    }
+    setCargando(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: nombreSesion(s),
+          perfil: nodoActivo,
+          perfil_hermes: perfilHermesNuevo,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const id = data.conversacion.id as string;
+      await cambiarTopic(id, `${s.chatId}:${s.threadId}`);
+      setModo('os');
+      setActivaId(id);
+      setMensajes([]);
+      setRunActivo(null);
+    } catch (e) {
+      setError(`No se pudo abrir como tema: ${String(e)}`);
+    } finally {
+      setCargando(false);
     }
   }
 
@@ -816,6 +885,20 @@ export default function OSChat() {
                 >
                   {s.origen === 'telegram' ? 'TG' : 'OS'}
                 </span>
+                {/* F3: crear un tema del OS ya enganchado a este topic. Solo
+                    aparece si Hermes reporta las coordenadas del topic. */}
+                {s.origen === 'telegram' && s.chatId && s.threadId ? (
+                  <button
+                    type="button"
+                    className="os-btn os-btn-ghost"
+                    disabled={cargando || vinculando}
+                    onClick={() => void abrirComoTema(s)}
+                    title={`Abrir como tema del OS, enganchado al topic ${s.threadId}`}
+                    style={{ fontSize: 10, padding: '1px 6px', flexShrink: 0 }}
+                  >
+                    Abrir como tema
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>
@@ -881,6 +964,43 @@ export default function OSChat() {
                 {etiquetaPerfilHermes(conversacionActiva?.perfil_hermes ?? 'default')}
                 {' · '}
                 {etiquetaPerfil(conversacionActiva?.perfil ?? 'vps-default')}
+                {/* F3: chip del topic vinculado. Memoria compartida con ese
+                    topic de Telegram; los transcripts siguen separados. */}
+                {conversacionActiva?.topic_telegram ? (
+                  <span
+                    title={`Comparte memoria con el topic de Telegram ${conversacionActiva.topic_telegram}`}
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 10,
+                      padding: '1px 6px',
+                      borderRadius: 4,
+                      background: 'rgba(56,189,248,0.15)',
+                      color: '#38bdf8',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    Telegram · topic {conversacionActiva.topic_telegram.split(':')[1]}
+                    <button
+                      type="button"
+                      disabled={vinculando}
+                      onClick={() => void cambiarTopic(conversacionActiva.id, null)}
+                      title="Desvincular el topic y devolverle al tema su memoria propia"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'inherit',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 10,
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      desvincular
+                    </button>
+                  </span>
+                ) : null}
               </span>
               {desktop && (
                 <span title="Estado de Ollama local">

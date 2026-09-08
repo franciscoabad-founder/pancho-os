@@ -31,6 +31,7 @@
     "test:desktop": "node --experimental-strip-types --test src/lib/desktopBridge.test.ts",
     "test:chat": "node --experimental-strip-types --test src/server/chat.handlers.test.ts",
     "test:taski": "node --experimental-strip-types --test src/server/taski.handlers.test.ts src/os/lib/sse.test.ts",
+    "test:eventos": "node --experimental-strip-types --test src/server/hermesEventos.handlers.test.ts src/routes/api/hermes/eventos.test.ts",
     "tauri": "tauri",
     "deploy": "ssh root@178.105.163.120 \"cd /opt/pancho-os && git pull && npm run build && pm2 restart pancho-os\""
   },

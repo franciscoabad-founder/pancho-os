@@ -185,7 +185,7 @@ export async function crearConversacion(
     .from('chat_conversaciones')
     .update({
       hermes_session_id: `os-chat-${conv.id.slice(0, 8)}`,
-      session_key: `os:${perfilHermes}:${conv.id.slice(0, 8)}`,
+      session_key: claveSesionPropia(perfilHermes, conv.id),
     })
     .eq('id', conv.id)
     .select('*')
@@ -364,11 +364,127 @@ export function perfilHermesDe(conv: Conversacion): PerfilHermesId {
  * conversaciones creadas antes de la migracion, que tienen session_key nula.
  * La clave nunca depende del titulo, a proposito: renombrar una conversacion
  * no le puede borrar la memoria al agente.
+ *
+ * Desde F3 la clave guardada puede ser la de un topic de Telegram
+ * (`agent:<perfil>:telegram:forum:<chat>:<thread>`) y no la propia del OS. Esa
+ * es justamente la vinculacion: el tema del OS y el topic quedan compartiendo
+ * memoria aunque cada uno tenga su propio transcript. Por eso esta funcion
+ * respeta lo guardado y nunca recalcula encima.
  */
 export function claveSesionTema(conv: Conversacion): string {
   const guardada = (conv.session_key ?? '').trim();
   if (guardada) return guardada;
-  return `os:${perfilHermesDe(conv)}:${conv.id.slice(0, 8)}`;
+  return claveSesionPropia(perfilHermesDe(conv), conv.id);
+}
+
+/** Clave de memoria propia del tema, la que se usa cuando NO hay topic. */
+export function claveSesionPropia(perfilHermes: PerfilHermesId, conversacionId: string): string {
+  return `os:${perfilHermes}:${conversacionId.slice(0, 8)}`;
+}
+
+/**
+ * Clave de memoria que Hermes usa para un topic de un foro de Telegram.
+ *
+ * Formato verificado contra el api_server en produccion (8 sep 2026):
+ *   agent:main:telegram:forum:<chat_id>:<thread_id>          (perfil default)
+ *   agent:<perfil>:telegram:forum:<chat_id>:<thread_id>      (los demas)
+ *
+ * El perfil default se llama `main` del lado de Hermes, no `default`.
+ */
+export function claveSesionTopic(perfilHermes: PerfilHermesId, chatId: string, threadId: number): string {
+  const agente = perfilHermes === 'default' ? 'main' : perfilHermes;
+  return `agent:${agente}:telegram:forum:${chatId}:${threadId}`;
+}
+
+/** Formato de topic_telegram tal como se guarda: `<chat_id>:<thread_id>`. */
+export const RE_TOPIC_TELEGRAM = /^(-?[1-9]\d{0,19}):([1-9]\d{0,18})$/;
+
+export interface TopicTelegram {
+  chatId: string;
+  threadId: number;
+}
+
+/** Parte `<chat_id>:<thread_id>` o devuelve null si el formato no sirve. */
+export function parsearTopicTelegram(valor: unknown): TopicTelegram | null {
+  const m = RE_TOPIC_TELEGRAM.exec(String(valor ?? '').trim());
+  if (!m) return null;
+  return { chatId: m[1], threadId: Number(m[2]) };
+}
+
+/**
+ * Engancha un tema del OS a un topic de Telegram (F3).
+ *
+ * Vincular no mueve mensajes: los dos transcripts siguen separados. Lo que se
+ * comparte es la MEMORIA, porque el tema pasa a usar la misma
+ * X-Hermes-Session-Key que el topic. Probado contra el api_server: dos
+ * sesiones distintas con la misma key comparten contexto.
+ *
+ * El indice unico parcial (perfil_hermes, topic_telegram) impide que dos temas
+ * del mismo agente peleen por el mismo topic; ese choque se traduce a un error
+ * legible en vez de dejar salir el 23505 crudo.
+ */
+export async function vincularTopic(conversacionId: string, chatIdRaw: unknown, threadIdRaw: unknown): Promise<Conversacion> {
+  const topic = parsearTopicTelegram(`${String(chatIdRaw ?? '').trim()}:${String(threadIdRaw ?? '').trim()}`);
+  if (!topic) fallar('Topic de Telegram invalido (se espera chat_id:thread_id)');
+
+  const sb = clienteActual();
+  const { data: previa, error: e0 } = await sb
+    .from('chat_conversaciones')
+    .select('*')
+    .eq('id', conversacionId)
+    .single();
+  if (e0 || !previa) fallar('Conversacion no encontrada');
+
+  const perfilHermes = perfilHermesDe(previa as Conversacion);
+  const { data, error } = await sb
+    .from('chat_conversaciones')
+    .update({
+      topic_telegram: `${topic.chatId}:${topic.threadId}`,
+      session_key: claveSesionTopic(perfilHermes, topic.chatId, topic.threadId),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversacionId)
+    .select('*')
+    .single();
+  if (error) {
+    const detalle = `${(error as { code?: string }).code ?? ''} ${error.message}`;
+    if (detalle.includes('23505') || /duplicate key|unique/i.test(detalle)) {
+      fallar('Ese topic de Telegram ya esta vinculado a otro tema de este agente');
+    }
+    fallar(`vincular topic: ${error.message}`);
+  }
+  if (!data) fallar('Conversacion no encontrada');
+  return data as Conversacion;
+}
+
+/**
+ * Desengancha el tema del topic y le devuelve su memoria propia.
+ *
+ * No borra nada del lado de Hermes: simplemente el tema vuelve a hablar con su
+ * propia session key `os:<perfil>:<uuid8>`, que es la que tenia al nacer.
+ */
+export async function desvincularTopic(conversacionId: string): Promise<Conversacion> {
+  const sb = clienteActual();
+  const { data: previa, error: e0 } = await sb
+    .from('chat_conversaciones')
+    .select('*')
+    .eq('id', conversacionId)
+    .single();
+  if (e0 || !previa) fallar('Conversacion no encontrada');
+
+  const conv = previa as Conversacion;
+  const { data, error } = await sb
+    .from('chat_conversaciones')
+    .update({
+      topic_telegram: null,
+      session_key: claveSesionPropia(perfilHermesDe(conv), conv.id),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversacionId)
+    .select('*')
+    .single();
+  if (error || !data) fallar(`desvincular topic: ${error?.message ?? 'sin resultado'}`);
+  return data as Conversacion;
 }
 
 export function sesionDeConversacion(conv: Conversacion): string {
