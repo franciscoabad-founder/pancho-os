@@ -269,18 +269,86 @@ test('validaciones de contenido', async () => {
   await assert.rejects(enviarMensaje(randomUUID(), 'hola'), /no encontrada/);
 });
 
-test('run huerfano se marca fallido al leer el hilo', async () => {
+// F3-fix: reintento automatico de un run que se llevo por delante un reinicio
+// del gateway de Hermes. Ningun canal de Hermes reanuda esos turnos, asi que
+// el OS lo hace una sola vez.
+
+/** Siembra un mensaje del usuario + un run vencido (huerfano) sobre el tema. */
+function sembrarRunHuerfano(conv: Conversacion, contenido = 'x'): { msgId: string; runId: string } {
+  const msg = { id: randomUUID(), conversacion_id: conv.id, rol: 'user', contenido, created_at: new Date().toISOString() };
+  estado.mensajes.push(msg);
+  const run = {
+    id: randomUUID(), conversacion_id: conv.id, mensaje_user_id: msg.id, mensaje_assistant_id: null,
+    estado: 'trabajando', error: null, evidencia: {},
+    iniciado_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), terminado_at: null,
+  };
+  estado.runs.push(run);
+  return { msgId: msg.id, runId: run.id };
+}
+
+test('run huerfano se marca fallido y se reintenta solo, sin que el humano reescriba', async () => {
+  const conv = await crearConversacion();
+  const { msgId, runId } = sembrarRunHuerfano(conv, 'revisa mi agenda');
+
+  const hilo = await obtenerHilo(conv.id);
+  // La UI sigue viendo un run activo: el reintento, no el muerto.
+  assert.ok(hilo.runActivo);
+  assert.notEqual(hilo.runActivo?.id, runId);
+
+  const muerto = estado.runs.find((r) => r.id === runId) as unknown as Run;
+  assert.equal(muerto.estado, 'fallido');
+  assert.match(String(muerto.error), /reintentado automaticamente/);
+  assert.equal((muerto.evidencia as Record<string, unknown>).interrumpido, true);
+
+  await new Promise((r) => setTimeout(r, 20));
+  // El mensaje del usuario NO se duplica: el reintento reusa la misma fila.
+  assert.equal(estado.mensajes.filter((m) => m.rol === 'user').length, 1);
+  const reintento = estado.runs.find((r) => r.id !== runId) as unknown as Run;
+  assert.equal(reintento.mensaje_user_id, msgId);
+  assert.equal((reintento.evidencia as Record<string, unknown>).reintento_de ?? runId, runId);
+  assert.equal(reintento.estado, 'completado');
+  const respuestas = estado.mensajes.filter((m) => m.rol === 'assistant');
+  assert.equal(respuestas.length, 1);
+  assert.equal(respuestas[0].contenido, 'respuesta de hermes');
+});
+
+test('si el reintento tambien queda huerfano, se marca fallido sin un tercer intento', async () => {
+  // Hermes nunca contesta: el reintento se queda 'trabajando'.
+  setEnviarAHermesChat(() => new Promise<string>(() => {}));
+  const conv = await crearConversacion();
+  const { runId } = sembrarRunHuerfano(conv);
+
+  const primero = await obtenerHilo(conv.id);
+  const reintentoId = primero.runActivo?.id;
+  assert.ok(reintentoId);
+  assert.equal(estado.runs.length, 2);
+
+  // El reintento envejece mas alla del timeout.
+  await new Promise((r) => setTimeout(r, 10));
+  const reintento = estado.runs.find((r) => r.id === reintentoId) as Fila;
+  reintento.iniciado_at = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+  const segundo = await obtenerHilo(conv.id);
+  assert.equal(segundo.runActivo, null);
+  assert.equal(estado.runs.length, 2, 'no se abre un tercer run');
+  assert.equal(reintento.estado, 'fallido');
+  assert.equal((estado.runs.find((r) => r.id === runId) as Fila).estado, 'fallido');
+});
+
+test('un run vivo dentro del timeout no se toca ni se reintenta', async () => {
   const conv = await crearConversacion();
   const msg = { id: randomUUID(), conversacion_id: conv.id, rol: 'user', contenido: 'x', created_at: new Date().toISOString() };
   estado.mensajes.push(msg);
   estado.runs.push({
     id: randomUUID(), conversacion_id: conv.id, mensaje_user_id: msg.id, mensaje_assistant_id: null,
     estado: 'trabajando', error: null, evidencia: {},
-    iniciado_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), terminado_at: null,
+    iniciado_at: new Date().toISOString(), terminado_at: null,
   });
+
   const hilo = await obtenerHilo(conv.id);
-  assert.equal(hilo.runActivo, null);
-  assert.equal(estado.runs[0].estado, 'fallido');
+  assert.equal(hilo.runActivo?.estado, 'trabajando');
+  assert.equal(estado.runs.length, 1);
+  assert.equal(estado.runs[0].estado, 'trabajando');
 });
 
 test('titulo automatico con el primer mensaje', async () => {

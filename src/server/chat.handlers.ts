@@ -11,8 +11,12 @@
 // el run 'completado' con la respuesta, o 'fallido' con el error.
 //
 // Si el server se reinicia con un run en vuelo, ese run queda 'trabajando'
-// para siempre: obtenerHilo lo marca 'fallido' pasado RUN_TIMEOUT_MS. Honesto
-// y simple; el usuario reintenta con un boton.
+// para siempre: obtenerHilo lo marca 'fallido' pasado RUN_TIMEOUT_MS y
+// reintenta el mismo mensaje UNA vez (ver reintentarRunHuerfano). Ningun canal
+// de Hermes reanuda un turno interrumpido por un reinicio del gateway
+// (run_shutdown.py los interrumpe sin esperarlos), asi que el reintento lo
+// pone el OS. Si el reintento tambien queda huerfano, ahi si se muestra
+// fallido y el usuario decide.
 //
 // F1 (streaming) agrega un SEGUNDO camino de envio, no un reemplazo:
 // enviarMensajeStream devuelve un ReadableStream con los eventos del turno en
@@ -251,20 +255,24 @@ export async function obtenerHilo(conversacionId: string): Promise<Hilo> {
 
   let runActivo = (runs?.[0] as Run | undefined) ?? null;
 
-  // Run huerfano (server reiniciado a mitad): declararlo fallido, no colgar la UI.
+  // Run huerfano (gateway reiniciado a mitad): declararlo fallido, no colgar la
+  // UI, y reintentar el mensaje una sola vez.
   if (runActivo && Date.now() - new Date(runActivo.iniciado_at).getTime() > RUN_TIMEOUT_MS) {
+    // El .in(estado) hace de candado: si otra pestana ya lo mato, este update
+    // no devuelve fila y no se dispara un segundo reintento.
     const { data: muerto } = await sb
       .from('chat_runs')
       .update({
         estado: 'fallido',
-        error: 'El procesamiento se interrumpio (timeout). Reintenta el mensaje.',
+        error: 'El procesamiento se interrumpio (el gateway de Hermes se reinicio).',
         terminado_at: new Date().toISOString(),
+        evidencia: { ...(runActivo.evidencia ?? {}), interrumpido: true },
       })
       .eq('id', runActivo.id)
       .in('estado', ['pendiente', 'trabajando'])
       .select('*')
       .single();
-    runActivo = muerto ? null : runActivo;
+    runActivo = muerto ? await reintentarRunHuerfano(conv as Conversacion, muerto as Run) : runActivo;
   }
 
   return {
@@ -272,6 +280,73 @@ export async function obtenerHilo(conversacionId: string): Promise<Hilo> {
     mensajes: (mensajes ?? []) as Mensaje[],
     runActivo,
   };
+}
+
+/**
+ * Reintenta UNA vez el mensaje que quedo sin respuesta cuando el gateway de
+ * Hermes se llevo por delante un run.
+ *
+ * Contexto (verificado el 8 sep 2026): ningun canal de Hermes reanuda solo un
+ * turno interrumpido; run_shutdown.py interrumpe los runs del api_server en
+ * cada apagado sin esperarlos ni retomarlos. El OS ya detectaba el run
+ * huerfano; lo que faltaba era volver a intentarlo en vez de obligar a Pancho
+ * a reescribir el mensaje.
+ *
+ * El reintento NO duplica el mensaje del usuario: reusa la misma fila de
+ * chat_mensajes y abre un run nuevo apuntando a ella, con
+ * `evidencia.reintento_de` = id del run muerto. Esa marca es tambien el limite
+ * duro: un mensaje que ya tiene dos runs (el original y su reintento) no se
+ * vuelve a reintentar, por mas veces que se recargue la pagina.
+ *
+ * Devuelve el run nuevo (para que la UI siga mostrando "trabajando") o null si
+ * no corresponde reintentar.
+ */
+async function reintentarRunHuerfano(conv: Conversacion, muerto: Run): Promise<Run | null> {
+  const sb = clienteActual();
+
+  // El propio reintento quedo huerfano: aca se corta, sin tercer intento.
+  if ((muerto.evidencia ?? {}).reintento_de) return null;
+
+  const { data: previos } = await sb
+    .from('chat_runs')
+    .select('id')
+    .eq('mensaje_user_id', muerto.mensaje_user_id)
+    .limit(5);
+  // Solo el run original: cualquier otra cosa significa que ya hubo reintento.
+  if ((previos ?? []).length !== 1) return null;
+
+  const { data: msg } = await sb
+    .from('chat_mensajes')
+    .select('*')
+    .eq('id', muerto.mensaje_user_id)
+    .single();
+  const contenido = String((msg as Mensaje | null)?.contenido ?? '').trim();
+  if (!contenido) return null;
+
+  const { data: nuevo, error } = await sb
+    .from('chat_runs')
+    .insert({
+      conversacion_id: conv.id,
+      mensaje_user_id: muerto.mensaje_user_id,
+      estado: 'pendiente',
+      evidencia: { reintento_de: muerto.id },
+    })
+    .select('*')
+    .single();
+  if (error || !nuevo) return null;
+
+  // El run muerto deja dicho que no se perdio nada: hubo un segundo intento.
+  await sb
+    .from('chat_runs')
+    .update({
+      error: 'El procesamiento se interrumpio (el gateway de Hermes se reinicio), reintentado automaticamente.',
+      evidencia: { ...(muerto.evidencia ?? {}), interrumpido: true, reintentado_por: (nuevo as Run).id },
+    })
+    .eq('id', muerto.id);
+
+  // Mismo camino que enviarMensaje: fire-and-forget contra Hermes.
+  void procesarRun((nuevo as Run).id, conv, contenido);
+  return nuevo as Run;
 }
 
 export interface EnvioResultado {
