@@ -11,8 +11,12 @@
 // el run 'completado' con la respuesta, o 'fallido' con el error.
 //
 // Si el server se reinicia con un run en vuelo, ese run queda 'trabajando'
-// para siempre: obtenerHilo lo marca 'fallido' pasado RUN_TIMEOUT_MS. Honesto
-// y simple; el usuario reintenta con un boton.
+// para siempre: obtenerHilo lo marca 'fallido' pasado RUN_TIMEOUT_MS y
+// reintenta el mismo mensaje UNA vez (ver reintentarRunHuerfano). Ningun canal
+// de Hermes reanuda un turno interrumpido por un reinicio del gateway
+// (run_shutdown.py los interrumpe sin esperarlos), asi que el reintento lo
+// pone el OS. Si el reintento tambien queda huerfano, ahi si se muestra
+// fallido y el usuario decide.
 //
 // F1 (streaming) agrega un SEGUNDO camino de envio, no un reemplazo:
 // enviarMensajeStream devuelve un ReadableStream con los eventos del turno en
@@ -251,20 +255,24 @@ export async function obtenerHilo(conversacionId: string): Promise<Hilo> {
 
   let runActivo = (runs?.[0] as Run | undefined) ?? null;
 
-  // Run huerfano (server reiniciado a mitad): declararlo fallido, no colgar la UI.
+  // Run huerfano (gateway reiniciado a mitad): declararlo fallido, no colgar la
+  // UI, y reintentar el mensaje una sola vez.
   if (runActivo && Date.now() - new Date(runActivo.iniciado_at).getTime() > RUN_TIMEOUT_MS) {
+    // El .in(estado) hace de candado: si otra pestana ya lo mato, este update
+    // no devuelve fila y no se dispara un segundo reintento.
     const { data: muerto } = await sb
       .from('chat_runs')
       .update({
         estado: 'fallido',
-        error: 'El procesamiento se interrumpio (timeout). Reintenta el mensaje.',
+        error: 'El procesamiento se interrumpio (el gateway de Hermes se reinicio).',
         terminado_at: new Date().toISOString(),
+        evidencia: { ...(runActivo.evidencia ?? {}), interrumpido: true },
       })
       .eq('id', runActivo.id)
       .in('estado', ['pendiente', 'trabajando'])
       .select('*')
       .single();
-    runActivo = muerto ? null : runActivo;
+    runActivo = muerto ? await reintentarRunHuerfano(conv as Conversacion, muerto as Run) : runActivo;
   }
 
   return {
@@ -272,6 +280,73 @@ export async function obtenerHilo(conversacionId: string): Promise<Hilo> {
     mensajes: (mensajes ?? []) as Mensaje[],
     runActivo,
   };
+}
+
+/**
+ * Reintenta UNA vez el mensaje que quedo sin respuesta cuando el gateway de
+ * Hermes se llevo por delante un run.
+ *
+ * Contexto (verificado el 8 sep 2026): ningun canal de Hermes reanuda solo un
+ * turno interrumpido; run_shutdown.py interrumpe los runs del api_server en
+ * cada apagado sin esperarlos ni retomarlos. El OS ya detectaba el run
+ * huerfano; lo que faltaba era volver a intentarlo en vez de obligar a Pancho
+ * a reescribir el mensaje.
+ *
+ * El reintento NO duplica el mensaje del usuario: reusa la misma fila de
+ * chat_mensajes y abre un run nuevo apuntando a ella, con
+ * `evidencia.reintento_de` = id del run muerto. Esa marca es tambien el limite
+ * duro: un mensaje que ya tiene dos runs (el original y su reintento) no se
+ * vuelve a reintentar, por mas veces que se recargue la pagina.
+ *
+ * Devuelve el run nuevo (para que la UI siga mostrando "trabajando") o null si
+ * no corresponde reintentar.
+ */
+async function reintentarRunHuerfano(conv: Conversacion, muerto: Run): Promise<Run | null> {
+  const sb = clienteActual();
+
+  // El propio reintento quedo huerfano: aca se corta, sin tercer intento.
+  if ((muerto.evidencia ?? {}).reintento_de) return null;
+
+  const { data: previos } = await sb
+    .from('chat_runs')
+    .select('id')
+    .eq('mensaje_user_id', muerto.mensaje_user_id)
+    .limit(5);
+  // Solo el run original: cualquier otra cosa significa que ya hubo reintento.
+  if ((previos ?? []).length !== 1) return null;
+
+  const { data: msg } = await sb
+    .from('chat_mensajes')
+    .select('*')
+    .eq('id', muerto.mensaje_user_id)
+    .single();
+  const contenido = String((msg as Mensaje | null)?.contenido ?? '').trim();
+  if (!contenido) return null;
+
+  const { data: nuevo, error } = await sb
+    .from('chat_runs')
+    .insert({
+      conversacion_id: conv.id,
+      mensaje_user_id: muerto.mensaje_user_id,
+      estado: 'pendiente',
+      evidencia: { reintento_de: muerto.id },
+    })
+    .select('*')
+    .single();
+  if (error || !nuevo) return null;
+
+  // El run muerto deja dicho que no se perdio nada: hubo un segundo intento.
+  await sb
+    .from('chat_runs')
+    .update({
+      error: 'El procesamiento se interrumpio (el gateway de Hermes se reinicio), reintentado automaticamente.',
+      evidencia: { ...(muerto.evidencia ?? {}), interrumpido: true, reintentado_por: (nuevo as Run).id },
+    })
+    .eq('id', muerto.id);
+
+  // Mismo camino que enviarMensaje: fire-and-forget contra Hermes.
+  void procesarRun((nuevo as Run).id, conv, contenido);
+  return nuevo as Run;
 }
 
 export interface EnvioResultado {
@@ -365,11 +440,13 @@ export function perfilHermesDe(conv: Conversacion): PerfilHermesId {
  * La clave nunca depende del titulo, a proposito: renombrar una conversacion
  * no le puede borrar la memoria al agente.
  *
- * Desde F3 la clave guardada puede ser la de un topic de Telegram
- * (`agent:<perfil>:telegram:forum:<chat>:<thread>`) y no la propia del OS. Esa
- * es justamente la vinculacion: el tema del OS y el topic quedan compartiendo
- * memoria aunque cada uno tenga su propio transcript. Por eso esta funcion
- * respeta lo guardado y nunca recalcula encima.
+ * F3 originalmente reescribia esta clave a la del topic de Telegram para
+ * "compartir memoria". Se probo contra el VPS el 8 sep 2026 y NO funciona: el
+ * api_server de Hermes nunca persiste la cabecera X-Hermes-Session-Key (la
+ * columna session_key queda NULL) y, aunque la persistiera, fija
+ * _SESSION_SOURCE = "api_server", asi que la busqueda de conversacion
+ * declarada jamas alcanza una sesion con source="telegram". La clave de un
+ * tema del OS es siempre la propia; vincular un topic ya no la toca.
  */
 export function claveSesionTema(conv: Conversacion): string {
   const guardada = (conv.session_key ?? '').trim();
@@ -380,20 +457,6 @@ export function claveSesionTema(conv: Conversacion): string {
 /** Clave de memoria propia del tema, la que se usa cuando NO hay topic. */
 export function claveSesionPropia(perfilHermes: PerfilHermesId, conversacionId: string): string {
   return `os:${perfilHermes}:${conversacionId.slice(0, 8)}`;
-}
-
-/**
- * Clave de memoria que Hermes usa para un topic de un foro de Telegram.
- *
- * Formato verificado contra el api_server en produccion (8 sep 2026):
- *   agent:main:telegram:forum:<chat_id>:<thread_id>          (perfil default)
- *   agent:<perfil>:telegram:forum:<chat_id>:<thread_id>      (los demas)
- *
- * El perfil default se llama `main` del lado de Hermes, no `default`.
- */
-export function claveSesionTopic(perfilHermes: PerfilHermesId, chatId: string, threadId: number): string {
-  const agente = perfilHermes === 'default' ? 'main' : perfilHermes;
-  return `agent:${agente}:telegram:forum:${chatId}:${threadId}`;
 }
 
 /** Formato de topic_telegram tal como se guarda: `<chat_id>:<thread_id>`. */
@@ -412,12 +475,17 @@ export function parsearTopicTelegram(valor: unknown): TopicTelegram | null {
 }
 
 /**
- * Engancha un tema del OS a un topic de Telegram (F3).
+ * Engancha un tema del OS a un topic de Telegram (F3, corregido).
  *
- * Vincular no mueve mensajes: los dos transcripts siguen separados. Lo que se
- * comparte es la MEMORIA, porque el tema pasa a usar la misma
- * X-Hermes-Session-Key que el topic. Probado contra el api_server: dos
- * sesiones distintas con la misma key comparten contexto.
+ * El vinculo es una REFERENCIA de agrupacion, no un puente de memoria: sirve
+ * para navegar entre el tema del OS y el topic de Telegram del mismo asunto,
+ * y para mostrar el contexto reciente del topic como texto de solo lectura.
+ * Los dos transcripts siguen separados y cada uno conserva su propia memoria
+ * del lado de Hermes (ver claveSesionTema: la version de Hermes en produccion
+ * no comparte contexto entre sesiones por session key).
+ *
+ * Por eso este update solo toca topic_telegram: la session_key del tema sigue
+ * siendo siempre la propia `os:<perfil>:<uuid8>`.
  *
  * El indice unico parcial (perfil_hermes, topic_telegram) impide que dos temas
  * del mismo agente peleen por el mismo topic; ese choque se traduce a un error
@@ -435,12 +503,10 @@ export async function vincularTopic(conversacionId: string, chatIdRaw: unknown, 
     .single();
   if (e0 || !previa) fallar('Conversacion no encontrada');
 
-  const perfilHermes = perfilHermesDe(previa as Conversacion);
   const { data, error } = await sb
     .from('chat_conversaciones')
     .update({
       topic_telegram: `${topic.chatId}:${topic.threadId}`,
-      session_key: claveSesionTopic(perfilHermes, topic.chatId, topic.threadId),
       updated_at: new Date().toISOString(),
     })
     .eq('id', conversacionId)
@@ -458,10 +524,12 @@ export async function vincularTopic(conversacionId: string, chatIdRaw: unknown, 
 }
 
 /**
- * Desengancha el tema del topic y le devuelve su memoria propia.
+ * Desengancha el tema del topic.
  *
- * No borra nada del lado de Hermes: simplemente el tema vuelve a hablar con su
- * propia session key `os:<perfil>:<uuid8>`, que es la que tenia al nacer.
+ * Vincular ya no toca la session_key, asi que aca normalmente solo hay que
+ * limpiar topic_telegram. Se aprovecha para sanear filas viejas: si una
+ * conversacion quedo con la session_key de Telegram que escribia la version
+ * anterior de vincularTopic, se le devuelve la propia `os:<perfil>:<uuid8>`.
  */
 export async function desvincularTopic(conversacionId: string): Promise<Conversacion> {
   const sb = clienteActual();
@@ -473,11 +541,14 @@ export async function desvincularTopic(conversacionId: string): Promise<Conversa
   if (e0 || !previa) fallar('Conversacion no encontrada');
 
   const conv = previa as Conversacion;
+  const propia = claveSesionPropia(perfilHermesDe(conv), conv.id);
+  const guardada = (conv.session_key ?? '').trim();
+  const sanear = !guardada.startsWith('os:');
   const { data, error } = await sb
     .from('chat_conversaciones')
     .update({
       topic_telegram: null,
-      session_key: claveSesionPropia(perfilHermesDe(conv), conv.id),
+      ...(sanear ? { session_key: propia } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', conversacionId)

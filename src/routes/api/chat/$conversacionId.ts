@@ -64,6 +64,9 @@ export const Route = createFileRoute('/api/chat/$conversacionId')({
       //   { titulo }          renombrar (el nombre se replica a Hermes)
       //   { topic_telegram }  vincular a un topic de Telegram, o null para
       //                       desvincular (F3). Formato '<chat_id>:<thread_id>'.
+      //                       El vinculo es una referencia de agrupacion: no
+      //                       comparte memoria con el topic ni toca la
+      //                       session_key del tema.
       PATCH: async ({ request, params }) => {
         if (!(await isOsAuthorized(request))) return noAutorizado();
         let body: Record<string, unknown>;
