@@ -566,6 +566,13 @@ export function sesionDeConversacion(conv: Conversacion): string {
 export async function procesarRun(runId: string, conv: Conversacion, contenido: string): Promise<void> {
   const sb = clienteActual();
   const inicio = Date.now();
+  // Se lee ANTES de sobreescribir estado: un run nacido de un reintento trae
+  // evidencia.reintento_de puesta por reintentarRunHuerfano, y las tres salidas
+  // de abajo (cortado a mitad, completado, fallido) deben conservarla en vez
+  // de pisarla, o el rastro de "esto ya se reintento" se pierde justo al
+  // completar (bug real, detectado por un test el 8 sep 2026).
+  const { data: filaInicial } = await sb.from('chat_runs').select('evidencia').eq('id', runId).single();
+  const evidenciaPrevia = ((filaInicial as { evidencia?: Record<string, unknown> } | null)?.evidencia ?? {}) as Record<string, unknown>;
   await sb.from('chat_runs').update({ estado: 'trabajando' }).eq('id', runId);
 
   try {
@@ -577,6 +584,32 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
     // 4 min de presupuesto: el run corre en background, no bloquea a nadie.
     const respuesta = await enviarAHermesActual(contenido, sessionId, conv.perfil, 240_000, { perfilHermes });
     const texto = respuesta.trim() || '(Hermes devolvio una respuesta vacia)';
+
+    // Hermes puede cortar un turno a mitad (su gateway se reinicio) y aun asi
+    // devolver 200 con un texto de relleno en vez de dejar la conexion
+    // colgada: "Operation interrupted..." es un prefijo fijo que emite el
+    // propio codigo de Hermes en varios puntos (conversation_loop.py,
+    // turn_api_error.py, message_sanitization.py; verificado el 8 sep 2026
+    // contra el VPS: un `systemctl restart` a mitad de turno completo en 8s
+    // con este texto, sin pasar nunca por el camino de "run huerfano" de
+    // obtenerHilo porque NO se cuelga). Tratarlo igual: marcar este run
+    // fallido y reintentar el mismo mensaje una vez.
+    if (texto.startsWith('Operation interrupted')) {
+      const { data: cortado } = await sb
+        .from('chat_runs')
+        .update({
+          estado: 'fallido',
+          error: 'El procesamiento se interrumpio a mitad (el gateway de Hermes se reinicio).',
+          terminado_at: new Date().toISOString(),
+          evidencia: { ...evidenciaPrevia, duracion_ms: Date.now() - inicio, interrumpido: true, texto_hermes: texto.slice(0, 200) },
+        })
+        .eq('id', runId)
+        .eq('estado', 'trabajando')
+        .select('*')
+        .single();
+      if (cortado) await reintentarRunHuerfano(conv, cortado as Run);
+      return;
+    }
 
     const { data: msgA, error: eA } = await sb
       .from('chat_mensajes')
@@ -592,6 +625,7 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
         mensaje_assistant_id: (msgA as Mensaje).id,
         terminado_at: new Date().toISOString(),
         evidencia: {
+          ...evidenciaPrevia,
           duracion_ms: Date.now() - inicio,
           hermes_session_id: sessionId,
           perfil: conv.perfil,
@@ -607,7 +641,7 @@ export async function procesarRun(runId: string, conv: Conversacion, contenido: 
         estado: 'fallido',
         error: err instanceof Error ? err.message : String(err),
         terminado_at: new Date().toISOString(),
-        evidencia: { duracion_ms: Date.now() - inicio, perfil: conv.perfil },
+        evidencia: { ...evidenciaPrevia, duracion_ms: Date.now() - inicio, perfil: conv.perfil },
       })
       .eq('id', runId);
   }
