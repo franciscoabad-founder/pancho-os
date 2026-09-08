@@ -25,6 +25,7 @@ import { datosDaily } from '../data/daily.ts';
 import OSJugadorBar from './OSJugadorBar.tsx';
 import TaskiBubble from './TaskiBubble.tsx';
 import OSAprobacionesBell from './OSAprobacionesBell.tsx';
+import OSHermesBell from './OSHermesBell.tsx';
 
 // Formato de titulo del OS, unico para todas las paginas. Se usa `·` como
 // separador, igual que src/routes/login.tsx.
@@ -644,6 +645,7 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
           </div>
           <SoloCliente><OSJugadorBar /></SoloCliente>
           <SoloCliente><OSAprobacionesBell /></SoloCliente>
+          <SoloCliente><OSHermesBell /></SoloCliente>
           <BotonTema />
           <a href="/api/os-auth?action=logout" className="cmd-logout" title="Cerrar sesion">salir</a>
         </div>
@@ -662,6 +664,7 @@ export default function OSLayout({ title, children }: OSLayoutProps) {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <SoloCliente><OSAprobacionesBell /></SoloCliente>
+          <SoloCliente><OSHermesBell /></SoloCliente>
           <BotonTema />
           <button className="menu-btn" onClick={() => setChatAbierto(true)} aria-label="Preguntar al cerebro">
             <span className="material-symbols-outlined" style={{ fontSize: 21, color: 'var(--os-muted)' }}>search</span>
