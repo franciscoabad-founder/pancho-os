@@ -498,6 +498,15 @@ export interface SesionTaski {
   lastActive: number | null;
   /** Modelo bloqueado en la sesion, si Hermes lo reporta. */
   model: string | null;
+  /**
+   * Coordenadas del topic de Telegram (solo en sesiones con origen telegram).
+   * Hermes las expone en /api/sessions y el OS las necesita para F3: son lo
+   * que permite crear un tema del OS ya enganchado a ese topic.
+   */
+  chatId: string | null;
+  threadId: number | null;
+  /** Scope de memoria del lado de Hermes (X-Hermes-Session-Key), si lo reporta. */
+  sessionKey: string | null;
 }
 
 /**
@@ -539,7 +548,24 @@ function mapearSesion(cruda: Record<string, unknown>): SesionTaski {
     messageCount: typeof cruda.message_count === 'number' ? cruda.message_count : 0,
     lastActive: aMilisegundos(cruda.last_active),
     model: typeof cruda.model === 'string' && cruda.model.trim() ? cruda.model : null,
+    // chat_id llega a veces como numero y a veces como string (los grupos de
+    // Telegram son enteros negativos grandes); se normaliza a string para que
+    // el frontend no pierda precision al pasarlo por JSON.
+    chatId: aTextoId(cruda.chat_id),
+    threadId: aEntero(cruda.thread_id),
+    sessionKey: typeof cruda.session_key === 'string' && cruda.session_key.trim() ? cruda.session_key : null,
   };
+}
+
+function aTextoId(valor: unknown): string | null {
+  if (typeof valor === 'number' && Number.isFinite(valor)) return String(Math.trunc(valor));
+  if (typeof valor === 'string' && valor.trim()) return valor.trim();
+  return null;
+}
+
+function aEntero(valor: unknown): number | null {
+  const n = typeof valor === 'number' ? valor : typeof valor === 'string' ? Number(valor) : NaN;
+  return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
 // Cuantas sesiones se traen como maximo. Antes eran solo las de Telegram (~12);
@@ -557,6 +583,9 @@ async function obtenerSesionGeneral(perfil: NodoId = 'vps-default', perfilHermes
     messageCount: 0,
     lastActive: null,
     model: null,
+    chatId: null,
+    threadId: null,
+    sessionKey: null,
   };
   const res = await taskiFetch(`/api/sessions/${SESSION_ID}`, { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil, undefined, perfilHermes).catch(() => null);
   if (!res || !res.ok) return vacia; // 404 = primer uso, todavia no se creo sola
