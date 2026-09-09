@@ -298,3 +298,17 @@ test('listarSesionesTaski expone chat_id, thread_id y session_key del topic', as
     globalThis.fetch = fetchOriginal;
   }
 });
+
+test('aplanarOpcionesModelo muestra solo las membresias autenticadas cuando hay alguna', () => {
+  const modelos = aplanarOpcionesModelo({
+    providers: [
+      { slug: 'nous', name: 'Nous Portal', models: [], authenticated: false, warning: 'sin login' },
+      { slug: 'xai-oauth', name: 'xAI', models: ['grok-4.3'], authenticated: true },
+      { slug: 'anthropic', name: 'Anthropic', models: ['claude'], authenticated: false },
+    ],
+    model: 'grok-4.3',
+    provider: 'xai-oauth',
+  });
+  assert.deepEqual(modelos.map((m) => m.id), ['xai-oauth/grok-4.3']);
+  assert.equal(modelos[0].isCurrent, true);
+});

@@ -716,9 +716,18 @@ interface FilaProveedor {
   warning?: unknown;
 }
 
-/** Aplana el payload de /api/model/options a la lista plana del desplegable. */
+/**
+ * Aplana el payload de /api/model/options a la lista plana del desplegable.
+ *
+ * Solo entran los proveedores con credencial activa en Hermes (las membresias
+ * reales: xAI, Codex, OpenRouter, etc.), que es lo mismo que muestra la app de
+ * Hermes. Si ninguno esta autenticado se devuelven todos, para no dejar el
+ * desplegable vacio y que la UI pueda avisar.
+ */
 export function aplanarOpcionesModelo(payload: Record<string, unknown>): ModeloHermes[] {
-  const filas: FilaProveedor[] = Array.isArray(payload?.providers) ? (payload.providers as FilaProveedor[]) : [];
+  const todas: FilaProveedor[] = Array.isArray(payload?.providers) ? (payload.providers as FilaProveedor[]) : [];
+  const autenticadas = todas.filter((f) => f.authenticated !== false && Array.isArray(f.models) && f.models.length > 0);
+  const filas = autenticadas.length > 0 ? autenticadas : todas;
   const modeloActual = typeof payload?.model === 'string' ? payload.model : '';
   const proveedorActual = typeof payload?.provider === 'string' ? payload.provider.toLowerCase() : '';
 
@@ -749,6 +758,58 @@ export function aplanarOpcionesModelo(payload: Record<string, unknown>): ModeloH
     }
   }
   return salida;
+}
+
+// Cache del catalogo por nodo. Medido el 9 sep 2026 en el VPS: el perfil
+// default tarda 41 s en contestar /api/model/options (sondea todos los
+// proveedores y precios), nerio 7 s. Con 15 s de timeout el OS nunca veia el
+// catalogo real y caia a la lista de referencia, que es lo que Pancho vio como
+// "modelo Hermes" sin sentido. Estrategia: timeout largo solo para esta
+// llamada, cache 10 min, y si ya hay cache se sirve al instante mientras se
+// refresca en segundo plano.
+const OPCIONES_TIMEOUT_MS = 75_000;
+const OPCIONES_TTL_MS = 10 * 60_000;
+interface CacheOpciones { modelos: ModeloHermes[]; en: number; refrescando: Promise<ModeloHermes[]> | null }
+const cacheOpciones = new Map<string, CacheOpciones>();
+
+async function pedirOpcionesModelo(perfil: NodoId): Promise<ModeloHermes[]> {
+  const res = await taskiFetch('/api/model/options', { method: 'GET' }, OPCIONES_TIMEOUT_MS, perfil);
+  if (!res.ok) throw new Error(`Hermes HTTP ${res.status} en /api/model/options`);
+  const data = (await res.json()) as Record<string, unknown>;
+  return aplanarOpcionesModelo(data);
+}
+
+async function catalogoOpcionesConCache(perfil: NodoId): Promise<ModeloHermes[]> {
+  const entrada = cacheOpciones.get(perfil);
+  const ahora = Date.now();
+  if (entrada && entrada.modelos.length > 0) {
+    if (ahora - entrada.en > OPCIONES_TTL_MS && !entrada.refrescando) {
+      entrada.refrescando = pedirOpcionesModelo(perfil)
+        .then((modelos) => {
+          if (modelos.length > 0) cacheOpciones.set(perfil, { modelos, en: Date.now(), refrescando: null });
+          return modelos;
+        })
+        .catch(() => entrada.modelos)
+        .finally(() => { entrada.refrescando = null; });
+    }
+    return entrada.modelos;
+  }
+  if (entrada?.refrescando) return entrada.refrescando;
+  const pendiente = pedirOpcionesModelo(perfil);
+  cacheOpciones.set(perfil, { modelos: [], en: ahora, refrescando: pendiente });
+  try {
+    const modelos = await pendiente;
+    cacheOpciones.set(perfil, { modelos, en: Date.now(), refrescando: null });
+    return modelos;
+  } catch (err) {
+    cacheOpciones.delete(perfil);
+    throw err;
+  }
+}
+
+/** Solo para tests: vacia la cache del catalogo. */
+export function _resetCacheOpcionesModelo(): void {
+  cacheOpciones.clear();
 }
 
 /** Modelo bloqueado en una sesion concreta (campo `model` de la sesion). */
@@ -782,14 +843,11 @@ export async function listarModelosHermes(perfilRaw: string = 'vps-default', ses
     };
   };
 
-  // 1. Catalogo real del gateway.
+  // 1. Catalogo real del gateway (con cache: el api_server tarda hasta 45 s
+  //    en armar el inventario porque sondea proveedores y precios).
   try {
-    const res = await taskiFetch('/api/model/options', { method: 'GET' }, HISTORY_TIMEOUT_MS, perfil);
-    if (res.ok) {
-      const data = (await res.json()) as Record<string, unknown>;
-      const modelos = aplanarOpcionesModelo(data);
-      if (modelos.length > 0) return conActivo({ modelos, fuente: 'options', aviso: null });
-    }
+    const modelos = await catalogoOpcionesConCache(perfil);
+    if (modelos.length > 0) return conActivo({ modelos, fuente: 'options', aviso: null });
   } catch {
     // sigue al fallback
   }
