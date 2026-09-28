@@ -1,0 +1,24 @@
+[Unit]
+Description=hermes-ui: Hermes Desktop como web para Pancho OS (solo Tailscale)
+After=network-online.target tailscaled.service hermes-remote-backend.service
+Wants=network-online.target
+
+[Service]
+# Decision 1b = A: escucha solo en la IP de Tailscale del VPS.
+Environment=HOST=100.127.42.51
+Environment=PORT=9120
+Environment=HERMES_BACKEND=http://100.127.42.51:9119
+Environment=HERMES_UI_DIST=/opt/hermes-ui/current/dist
+# HERMES_UI_USER y HERMES_UI_PASS (login del dashboard), chmod 600.
+EnvironmentFile=/etc/hermes-ui.env
+ExecStart=/usr/local/bin/node /opt/hermes-ui/current/server.mjs
+Restart=always
+RestartSec=5
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
