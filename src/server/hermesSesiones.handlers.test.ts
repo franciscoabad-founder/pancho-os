@@ -1,6 +1,6 @@
 import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { construirRutaSesiones, listarSesionesHermes, setFetcherSesiones } from './hermesSesiones.handlers.ts';
+import { construirRutaSesiones, leerMensajesSesion, listarSesionesHermes, setFetcherSesiones } from './hermesSesiones.handlers.ts';
 
 afterEach(() => setFetcherSesiones(null));
 
@@ -55,6 +55,28 @@ test('listarSesionesHermes: normaliza filas, descarta las sin id y pasa totales 
   assert.equal(r.total, 1193);
   assert.deepEqual(r.totalPorPerfil, { default: 594, arazza: 529 });
   assert.deepEqual(r.errores, [{ profile: 'nerio', error: 'locked' }]);
+});
+
+test('leerMensajesSesion: ordena de viejo a nuevo, descarta vacios y valida el id', async () => {
+  let visto = '';
+  setFetcherSesiones(async (url) => {
+    visto = String(url);
+    return new Response(
+      JSON.stringify({ messages: [
+        { id: 12, role: 'assistant', content: 'respuesta' },
+        { id: 11, role: 'user', content: 'pregunta' },
+        { id: 13, role: 'assistant', content: '' },
+      ] }),
+      { status: 200 },
+    );
+  });
+  const m = await leerMensajesSesion('20260909_161345_17393db0', 'default', 50);
+  assert.match(visto, /\/api\/sessions\/20260909_161345_17393db0\/messages\?limit=50&order=latest/);
+  assert.deepEqual(m.map((x) => x.id), [11, 12]);
+  await assert.rejects(leerMensajesSesion('../etc/passwd'), /id de sesion invalido/);
+  await assert.rejects(leerMensajesSesion('a/b'), /invalido/);
+  setFetcherSesiones(async () => new Response('no', { status: 404 }));
+  await assert.rejects(leerMensajesSesion('abc'), /no encontrada/);
 });
 
 test('listarSesionesHermes: si hermes-ui falla el error es explicito, no una lista vacia', async () => {

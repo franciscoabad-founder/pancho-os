@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   agruparSesiones,
+  arbolTelegram,
+  normalizarMensaje,
   canalDeSource,
   contarPorCanal,
   filtrarSesiones,
@@ -85,6 +87,32 @@ test('contarPorCanal: en orden del catalogo y sin canales vacios', () => {
     { canal: 'cron', total: 2 },
     { canal: 'puente', total: 1 },
   ]);
+});
+
+test('normalizarMensaje: traduce roles, descarta vacios y conserva la herramienta', () => {
+  assert.equal(normalizarMensaje({ id: 1, role: 'user', content: ' hola ', timestamp: 5 })!.texto, 'hola');
+  assert.equal(normalizarMensaje({ id: 2, role: 'assistant', content: 'ok' })!.rol, 'agente');
+  assert.equal(normalizarMensaje({ id: 3, role: 'assistant', content: '', tool_calls: [{}] }), null);
+  assert.equal(normalizarMensaje({ role: 'user', content: 'sin id' }), null);
+  const t = normalizarMensaje({ id: 4, role: 'tool', content: '{"ok":true}', tool_name: 'Cerebro' })!;
+  assert.equal(t.rol, 'herramienta');
+  assert.equal(t.herramienta, 'Cerebro');
+});
+
+test('arbolTelegram: chat -> topic -> sesiones, lo mas reciente primero, sin canales no Telegram', () => {
+  const s = [
+    normalizarSesion(topic('56', 100))!,
+    normalizarSesion(topic('1279', 300))!,
+    normalizarSesion({ ...topic('1279', 200), id: 'otra', profile: 'rafik' })!,
+    normalizarSesion(dm)!,
+    normalizarSesion({ id: 'k', source: 'cron' })!,
+  ];
+  const arbol = arbolTelegram(s);
+  assert.deepEqual(arbol.map((c) => c.nombre), ['Xaxxo', 'Pancho HQ']);
+  const hq = arbol.find((c) => c.chatId === '-1004384794270')!;
+  assert.deepEqual(hq.topics.map((t) => t.etiqueta), ['Topic 1279', 'Topic 56']);
+  assert.deepEqual(hq.topics[0].sesiones.map((x) => x.id), ['t1279', 'otra']);
+  assert.equal(arbol.find((c) => c.tipo === 'dm')!.topics[0].etiqueta, 'Chat');
 });
 
 test('agruparSesiones: Telegram por grupo, resto por canal, fijadas primero y luego las recientes', () => {

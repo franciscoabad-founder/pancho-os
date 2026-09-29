@@ -80,6 +80,7 @@ const ms: Record<string, string> = {
   '/hermes': 'smart_toy',
   '/hermes/app': 'hub',
   '/hermes/sesiones': 'forum',
+  '/hermes/telegram': 'send',
 };
 
 export const navGroups = [
@@ -89,6 +90,7 @@ export const navGroups = [
     { href: '/hermes', label: 'Hermes' },
     { href: '/hermes/app', label: 'Hermes completo' },
     { href: '/hermes/sesiones', label: 'Sesiones de Hermes' },
+    { href: '/hermes/telegram', label: 'Telegram en Hermes' },
     { href: '/aprobaciones', label: 'Aprobaciones' },
     { href: '/diario', label: 'Journal' },
     { href: '/ikigai', label: 'Ikigai' },

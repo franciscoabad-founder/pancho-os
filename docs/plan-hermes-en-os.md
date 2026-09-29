@@ -180,3 +180,32 @@ El OS le pregunta a `hermes-ui` (mismo VPS), que ya tiene la sesión del dashboa
 1. Carga las 500 sesiones más recientes (tope de Hermes por página). Los conteos por canal son de esas 500; los conteos por perfil son totales. La página lo avisa ("las 501 más recientes de 1193").
 2. Abrir una sesión requiere Tailscale, porque Hermes completo es solo Tailscale (decisión 1b = A).
 3. Al fusionar, la página aparece en producción. Producción debe alcanzar `100.127.42.51:9120` (mismo VPS): se verifica tras el despliegue.
+
+## Resultado Fase 3 (29-sep-2026)
+
+**Estado: la parte de lectura está hecha y probada. La parte de escribir en Telegram espera tu decisión (1c en `C:\DEV\Pancho-OS\docs\DECISIONES-PENDIENTES.md`).**
+
+### Qué hace
+Página nueva `/hermes/telegram` ("Telegram en Hermes" en el menú Sistema), con tres columnas como en Telegram:
+1. **Grupos y chats:** Xaxxo (privado), Pancho HQ (20 topics), Arazza Mealpreps (8 topics) y otro chat privado.
+2. **Topics del grupo:** cada uno con su título y el perfil que lo atiende, el más reciente arriba. Telegram no entrega el nombre del topic a Hermes, así que se muestra "Topic 1279" con el título de su última conversación.
+3. **Conversación:** mensajes tuyos y de Alfred; las llamadas a herramientas (Cerebro, búsquedas) quedan ocultas y se activan con "Herramientas". Se actualiza sola cada 8 segundos y la lista cada 45.
+En celular se ve una columna a la vez, con botón para volver.
+
+### Cómo está hecho
+| Pieza | Ruta |
+|---|---|
+| Árbol grupo → topic → sesiones y mensajes (con 17 pruebas en total, `npm run test:sesiones`) | `C:\DEV\Pancho-OS\src\os\lib\canalesHermes.ts` |
+| Lectura de mensajes desde `hermes-ui`, con id de sesión validado | `C:\DEV\Pancho-OS\src\server\hermesSesiones.handlers.ts` |
+| API `GET /api/hermes/mensajes` (401 sin sesión, 400 con id inválido) | `C:\DEV\Pancho-OS\src\routes\api\hermes\mensajes.ts` |
+| Página | `C:\DEV\Pancho-OS\src\routes\hermes_\telegram.tsx` |
+
+Capturas: `C:\DEV\Pancho-OS\docs\fase3-capturas\` (grupos, topics de Pancho HQ, conversación del topic 1279, con herramientas, celular).
+
+### Lo que NO se hizo, y por qué
+Crear, renombrar o cerrar topics y mandar mensajes desde el OS. Hermes no tiene un endpoint para eso: haría falta el token del bot de Telegram como secreto nuevo en el servidor del OS, y escribir es visible para otras personas. Además, un mensaje escrito por el bot no lo recibe Alfred (Telegram no entrega al bot sus propios mensajes). Las opciones están en la decisión 1c.
+
+### Límites conocidos (Fase 3)
+1. No se sabe si un mensaje enviado por Telegram ya fue respondido más allá de lo que Hermes guardó; se ve lo que Hermes registró.
+2. Los últimos 150 mensajes por conversación.
+3. El espejo del Desktop al topic 1279 (`hermes-desktop-mirror.service`) no se tocó.

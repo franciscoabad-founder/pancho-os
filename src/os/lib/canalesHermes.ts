@@ -136,6 +136,91 @@ export function normalizarSesion(cruda: SesionHermesCruda): SesionHermes | null 
   };
 }
 
+/** Mensaje crudo de /api/sessions/{id}/messages. */
+export interface MensajeHermesCrudo {
+  id?: unknown;
+  role?: unknown;
+  content?: unknown;
+  tool_name?: unknown;
+  tool_calls?: unknown;
+  timestamp?: unknown;
+}
+
+export interface MensajeHermes {
+  id: number;
+  /** 'herramienta' agrupa las llamadas y resultados de tools: se muestran plegados. */
+  rol: 'usuario' | 'agente' | 'herramienta' | 'sistema';
+  texto: string;
+  herramienta: string | null;
+  /** Segundos Unix. */
+  hora: number | null;
+}
+
+const ROL: Record<string, MensajeHermes['rol']> = {
+  user: 'usuario',
+  assistant: 'agente',
+  tool: 'herramienta',
+  system: 'sistema',
+};
+
+/** Descarta filas sin id o sin nada que mostrar (turnos del agente que solo llaman tools). */
+export function normalizarMensaje(cruda: MensajeHermesCrudo): MensajeHermes | null {
+  const id = typeof cruda.id === 'number' ? cruda.id : Number(cruda.id);
+  if (!Number.isFinite(id)) return null;
+  const rol = ROL[texto(cruda.role)] ?? 'sistema';
+  const cuerpo = typeof cruda.content === 'string' ? cruda.content.trim() : '';
+  const herramienta = texto(cruda.tool_name) || null;
+  if (!cuerpo && rol !== 'herramienta') return null;
+  return { id, rol, texto: cuerpo, herramienta, hora: numero(cruda.timestamp) || null };
+}
+
+export interface TopicTelegram {
+  /** thread_id, o null para el chat general o un chat privado. */
+  topic: string | null;
+  etiqueta: string;
+  sesiones: SesionHermes[];
+  ultimaActividad: number | null;
+}
+
+export interface ChatTelegram {
+  chatId: string;
+  nombre: string;
+  tipo: 'dm' | 'group' | 'otro';
+  topics: TopicTelegram[];
+  ultimaActividad: number | null;
+}
+
+/**
+ * Arma el arbol de Telegram: chat (grupo o privado) -> topic -> sesiones. Un
+ * topic puede tener varias sesiones (una por perfil, o por reinicio de contexto).
+ * Sin nombre de topic en Hermes se usa "Topic N": Telegram no lo entrega.
+ */
+export function arbolTelegram(sesiones: SesionHermes[]): ChatTelegram[] {
+  const chats = new Map<string, ChatTelegram>();
+  for (const s of sesiones) {
+    if (!s.telegram) continue;
+    const t = s.telegram;
+    const chat = chats.get(t.chatId) ?? { chatId: t.chatId, nombre: t.nombre, tipo: t.tipo, topics: [], ultimaActividad: null };
+    let topic = chat.topics.find((x) => x.topic === t.topic);
+    if (!topic) {
+      topic = { topic: t.topic, etiqueta: t.topic ? `Topic ${t.topic}` : t.tipo === 'group' ? 'General' : 'Chat', sesiones: [], ultimaActividad: null };
+      chat.topics.push(topic);
+    }
+    topic.sesiones.push(s);
+    chats.set(t.chatId, chat);
+  }
+  const reciente = (a: number | null, b: number | null) => (b ?? 0) - (a ?? 0);
+  for (const chat of chats.values()) {
+    for (const topic of chat.topics) {
+      topic.sesiones.sort((a, b) => reciente(a.ultimaActividad, b.ultimaActividad));
+      topic.ultimaActividad = topic.sesiones[0]?.ultimaActividad ?? null;
+    }
+    chat.topics.sort((a, b) => reciente(a.ultimaActividad, b.ultimaActividad));
+    chat.ultimaActividad = chat.topics[0]?.ultimaActividad ?? null;
+  }
+  return [...chats.values()].sort((a, b) => reciente(a.ultimaActividad, b.ultimaActividad));
+}
+
 export interface FiltroSesiones {
   canal?: CanalHermesId | null;
   perfil?: string | null;
