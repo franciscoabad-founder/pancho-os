@@ -81,6 +81,7 @@ const ms: Record<string, string> = {
   '/hermes/app': 'hub',
   '/hermes/sesiones': 'forum',
   '/hermes/telegram': 'send',
+  '/hermes/capabilities': 'extension',
 };
 
 export const navGroups = [
@@ -91,6 +92,7 @@ export const navGroups = [
     { href: '/hermes/app', label: 'Hermes completo' },
     { href: '/hermes/sesiones', label: 'Sesiones de Hermes' },
     { href: '/hermes/telegram', label: 'Telegram en Hermes' },
+    { href: '/hermes/capabilities', label: 'Capabilities de Hermes' },
     { href: '/aprobaciones', label: 'Aprobaciones' },
     { href: '/diario', label: 'Journal' },
     { href: '/ikigai', label: 'Ikigai' },

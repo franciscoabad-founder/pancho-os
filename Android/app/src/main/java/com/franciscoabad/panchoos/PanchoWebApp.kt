@@ -1,6 +1,7 @@
 package com.franciscoabad.panchoos
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
 import android.webkit.WebResourceRequest
 import android.webkit.WebChromeClient
@@ -34,7 +35,15 @@ fun PanchoWebApp(activity: MainActivity) {
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val host = request.url.host ?: return true
-                        return host != "next.os.franciscoabad.com"
+                        if (host == "next.os.franciscoabad.com" || host == "os.franciscoabad.com") return false
+                        // Enlaces externos (p. ej. Hermes completo, solo Tailscale): al navegador del
+                        // telefono. Antes se bloqueaban en silencio y el toque no hacia nada.
+                        runCatching {
+                            activity.startActivity(
+                                Intent(Intent.ACTION_VIEW, request.url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                        return true
                     }
                 }
                 webChromeClient = object : WebChromeClient() {
