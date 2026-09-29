@@ -22,6 +22,19 @@
 
 Resueltas el 28-sep-2026: Fase 1 aprobada ("si haz fase 1"); acceso = **A, solo Tailscale** (tomada por defecto, la recomendada; si prefieres B, dilo).
 
+## 1c. Escribir en Telegram desde el OS (29-sep-2026)
+
+**Qué decidir:** elige A, B o C.
+- **A. Solo leer** (hoy): ver grupos, topics y conversaciones. Para responder abres Hermes completo. Cero riesgo.
+- **B. Gestionar topics con el bot:** crear, renombrar y cerrar topics de tus grupos desde el OS. Requiere guardar el token del bot de Telegram en el servidor del OS (un secreto nuevo). El bot debe ser administrador del grupo con permiso de gestionar topics.
+- **C. B más mandar mensajes como el bot** a un topic. Alfred NO responde a esos mensajes: Telegram no entrega al bot lo que el propio bot escribe. Para que Alfred responda como si fueras tú haría falta una cuenta de usuario de Telegram, que no recomiendo (riesgo de bloqueo de tu cuenta).
+
+**Por qué importa:** escribir es una acción visible para otras personas. Los grupos incluyen "Arazza Mealpreps" y un mensaje equivocado lo ve el equipo.
+
+**Cómo responder:** "A", "B" o "C". Recomiendo A ahora y B más adelante, si de verdad administras topics desde el OS. Si eliges B o C, dime qué bot (Alfred u otro) y ya sé dónde está su token en el VPS; no te lo pido por chat.
+
+**Estado:** Fase 3 solo de lectura, lista en la rama `feat/hermes-telegram-fase3`. Detalle en `C:\DEV\Pancho-OS\docs\plan-hermes-en-os.md`, sección "Resultado Fase 3".
+
 ## 1b. Hermes completo dentro del OS, sin pestaña aparte (28-sep-2026)
 
 **Qué decidir:** ¿activas HTTPS en tu cuenta de Tailscale? Sí o no.

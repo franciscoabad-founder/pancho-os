@@ -11,7 +11,10 @@
 
 import { readEnv } from '../lib/env.ts';
 import {
+  normalizarMensaje,
   normalizarSesion,
+  type MensajeHermes,
+  type MensajeHermesCrudo,
   sourcesDeCanal,
   type CanalHermesId,
   type SesionHermes,
@@ -64,6 +67,36 @@ export function construirRutaSesiones(p: ParametrosSesiones): string {
   const sources = p.canal ? sourcesDeCanal(p.canal) : [];
   if (sources.length) q.set('sources', sources.join(','));
   return `/hermes-api/api/profiles/sessions?${q.toString()}`;
+}
+
+/** Ids de sesion de Hermes: fecha_hora_hex o api-hex. Nada de rutas ni espacios. */
+const ID_SESION = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,80}$/;
+
+export function construirRutaMensajes(id: string, perfil?: string | null, limite?: number): string {
+  if (!ID_SESION.test(id)) throw new Error('id de sesion invalido');
+  const q = new URLSearchParams({ limit: String(enteroAcotado(limite, 120, 1, 500)), order: 'latest', include_compacted: 'true' });
+  if (perfil && /^[a-z0-9][a-z0-9_-]{0,40}$/i.test(perfil)) q.set('profile', perfil);
+  return `/hermes-api/api/sessions/${encodeURIComponent(id)}/messages?${q.toString()}`;
+}
+
+/** Ultimos mensajes de una sesion, de mas viejo a mas nuevo. Solo lectura. */
+export async function leerMensajesSesion(id: string, perfil?: string | null, limite?: number): Promise<MensajeHermes[]> {
+  const ruta = construirRutaMensajes(id, perfil, limite);
+  const base = (readEnv('HERMES_UI_INTERNAL_URL') ?? BASE_POR_DEFECTO).replace(/\/+$/, '');
+  let res: Response;
+  try {
+    res = await fetcher(`${base}${ruta}`, { method: 'GET', signal: AbortSignal.timeout(TIMEOUT_MS) });
+  } catch (err) {
+    throw new Error(`hermes-ui no responde: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (res.status === 404) throw new Error('sesion no encontrada');
+  if (!res.ok) throw new Error(`hermes-ui respondio HTTP ${res.status}`);
+  const cuerpo = (await res.json()) as { messages?: MensajeHermesCrudo[] };
+  if (!Array.isArray(cuerpo.messages)) throw new Error('hermes-ui devolvio una respuesta sin mensajes');
+  return cuerpo.messages
+    .map(normalizarMensaje)
+    .filter((m): m is MensajeHermes => m !== null)
+    .sort((a, b) => a.id - b.id);
 }
 
 export async function listarSesionesHermes(p: ParametrosSesiones = {}): Promise<ResultadoSesiones> {
