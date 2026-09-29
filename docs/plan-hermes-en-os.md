@@ -151,4 +151,32 @@ Decisiones abiertas: `C:\DEV\Pancho-OS\docs\DECISIONES-PENDIENTES.md`.
 `powershell -File C:\DEV\Pancho-OS\hermes-ui\deploy.ps1`. Lee la versión nueva del VPS y recompila la misma. Si el VPS se actualiza y no se corre este script, el servicio sigue con el build anterior y puede fallar en partes nuevas de la API.
 
 ### Pendiente para Fase 2
-Sesiones agrupadas por canal y perfil, con buscador. Después: Fase 3 (Telegram con topics) y Fase 4 (móvil).
+Hecho, ver abajo. Después: Fase 3 (Telegram con topics) y Fase 4 (móvil).
+
+## Resultado Fase 2 (29-sep-2026)
+
+**Estado: hecha y probada contra el Hermes real.** Página nueva `/hermes/sesiones` ("Sesiones de Hermes" en el menú Sistema).
+
+### Qué hace
+1. Junta las sesiones de los 6 perfiles del VPS (1193 hoy) y las separa por **canal**: Telegram, Pancho OS, Desktop y web, Tareas programadas, Puente de Ara, Tareas de una vez, Terminal y Otros. Cada canal tiene nombre, color e ícono.
+2. Filtra por **perfil** (Alfred, Arazza, Nerio, Rafik, Taskr) y busca por título, mensaje, grupo o perfil, sin importar acentos.
+3. **Telegram va por grupo y con topic**: por ejemplo "Telegram · Pancho HQ" con sus topics 1, 56, 1279, y "Telegram · Arazza Mealpreps" con el 187. Esto es la base de la Fase 3.
+4. Cada sesión se abre en Hermes completo (solo con Tailscale). Funciona en celular (captura 05).
+
+### Cómo está hecho
+| Pieza | Ruta |
+|---|---|
+| Lógica de canales (pura, con 9 pruebas) | `C:\DEV\Pancho-OS\src\os\lib\canalesHermes.ts` |
+| Lectura desde Hermes (solo GET, con 5 pruebas) | `C:\DEV\Pancho-OS\src\server\hermesSesiones.handlers.ts` |
+| API con sesión del OS (401 sin sesión) | `C:\DEV\Pancho-OS\src\routes\api\hermes\sesiones.ts` |
+| Página | `C:\DEV\Pancho-OS\src\routes\hermes_\sesiones.tsx` |
+
+El OS le pregunta a `hermes-ui` (mismo VPS), que ya tiene la sesión del dashboard: no se guardó ninguna clave nueva. Si `hermes-ui` no responde, la página muestra el error, no una lista inventada. Variable opcional: `HERMES_UI_INTERNAL_URL` (por defecto `http://100.127.42.51:9120`).
+
+### Probado
+14 de 14 pruebas (`npm run test:sesiones`). Sin errores nuevos de tipos. Página y API probadas en local con el Hermes real. Capturas: `C:\DEV\Pancho-OS\docs\fase2-capturas\` (todas por canal, filtro Telegram con topics, Telegram + Arazza, búsqueda, celular).
+
+### Límites conocidos
+1. Carga las 500 sesiones más recientes (tope de Hermes por página). Los conteos por canal son de esas 500; los conteos por perfil son totales. La página lo avisa ("las 501 más recientes de 1193").
+2. Abrir una sesión requiere Tailscale, porque Hermes completo es solo Tailscale (decisión 1b = A).
+3. Al fusionar, la página aparece en producción. Producción debe alcanzar `100.127.42.51:9120` (mismo VPS): se verifica tras el despliegue.
