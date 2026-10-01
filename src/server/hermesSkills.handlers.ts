@@ -55,9 +55,14 @@ export async function listarSkills(perfil?: string | null): Promise<SkillHermes[
 }
 
 /** Activa o desactiva una skill. Devuelve el estado que Hermes confirma. */
-export async function cambiarSkill(nombre: unknown, activa: unknown, perfil?: string | null): Promise<{ nombre: string; activa: boolean }> {
+export async function cambiarSkill(nombre: unknown, activa: unknown, perfil?: unknown): Promise<{ nombre: string; activa: boolean }> {
   if (typeof nombre !== 'string' || !NOMBRE_SKILL.test(nombre)) throw new Error('nombre de skill invalido');
   if (typeof activa !== 'boolean') throw new Error('activa debe ser verdadero o falso');
+  // Esto cambia la config real de Hermes: un perfil mal escrito no puede caer en
+  // silencio al perfil default y tocar las skills de Alfred.
+  if (perfil !== undefined && perfil !== null && (typeof perfil !== 'string' || !PERFIL.test(perfil))) {
+    throw new Error('perfil invalido');
+  }
   const res = await pedir(rutaSkills('/api/skills/toggle', perfil), {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },

@@ -30,7 +30,7 @@ export const Route = createFileRoute('/api/hermes/skills')({
           return json({ error: 'JSON invalido' }, 400);
         }
         try {
-          return json(await cambiarSkill(cuerpo.nombre, cuerpo.activa, typeof cuerpo.perfil === 'string' ? cuerpo.perfil : null));
+          return json(await cambiarSkill(cuerpo.nombre, cuerpo.activa, cuerpo.perfil));
         } catch (err) {
           const texto = err instanceof Error ? err.message : String(err);
           return json({ error: texto }, estado(texto));

@@ -4,7 +4,7 @@
 // Datos: /api/hermes/skills. OJO: el interruptor cambia la configuracion REAL
 // de Hermes en el VPS (PUT /api/skills/toggle), por perfil.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import OSLayout, { tituloOs } from '../../os/components/OSLayout.tsx';
 import PageHeader from '../../os/components/ui/PageHeader.tsx';
@@ -25,6 +25,9 @@ const chip = (activo: boolean): React.CSSProperties => ({
 
 function CapabilitiesPage() {
   const [perfil, setPerfil] = useState('default');
+  // Perfil vigente, para descartar respuestas de un toggle hecho en otro perfil.
+  const perfilActual = useRef(perfil);
+  perfilActual.current = perfil;
   const [skills, setSkills] = useState<SkillHermes[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -57,6 +60,8 @@ function CapabilitiesPage() {
 
   async function alternar(s: SkillHermes) {
     const nueva = !s.activa;
+    const pedido = perfil;
+    const sigue = () => perfilActual.current === pedido;
     setAviso(null);
     setEnCurso((p) => new Set(p).add(s.nombre));
     // Se muestra el cambio de inmediato y se revierte si Hermes no lo confirma.
@@ -65,13 +70,15 @@ function CapabilitiesPage() {
       const res = await fetch('/api/hermes/skills', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ nombre: s.nombre, activa: nueva, perfil }),
+        body: JSON.stringify({ nombre: s.nombre, activa: nueva, perfil: pedido }),
       });
       const c = await res.json();
       if (!res.ok) throw new Error(c?.error ?? `HTTP ${res.status}`);
+      if (!sigue()) return;
       setSkills((prev) => prev?.map((x) => (x.nombre === s.nombre ? { ...x, activa: c.activa === true } : x)) ?? prev);
-      setAviso(`${s.nombre}: ${c.activa ? 'activada' : 'desactivada'} en ${PERFILES_HERMES.find((p) => p.id === perfil)?.etiqueta ?? perfil}.`);
+      setAviso(`${s.nombre}: ${c.activa ? 'activada' : 'desactivada'} en ${PERFILES_HERMES.find((p) => p.id === pedido)?.etiqueta ?? pedido}.`);
     } catch (e) {
+      if (!sigue()) return;
       setSkills((prev) => prev?.map((x) => (x.nombre === s.nombre ? { ...x, activa: s.activa } : x)) ?? prev);
       setAviso(`No pude cambiar ${s.nombre}: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
