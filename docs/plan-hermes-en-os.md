@@ -209,3 +209,26 @@ Crear, renombrar o cerrar topics y mandar mensajes desde el OS. Hermes no tiene 
 1. No se sabe si un mensaje enviado por Telegram ya fue respondido más allá de lo que Hermes guardó; se ve lo que Hermes registró.
 2. Los últimos 150 mensajes por conversación.
 3. El espejo del Desktop al topic 1279 (`hermes-desktop-mirror.service`) no se tocó.
+
+## Resultado Fase 4 (29-sep-2026)
+
+**Estado: hecha y probada en celular simulado; la app Android compila pero no la instalé en un teléfono ni emulador.**
+
+### Qué quedó
+1. **Vista móvil de Capabilities** (`/hermes/capabilities`, "Capabilities de Hermes" en el menú Sistema): las 266 skills por perfil (Alfred, Arazza, Nerio, Rafik, Taskr), buscador, filtro Activas/Inactivas, categorías y un interruptor por skill. **El interruptor cambia la configuración real de Hermes en el VPS.**
+2. **Sesiones y Telegram** (Fases 2 y 3) revisadas en celular de 412 px: sin desborde horizontal.
+3. **Arreglo en la app Android** (`C:\DEV\Pancho-OS\Android\app\src\main\java\com\franciscoabad\panchoos\PanchoWebApp.kt`): antes, un toque en un enlace externo (como "Abrir en Hermes completo") no hacía nada, porque la app lo bloqueaba en silencio. Ahora se abre en el navegador del teléfono. Compila (`BUILD SUCCESSFUL`).
+4. **App de escritorio Tauri**: el código ya abre los enlaces externos en el navegador (`on_navigation` en `C:\DEV\Pancho-OS\src-tauri\src\lib.rs`). Revisado por lectura; no la ejecuté.
+5. **Hermes completo en celular**: la app oficial se adapta a pantalla chica (chat en una columna, barra lateral plegada) y es usable por Tailscale. La barra de estado inferior queda recortada; es de Hermes, no lo toqué.
+
+### Probado
+- 24 pruebas (`npm run test:sesiones`), sin errores nuevos de tipos (115, igual que antes).
+- API de skills: 401 sin sesión, 400 con nombre malicioso o valor que no es verdadero/falso.
+- **Cambio real y reversible en el Hermes de producción:** apagué y volví a prender `openhue` (luces inteligentes, sin uso en tus tareas). Hermes confirmó las dos veces y al final quedaron las 266 activas, como al inicio.
+- Capturas en `C:\DEV\Pancho-OS\docs\fase4-capturas\`.
+
+### Límites
+1. Las skills que aparecen en el catálogo de Hermes pero no están instaladas (por ejemplo `apple-notes`) no salen en esta lista; solo las instaladas.
+2. Desactivar una skill importante puede dejar a un agente sin una herramienta que sus tareas programadas usan. El interruptor no avisa qué tarea la usa.
+3. Falta instalar la app Android en un teléfono para confirmar el enlace externo.
+4. Necesita Tailscale en el teléfono para abrir Hermes completo.
